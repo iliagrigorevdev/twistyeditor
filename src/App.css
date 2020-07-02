@@ -1,5 +1,5 @@
 .App {
-  text-align: center;
+  overflow: hidden;
 }
 
 .App-logo {
@@ -35,4 +35,17 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.Viewport {
+  float: left;
+  width: 80%;
+  height: 100%;
+}
+
+.Toolbar {
+  float: left;
+  text-align: center;
+  width: 20%;
+  height: 100%;
 }
