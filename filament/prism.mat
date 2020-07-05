@@ -1,0 +1,22 @@
+material {
+  name : prism,
+  requires : [ uv0 ],
+  shadingModel : lit,
+  parameters : [
+    { type : sampler2d, name : colorMask },
+    { type : float3, name : backgroundColor },
+    { type : float3, name : foregroundColor }
+  ],
+}
+
+fragment {
+  void material(inout MaterialInputs material) {
+    prepareMaterial(material);
+    const float smoothRange = 0.1;
+    float colorMask = texture(materialParams_colorMask, getUV0()).r;
+    float blend = smoothstep(0.5 - smoothRange, 0.5 + smoothRange, colorMask);
+    material.baseColor = vec4(mix(materialParams.backgroundColor, materialParams.foregroundColor, blend), 1.0);
+    material.roughness = 0.1;
+    material.metallic = 0.0;
+  }
+}
