@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
-import { vec3, quat, mat4 } from 'gl-matrix';
+import { vec3, quat } from 'gl-matrix';
 import Prism from './Prism';
+import Shape from './Shape';
+import ShapeView from './ShapeView';
 import './App.css';
 
 const COLOR_MASK_COUNT = 8;
@@ -39,6 +41,8 @@ class Viewport extends Component {
   init() {
     this.canvas = this.filament;
     const engine = this.engine = window.Filament.Engine.create(this.canvas);
+    this.transformManager = engine.getTransformManager();
+    this.camera = engine.createCamera();
     this.scene = engine.createScene();
 
     const indirectLight = engine.createIblFromKtx(iblUrl);
@@ -69,7 +73,7 @@ class Viewport extends Component {
     // XXX test
     const backgroundColors = [0x2a7fff, 0xff7f2a, 0xffd42a, 0x7f2aff];
     const foregroundColor = 0xf9f9f9;
-    const prisms = [];
+    const shape = new Shape();
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       const angle = i * 360 / COLOR_MASK_COUNT;
       const prism = new Prism();
@@ -79,13 +83,13 @@ class Viewport extends Component {
       quat.fromEuler(prism.orientation, 0, 0, angle);
       vec3.set(prism.position, 2, 0, 0);
       vec3.transformQuat(prism.position, prism.position, prism.orientation);
-      prisms.push(prism);
+      shape.prisms.push(prism);
     }
-    this.shapeView = this.createShapeView(prisms);
+    this.shapeView = new ShapeView(shape, this);
+    this.shapeView.addToScene(this.scene);
 
     this.swapChain = engine.createSwapChain();
     this.renderer = engine.createRenderer();
-    this.camera = engine.createCamera();
     this.view = engine.createView();
     this.view.setCamera(this.camera);
     this.view.setScene(this.scene);
@@ -125,66 +129,13 @@ class Viewport extends Component {
       return renderable;
   }
 
-  createPrismView(prism) {
-    const renderable = this.createPrismRenderable(prism.colorMask,
-        prism.backgroundColor, prism.foregroundColor);
-    const transform = mat4.fromRotationTranslation(mat4.create(),
-        prism.orientation, prism.position);
-    const transformManager = this.engine.getTransformManager();
-    const transformInstance = transformManager.getInstance(renderable);
-    transformManager.setTransform(transformInstance, transform);
-    transformInstance.delete();
-    this.scene.addEntity(renderable);
-    return {
-      prism: prism,
-      renderable: renderable
-    };
-  }
-
-  createShapeView(prisms) {
-    const prismViews = [];
-    for (let i = 0; i < prisms.length; i++) {
-      prismViews.push(this.createPrismView(prisms[i]));
-    }
-    return {
-      prismViews: prismViews,
-      pivot: vec3.create(),
-      position: vec3.create(),
-      orientation: quat.create()
-    };
-  }
-
-  applyShapeTransform(shapeView) {
-    const transformManager = this.engine.getTransformManager();
-    const position = vec3.create();
-    const orientation = quat.create();
-    for (let i = 0; i < shapeView.prismViews.length; i++) {
-      const prismView = shapeView.prismViews[i]
-      vec3.copy(position, prismView.prism.position);
-      quat.copy(orientation, prismView.prism.orientation);
-      vec3.subtract(position, position, shapeView.pivot);
-      vec3.transformQuat(position, position, shapeView.orientation);
-      vec3.add(position, position, shapeView.pivot);
-      vec3.add(position, position, shapeView.position);
-      quat.multiply(orientation, shapeView.orientation, orientation);
-      const transformInstance = transformManager.getInstance(prismView.renderable);
-      const transform = mat4.fromRotationTranslation(mat4.create(), orientation, position);
-      transformManager.setTransform(transformInstance, transform);
-      transformInstance.delete();
-    }
-  }
-
   renderFrame() {
-    const angle = Date.now() / 100;
-
-    const eye = [0, 0, 10];
-    const center = [0, 0, 0];
-    const up = [0, 1, 0];
-    vec3.rotateY(eye, eye, center, 0.01 * angle);
-    this.camera.lookAt(eye, center, up);
-
-    quat.fromEuler(this.shapeView.orientation, 0, 3 * angle, angle);
-    this.applyShapeTransform(this.shapeView);
+    const angle = Date.now() / 10000;
+    this.shapeView.heading = angle;
+    this.shapeView.elevation = Math.sin(4 * angle);
+    this.shapeView.shape.roll = Math.PI / 2;
+    this.shapeView.shape.pitch = Math.PI / 6;
+    this.shapeView.applyTransform(this);
 
     this.renderer.render(this.swapChain, this.view);
     window.requestAnimationFrame(this.renderFrame);
