@@ -1,7 +1,5 @@
 import React, { Component } from 'react';
-import { vec3, quat } from 'gl-matrix';
-import Prism from './Prism';
-import Shape from './Shape';
+import { vec3 } from 'gl-matrix';
 import ShapeView from './ShapeView';
 import './App.css';
 
@@ -16,18 +14,6 @@ const convertColor = ((hex) =>
   [((hex >> 16) & 0xff) / 0xff, ((hex >> 8) & 0xff) / 0xff, (hex & 0xff) / 0xff]);
 
 class Viewport extends Component {
-  constructor(props) {
-    super(props);
-
-    this.prismTextures = null;
-    this.prismMaterials = null;
-    this.prismSourceMaterial = null;
-    this.prismSourceMesh = null;
-    this.prismBoundingBox = null;
-    this.prismTextureSampler = null;
-    this.shapeView = null;
-  }
-
   componentDidMount() {
     let assets = [iblUrl, skyboxUrl, prismMeshUrl, prismMaterialUrl];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
@@ -38,7 +24,29 @@ class Viewport extends Component {
     });
   }
 
+  componentDidUpdate(prevProps) {
+    if (prevProps.shape !== this.props.shape) {
+      this.handleShapeChange();
+    }
+  }
+
+  handleShapeChange() {
+    if (!this.engine) {
+      return;
+    }
+    if (this.shapeView) {
+      this.shapeView.removeFromScene(this);
+    }
+    this.shapeView = new ShapeView(this.props.shape, this);
+    this.shapeView.addToScene(this);
+  }
+
   init() {
+    this.elevation = 0;
+    this.heading = 0;
+    this.distance = 10;
+    this.target = vec3.create();
+
     this.canvas = this.filament;
     const engine = this.engine = window.Filament.Engine.create(this.canvas);
     this.transformManager = engine.getTransformManager();
@@ -70,23 +78,7 @@ class Viewport extends Component {
 
     this.prismMaterials = new Map();
 
-    // XXX test
-    const backgroundColors = [0x2a7fff, 0xff7f2a, 0xffd42a, 0x7f2aff];
-    const foregroundColor = 0xf9f9f9;
-    const shape = new Shape();
-    for (let i = 0; i < COLOR_MASK_COUNT; i++) {
-      const angle = i * 360 / COLOR_MASK_COUNT;
-      const prism = new Prism();
-      prism.colorMask = i;
-      prism.backgroundColor = backgroundColors[i % backgroundColors.length];
-      prism.foregroundColor = foregroundColor;
-      quat.fromEuler(prism.orientation, 0, 0, angle);
-      vec3.set(prism.position, 2, 0, 0);
-      vec3.transformQuat(prism.position, prism.position, prism.orientation);
-      shape.prisms.push(prism);
-    }
-    this.shapeView = new ShapeView(shape, this);
-    this.shapeView.addToScene(this.scene);
+    this.handleShapeChange();
 
     this.swapChain = engine.createSwapChain();
     this.renderer = engine.createRenderer();
@@ -131,11 +123,14 @@ class Viewport extends Component {
 
   renderFrame() {
     const angle = Date.now() / 10000;
-    this.shapeView.heading = angle;
-    this.shapeView.elevation = Math.sin(4 * angle);
-    this.shapeView.shape.roll = Math.PI / 2;
-    this.shapeView.shape.pitch = Math.PI / 6;
-    this.shapeView.applyTransform(this);
+
+    this.heading = angle;
+    this.elevation = Math.sin(4 * angle);
+    const eye = [0, 0, this.distance];
+    const up = [0, 1, 0];
+    vec3.rotateX(eye, eye, this.target, this.elevation);
+    vec3.rotateY(eye, eye, this.target, this.heading);
+    this.camera.lookAt(eye, this.target, up);
 
     this.renderer.render(this.swapChain, this.view);
     window.requestAnimationFrame(this.renderFrame);

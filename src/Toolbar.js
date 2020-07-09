@@ -1,26 +1,35 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { Component } from 'react';
 import './App.css';
 
-function Toolbar() {
-  return (
-    <div className="Toolbar">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+class Toolbar extends Component {
+  handleRollChange(roll) {
+    const shape = this.props.shape.clone();
+    shape.roll = parseFloat(roll) || 0;
+    this.props.onShapeChange(shape);
+  }
+
+  handlePitchChange(pitch) {
+    const shape = this.props.shape.clone();
+    shape.pitch = parseFloat(pitch) || 0;
+    this.props.onShapeChange(shape);
+  }
+
+  render() {
+    return (
+      <div className="Toolbar">
         <p>
-          Edit <code>src/App.js</code> and save to reload.
+          <label htmlFor="roll">Roll : </label>
+          <input type="number" id="roll" name="roll" min="-180" max="180"
+            step="15" value={this.props.shape.roll} onChange={e => this.handleRollChange(e.target.value)} />
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+        <p>
+          <label htmlFor="pitch">Pitch : </label>
+          <input type="number" id="pitch" name="pitch" min="-180" max="180"
+            step="15" value={this.props.shape.pitch} onChange={e => this.handlePitchChange(e.target.value)} />
+        </p>
+      </div>
+    );
+  }
 }
 
 export default Toolbar;
