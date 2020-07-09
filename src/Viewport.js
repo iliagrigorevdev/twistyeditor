@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { vec3 } from 'gl-matrix';
-import Trackball from 'gltumble';
 import ShapeView from './ShapeView';
 import './App.css';
 
@@ -87,11 +86,6 @@ class Viewport extends Component {
     this.view.setCamera(this.camera);
     this.view.setScene(this.scene);
 
-    this.trackball = new Trackball(this.canvas, {
-      autoTick: false,
-      clampTilt: 0.48 * Math.PI
-    });
-
     this.resize();
     this.renderFrame = this.renderFrame.bind(this);
     this.resize = this.resize.bind(this);
@@ -128,11 +122,10 @@ class Viewport extends Component {
   }
 
   renderFrame() {
-    this.trackball.tick();
-    const [spin, tilt] = this.trackball.getAngles();
+    const angle = Date.now() / 10000;
 
-    this.heading = -spin;
-    this.elevation = -tilt;
+    this.heading = angle;
+    this.elevation = Math.sin(4 * angle);
     const eye = [0, 0, this.distance];
     const up = [0, 1, 0];
     vec3.rotateX(eye, eye, this.target, this.elevation);
