@@ -4,6 +4,7 @@
 
 .Viewport {
   float: left;
+  touch-action: none;
   width: 80%;
   height: 100%;
 }

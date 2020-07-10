@@ -4,6 +4,10 @@ import ShapeView from './ShapeView';
 import './App.css';
 
 const COLOR_MASK_COUNT = 8;
+const POINTER_DRAG_THRESHOLD = 5;
+const POINTER_DRAG_THRESHOLD_SQUARED = POINTER_DRAG_THRESHOLD * POINTER_DRAG_THRESHOLD;
+const POINTER_DRAG_FACTOR = 0.01;
+const ELEVATION_LIMIT = 0.48 * Math.PI;
 
 const iblUrl = "res/environment_ibl.ktx";
 const skyboxUrl = "res/environment_skybox.ktx";
@@ -47,6 +51,11 @@ class Viewport extends Component {
     this.distance = 10;
     this.target = vec3.create();
 
+    this.pressing = false;
+    this.dragging = false;
+    this.pointerX = 0;
+    this.pointerY = 0;
+
     this.canvas = this.filament;
     const engine = this.engine = window.Filament.Engine.create(this.canvas);
     this.transformManager = engine.getTransformManager();
@@ -78,6 +87,7 @@ class Viewport extends Component {
 
     this.prismMaterials = new Map();
 
+    this.updateCamera();
     this.handleShapeChange();
 
     this.swapChain = engine.createSwapChain();
@@ -91,6 +101,9 @@ class Viewport extends Component {
     this.resize = this.resize.bind(this);
     window.addEventListener("resize", this.resize);
     window.requestAnimationFrame(this.renderFrame);
+    this.canvas.addEventListener("pointerdown", (e) => this.handlePointerDown(e));
+    this.canvas.addEventListener("pointerup", (e) => this.handlePointerUp(e));
+    this.canvas.addEventListener("pointermove", (e) => this.handlePointerMove(e));
   }
 
   createPrismRenderable(colorMask, backgroundColor, foregroundColor) {
@@ -121,17 +134,15 @@ class Viewport extends Component {
       return renderable;
   }
 
-  renderFrame() {
-    const angle = Date.now() / 10000;
-
-    this.heading = angle;
-    this.elevation = Math.sin(4 * angle);
+  updateCamera() {
     const eye = [0, 0, this.distance];
     const up = [0, 1, 0];
     vec3.rotateX(eye, eye, this.target, this.elevation);
     vec3.rotateY(eye, eye, this.target, this.heading);
     this.camera.lookAt(eye, this.target, up);
+  }
 
+  renderFrame() {
     this.renderer.render(this.swapChain, this.view);
     window.requestAnimationFrame(this.renderFrame);
   }
@@ -144,6 +155,49 @@ class Viewport extends Component {
 
     this.camera.setProjectionFov(45.0, width / height, 1.0, 100.0,
         window.Filament.Camera$Fov.VERTICAL);
+  }
+
+  isPrimaryPointer(e) {
+    return ((e.pointerType !== "touch") || e.isPrimary);
+  }
+
+  handlePointerDown(e) {
+    if (!this.isPrimaryPointer(e)) {
+      return;
+    }
+    this.pressing = true;
+    this.dragging = false;
+    this.pointerX = e.clientX;
+    this.pointerY = e.clientY;
+  }
+
+  handlePointerUp(e) {
+    if (!this.isPrimaryPointer(e)) {
+      return;
+    }
+    this.pressing = false;
+  }
+
+  handlePointerMove(e) {
+    if (!this.isPrimaryPointer(e) || !this.pressing) {
+      return;
+    }
+    const dx = e.clientX - this.pointerX;
+    const dy = e.clientY - this.pointerY;
+    if (!this.dragging) {
+      const dragDistanceSquared = dx * dx + dy * dy;
+      if (dragDistanceSquared >= POINTER_DRAG_THRESHOLD_SQUARED) {
+        this.dragging = true;
+      }
+    }
+    if (this.dragging) {
+      this.elevation = Math.min(Math.max(
+          this.elevation - dy * POINTER_DRAG_FACTOR, -ELEVATION_LIMIT), ELEVATION_LIMIT);
+      this.heading = (this.heading - dx * POINTER_DRAG_FACTOR) % (2 * Math.PI);
+      this.updateCamera();
+      this.pointerX = e.clientX;
+      this.pointerY = e.clientY;
+    }
   }
 
   render() {
