@@ -1,8 +1,17 @@
+import { quat } from 'gl-matrix';
+
 class Shape {
   constructor() {
     this.prisms = [];
     this.roll = 0;
     this.pitch = 0;
+  }
+
+  applyTransform() {
+    const shapeOrientation = quat.create();
+    quat.rotateX(shapeOrientation, shapeOrientation, this.roll / 180 * Math.PI);
+    quat.rotateZ(shapeOrientation, shapeOrientation, this.pitch / 180 * Math.PI);
+    this.prisms.forEach((prism) => prism.applyTransform(shapeOrientation));
   }
 
   clone() {

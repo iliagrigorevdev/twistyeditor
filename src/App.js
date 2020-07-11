@@ -25,6 +25,7 @@ class App extends Component {
       vec3.transformQuat(prism.position, prism.position, prism.orientation);
       shape.prisms.push(prism);
     }
+    shape.applyTransform();
 
     this.state = {
       shape: shape

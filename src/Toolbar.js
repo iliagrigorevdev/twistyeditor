@@ -5,12 +5,14 @@ class Toolbar extends Component {
   handleRollChange(roll) {
     const shape = this.props.shape.clone();
     shape.roll = parseFloat(roll) || 0;
+    shape.applyTransform();
     this.props.onShapeChange(shape);
   }
 
   handlePitchChange(pitch) {
     const shape = this.props.shape.clone();
     shape.pitch = parseFloat(pitch) || 0;
+    shape.applyTransform();
     this.props.onShapeChange(shape);
   }
 

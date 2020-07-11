@@ -1,5 +1,5 @@
 import PrismView from './PrismView';
-import { vec3, quat, mat4 } from 'gl-matrix';
+import { mat4 } from 'gl-matrix';
 
 class ShapeView {
   constructor(shape, viewport) {
@@ -10,7 +10,7 @@ class ShapeView {
       this.prismViews.push(this.createPrismView(this.shape.prisms[i], viewport));
     }
 
-    this.applyTransform(viewport);
+    this.syncTransform(viewport);
   }
 
   createPrismView(prism, viewport) {
@@ -27,21 +27,13 @@ class ShapeView {
     this.prismViews.forEach((prismView) => viewport.scene.remove(prismView.renderable));
   }
 
-  applyTransform(viewport) {
-    const position = vec3.create();
-    const orientation = quat.create();
+  syncTransform(viewport) {
     const transform = mat4.create();
-    const shapeOrientation = quat.create();
-    quat.rotateX(shapeOrientation, shapeOrientation, this.shape.roll / 180 * Math.PI);
-    quat.rotateZ(shapeOrientation, shapeOrientation, this.shape.pitch / 180 * Math.PI);
     for (let i = 0; i < this.prismViews.length; i++) {
       const prismView = this.prismViews[i];
-      vec3.copy(position, prismView.prism.position);
-      quat.copy(orientation, prismView.prism.orientation);
-      vec3.transformQuat(position, position, shapeOrientation);
-      quat.multiply(orientation, shapeOrientation, orientation);
+      const prism = prismView.prism;
       const transformInstance = viewport.transformManager.getInstance(prismView.renderable);
-      mat4.fromRotationTranslation(transform, orientation, position);
+      mat4.fromRotationTranslation(transform, prism.worldOrientation, prism.worldPosition);
       viewport.transformManager.setTransform(transformInstance, transform);
       transformInstance.delete();
     }
