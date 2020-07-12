@@ -1,17 +1,42 @@
-import { quat } from 'gl-matrix';
+import { quat, vec3 } from 'gl-matrix';
 
 class Shape {
   constructor() {
     this.prisms = [];
     this.roll = 0;
     this.pitch = 0;
+    this.aabb = {
+      min: vec3.create(),
+      max: vec3.create(),
+      center: vec3.create()
+    };
   }
 
   applyTransform() {
     const shapeOrientation = quat.create();
     quat.rotateX(shapeOrientation, shapeOrientation, this.roll / 180 * Math.PI);
     quat.rotateZ(shapeOrientation, shapeOrientation, this.pitch / 180 * Math.PI);
-    this.prisms.forEach((prism) => prism.applyTransform(shapeOrientation));
+
+    vec3.zero(this.aabb.min);
+    vec3.zero(this.aabb.max);
+    for (let i = 0; i < this.prisms.length; i++) {
+      const prism = this.prisms[i];
+      prism.applyTransform(shapeOrientation);
+
+      // Compute axis aligned bounding box
+      for (let j = 0; j < prism.vertices.length; j++) {
+        const vertex = prism.vertices[j];
+        if ((i === 0) && (j === 0)) {
+          vec3.copy(this.aabb.min, vertex);
+          vec3.copy(this.aabb.max, vertex);
+        } else {
+          vec3.min(this.aabb.min, this.aabb.min, vertex);
+          vec3.max(this.aabb.max, this.aabb.max, vertex);
+        }
+      }
+    }
+    vec3.add(this.aabb.center, this.aabb.min, this.aabb.max);
+    vec3.scale(this.aabb.center, this.aabb.center, 0.5);
   }
 
   intersect(ray) {

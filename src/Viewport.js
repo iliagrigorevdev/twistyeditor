@@ -44,6 +44,10 @@ class Viewport extends Component {
     }
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
+    vec3.copy(this.focalPoint, this.shapeView.shape.aabb.center);
+    vec3.copy(this.targetPosition, this.focalPoint);
+    vec3.copy(this.lastPosition, this.focalPoint);
+    this.updateCamera();
   }
 
   init() {
@@ -91,7 +95,6 @@ class Viewport extends Component {
 
     this.prismMaterials = new Map();
 
-    this.updateCamera();
     this.handleShapeChange();
 
     this.swapChain = engine.createSwapChain();
@@ -200,7 +203,7 @@ class Viewport extends Component {
       if (intersection) {
         vec3.copy(this.targetPosition, intersection.hitPrism.worldPosition);
       } else {
-        vec3.zero(this.targetPosition);
+        vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
       }
       this.animationTimer = 0;
     }

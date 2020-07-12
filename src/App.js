@@ -23,6 +23,7 @@ class App extends Component {
       quat.fromEuler(prism.orientation, 0, 0, angle);
       vec3.set(prism.position, 2, 0, 0);
       vec3.transformQuat(prism.position, prism.position, prism.orientation);
+      prism.position[0] -= 2;
       shape.prisms.push(prism);
     }
     shape.applyTransform();
