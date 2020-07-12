@@ -10,6 +10,12 @@ const POINTER_DRAG_FACTOR = 0.01;
 const ELEVATION_LIMIT = 0.48 * Math.PI;
 const CAMERA_ANIMATION_TIME = 0.3;
 
+const HIGHLIGHT_COLOR = [ 1, 1, 0.25, 0 ];
+const HIGHLIGHT_OPAQUE_BLEND = 0.8;
+const HIGHLIGHT_START_BLEND = 0.3;
+const HIGHLIGHT_RANGE_BLEND = HIGHLIGHT_OPAQUE_BLEND - HIGHLIGHT_START_BLEND;
+const HIGHLIGHT_ANIMATION_TIME = 2;
+
 const iblUrl = "res/environment_ibl.ktx";
 const skyboxUrl = "res/environment_skybox.ktx";
 const prismMeshUrl = "res/prism.filamesh";
@@ -53,10 +59,13 @@ class Viewport extends Component {
     this.heading = 0;
     this.distance = 10;
     this.selectedPrismId = 0;
+    this.selectedPrism = null;
+    this.selectedPrismView = null;
     this.focalPoint = vec3.create();
     this.targetPosition = vec3.create();
     this.lastPosition = vec3.create();
     this.animationTimer = 0;
+    this.highlightTimer = 0;
 
     this.pressing = false;
     this.dragging = false;
@@ -92,8 +101,6 @@ class Viewport extends Component {
         window.Filament.MagFilter.LINEAR,
         window.Filament.WrapMode.CLAMP_TO_EDGE);
 
-    this.prismMaterials = new Map();
-
     this.handleShapeChange();
 
     this.swapChain = engine.createSwapChain();
@@ -115,19 +122,15 @@ class Viewport extends Component {
   createPrismRenderable(colorMask, backgroundColor, foregroundColor) {
     const validColorMask = (colorMask >= 0) && (colorMask < COLOR_MASK_COUNT)
         ? colorMask : 0;
-    const key = validColorMask + "_" + ("000000" + backgroundColor.toString(16)).substr(-6)
-        + "_" + ("000000" + foregroundColor.toString(16)).substr(-6);
-    let prismMaterial = this.prismMaterials.get(key);
-    if (!prismMaterial) {
-      prismMaterial = this.prismSourceMaterial.createInstance();
-      prismMaterial.setTextureParameter("colorMask",
-          this.prismTextures[validColorMask], this.prismTextureSampler);
-      prismMaterial.setColor3Parameter("backgroundColor",
-          window.Filament.RgbType.sRGB, convertColor(backgroundColor));
-      prismMaterial.setColor3Parameter("foregroundColor",
-          window.Filament.RgbType.sRGB, convertColor(foregroundColor));
-      this.prismMaterials.set(key, prismMaterial);
-    }
+    const prismMaterial = this.prismSourceMaterial.createInstance();
+    prismMaterial.setTextureParameter("colorMask",
+        this.prismTextures[validColorMask], this.prismTextureSampler);
+    prismMaterial.setColor3Parameter("backgroundColor",
+        window.Filament.RgbType.sRGB, convertColor(backgroundColor));
+    prismMaterial.setColor3Parameter("foregroundColor",
+        window.Filament.RgbType.sRGB, convertColor(foregroundColor));
+    prismMaterial.setColor4Parameter("highlightColor",
+        window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
 
     const renderable = window.Filament.EntityManager.get()
       .create();
@@ -163,6 +166,17 @@ class Viewport extends Component {
       this.updateCamera();
     }
 
+    if (this.selectedPrismView) {
+      this.highlightTimer += deltaTime;
+      if (this.highlightTimer > HIGHLIGHT_ANIMATION_TIME) {
+        this.highlightTimer %= HIGHLIGHT_ANIMATION_TIME;
+      }
+      const t = 2 * Math.abs(this.highlightTimer / HIGHLIGHT_ANIMATION_TIME - 0.5);
+      const k = t * t * (3 - 2 * t);
+      const highlightIntensity = HIGHLIGHT_START_BLEND + k * HIGHLIGHT_RANGE_BLEND;
+      this.setHighlightIntensity(this.selectedPrismView, highlightIntensity);
+    }
+
     this.renderer.render(this.swapChain, this.view);
     window.requestAnimationFrame(this.renderFrame);
   }
@@ -178,7 +192,7 @@ class Viewport extends Component {
   }
 
   isPrimaryPointer(e) {
-    return ((e.pointerType !== "touch") || e.isPrimary);
+    return (e.pointerType !== "touch") || e.isPrimary;
   }
 
   handlePointerDown(e) {
@@ -249,12 +263,19 @@ class Viewport extends Component {
   }
 
   selectPrism(prism, animate) {
+    this.selectedPrism = prism;
     vec3.copy(this.lastPosition, this.targetPosition);
+    if (this.selectedPrismView) {
+      this.setHighlightIntensity(this.selectedPrismView, 0);
+    }
     if (prism) {
       this.selectedPrismId = prism.id;
+      this.selectedPrismView = this.shapeView.findPrismView(this.selectedPrismId);
+      this.highlightTimer = 0;
       vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
       this.selectedPrismId = 0;
+      this.selectedPrismView = null;
       vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
     }
     if (animate) {
@@ -265,6 +286,15 @@ class Viewport extends Component {
       this.updateCamera();
     }
   }
+
+  setHighlightIntensity(prismView, intensity) {
+    const renderableManager = this.engine.getRenderableManager();
+    const prismRenderableInstance = renderableManager.getInstance(prismView.renderable);
+    const prismMaterial = renderableManager.getMaterialInstanceAt(prismRenderableInstance, 0);
+    HIGHLIGHT_COLOR[3] = intensity;
+    prismMaterial.setColor4Parameter("highlightColor", window.Filament.RgbaType.sRGB, HIGHLIGHT_COLOR);
+    prismRenderableInstance.delete();
+}
 
   render() {
     return <canvas className="Viewport" ref={ref => (this.filament = ref)} />

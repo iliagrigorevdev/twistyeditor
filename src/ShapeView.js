@@ -19,6 +19,16 @@ class ShapeView {
     return new PrismView(prism, renderable);
   }
 
+  findPrismView(id) {
+    for (let i = 0; i < this.prismViews.length; i++) {
+      const prismView = this.prismViews[i];
+      if (prismView.prism.id === id) {
+        return prismView;
+      }
+    }
+    return null;
+  }
+
   addToScene(viewport) {
     this.prismViews.forEach((prismView) => viewport.scene.addEntity(prismView.renderable));
   }
