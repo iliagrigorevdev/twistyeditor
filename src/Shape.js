@@ -14,6 +14,28 @@ class Shape {
     this.prisms.forEach((prism) => prism.applyTransform(shapeOrientation));
   }
 
+  intersect(ray) {
+    let hitPrism;
+    let hitDistance;
+    for (let i = 0; i < this.prisms.length; i++) {
+      const prism = this.prisms[i];
+      const prismHitDistance = prism.intersect(ray);
+      if (prismHitDistance !== undefined) {
+        if ((hitDistance === undefined) || (prismHitDistance < hitDistance)) {
+          hitPrism = prism;
+          hitDistance = prismHitDistance;
+        }
+      }
+    }
+    if (!hitPrism) {
+      return;
+    }
+    return {
+      hitPrism: hitPrism,
+      hitDistance: hitDistance
+    };
+  }
+
   clone() {
     const shape = new Shape();
     shape.roll = this.roll;

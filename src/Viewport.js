@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { vec3 } from 'gl-matrix';
+import { vec3, vec4 } from 'gl-matrix';
 import ShapeView from './ShapeView';
 import './App.css';
 
@@ -8,6 +8,7 @@ const POINTER_DRAG_THRESHOLD = 3;
 const POINTER_DRAG_THRESHOLD_SQUARED = POINTER_DRAG_THRESHOLD * POINTER_DRAG_THRESHOLD;
 const POINTER_DRAG_FACTOR = 0.01;
 const ELEVATION_LIMIT = 0.48 * Math.PI;
+const CAMERA_ANIMATION_TIME = 0.3;
 
 const iblUrl = "res/environment_ibl.ktx";
 const skyboxUrl = "res/environment_skybox.ktx";
@@ -49,7 +50,10 @@ class Viewport extends Component {
     this.elevation = 0;
     this.heading = 0;
     this.distance = 10;
-    this.target = vec3.create();
+    this.focalPoint = vec3.create();
+    this.targetPosition = vec3.create();
+    this.lastPosition = vec3.create();
+    this.animationTimer = 0;
 
     this.pressing = false;
     this.dragging = false;
@@ -135,14 +139,28 @@ class Viewport extends Component {
   }
 
   updateCamera() {
-    const eye = [0, 0, this.distance];
+    const eye = [this.focalPoint[0], this.focalPoint[1], this.focalPoint[2] + this.distance];
     const up = [0, 1, 0];
-    vec3.rotateX(eye, eye, this.target, this.elevation);
-    vec3.rotateY(eye, eye, this.target, this.heading);
-    this.camera.lookAt(eye, this.target, up);
+    vec3.rotateX(eye, eye, this.focalPoint, this.elevation);
+    vec3.rotateY(eye, eye, this.focalPoint, this.heading);
+    this.camera.lookAt(eye, this.focalPoint, up);
   }
 
-  renderFrame() {
+  renderFrame(timestamp) {
+    if (this.lastTime === undefined) {
+      this.lastTime = timestamp;
+    }
+    const deltaTime = 1e-3 * (timestamp - this.lastTime);
+    this.lastTime = timestamp;
+
+    if (this.animationTimer < CAMERA_ANIMATION_TIME) {
+      this.animationTimer += deltaTime;
+      const t = Math.min(this.animationTimer / CAMERA_ANIMATION_TIME, 1);
+      const k = t * t * (3 - 2 * t);
+      vec3.lerp(this.focalPoint, this.lastPosition, this.targetPosition, k);
+      this.updateCamera();
+    }
+
     this.renderer.render(this.swapChain, this.view);
     window.requestAnimationFrame(this.renderFrame);
   }
@@ -175,6 +193,17 @@ class Viewport extends Component {
     if (!this.isPrimaryPointer(e)) {
       return;
     }
+    if (!this.dragging) {
+      const ray = this.getCastingRay(e.clientX, e.clientY);
+      const intersection = this.shapeView.shape.intersect(ray);
+      vec3.copy(this.lastPosition, this.targetPosition);
+      if (intersection) {
+        vec3.copy(this.targetPosition, intersection.hitPrism.worldPosition);
+      } else {
+        vec3.zero(this.targetPosition);
+      }
+      this.animationTimer = 0;
+    }
     this.pressing = false;
   }
 
@@ -199,6 +228,24 @@ class Viewport extends Component {
         this.dragging = true;
       }
     }
+  }
+
+  getCastingRay(clientX, clientY) {
+    const dpr = window.devicePixelRatio;
+    const x = (2 * clientX * dpr) / this.canvas.width - 1;
+    const y = 1 - (2 * clientY * dpr) / this.canvas.height;
+    const rayVec = vec4.fromValues(x, y, -1, 1);
+    vec4.transformMat4(rayVec, rayVec, window.Filament.Camera.inverseProjection(
+        this.camera.getProjectionMatrix()));
+    rayVec[2] = -1;
+    rayVec[3] = 0;
+    vec4.transformMat4(rayVec, rayVec, this.camera.getModelMatrix());
+    const direction = vec3.fromValues(rayVec[0], rayVec[1], rayVec[2]);
+    vec3.normalize(direction, direction);
+    return {
+      origin: this.camera.getPosition(),
+      direction: direction
+    };
   }
 
   render() {
