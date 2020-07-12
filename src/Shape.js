@@ -3,6 +3,7 @@ import { quat, vec3 } from 'gl-matrix';
 class Shape {
   constructor() {
     this.prisms = [];
+    this.lastPrismId = 0;
     this.roll = 0;
     this.pitch = 0;
     this.aabb = {
@@ -37,6 +38,16 @@ class Shape {
     }
     vec3.add(this.aabb.center, this.aabb.min, this.aabb.max);
     vec3.scale(this.aabb.center, this.aabb.center, 0.5);
+  }
+
+  findPrism(id) {
+    for (let i = 0; i < this.prisms.length; i++) {
+      const prism = this.prisms[i];
+      if (prism.id === id) {
+        return prism;
+      }
+    }
+    return null;
   }
 
   intersect(ray) {

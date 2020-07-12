@@ -44,16 +44,15 @@ class Viewport extends Component {
     }
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
-    vec3.copy(this.focalPoint, this.shapeView.shape.aabb.center);
-    vec3.copy(this.targetPosition, this.focalPoint);
-    vec3.copy(this.lastPosition, this.focalPoint);
-    this.updateCamera();
+    const selectedPrism = this.shapeView.shape.findPrism(this.selectedPrismId);
+    this.selectPrism(selectedPrism, false);
   }
 
   init() {
     this.elevation = 0;
     this.heading = 0;
     this.distance = 10;
+    this.selectedPrismId = 0;
     this.focalPoint = vec3.create();
     this.targetPosition = vec3.create();
     this.lastPosition = vec3.create();
@@ -199,13 +198,11 @@ class Viewport extends Component {
     if (!this.dragging) {
       const ray = this.getCastingRay(e.clientX, e.clientY);
       const intersection = this.shapeView.shape.intersect(ray);
-      vec3.copy(this.lastPosition, this.targetPosition);
       if (intersection) {
-        vec3.copy(this.targetPosition, intersection.hitPrism.worldPosition);
+        this.selectPrism(intersection.hitPrism, true);
       } else {
-        vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
+        this.selectPrism(null, true);
       }
-      this.animationTimer = 0;
     }
     this.pressing = false;
   }
@@ -249,6 +246,24 @@ class Viewport extends Component {
       origin: this.camera.getPosition(),
       direction: direction
     };
+  }
+
+  selectPrism(prism, animate) {
+    vec3.copy(this.lastPosition, this.targetPosition);
+    if (prism) {
+      this.selectedPrismId = prism.id;
+      vec3.copy(this.targetPosition, prism.worldPosition);
+    } else {
+      this.selectedPrismId = 0;
+      vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
+    }
+    if (animate) {
+      this.animationTimer = 0;
+    } else {
+      vec3.copy(this.lastPosition, this.targetPosition);
+      vec3.copy(this.focalPoint, this.targetPosition);
+      this.updateCamera();
+    }
   }
 
   render() {

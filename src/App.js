@@ -17,6 +17,7 @@ class App extends Component {
     for (let i = 0; i < 8; i++) {
       const angle = i * 360 / 8;
       const prism = new Prism();
+      prism.id = ++shape.lastPrismId;
       prism.colorMask = i;
       prism.backgroundColor = backgroundColors[i % backgroundColors.length];
       prism.foregroundColor = foregroundColor;

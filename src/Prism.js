@@ -51,15 +51,16 @@ const PRISM_POLYGON_NORMALS = PRISM_POLYGON_INDICES.map(indices => {
 
 class Prism {
   constructor() {
+    this.id = 0;
+    this.colorMask = 0;
+    this.backgroundColor = 0x000000;
+    this.foregroundColor = 0xffffff;
     this.position = vec3.create();
     this.orientation = quat.create();
     this.worldPosition = vec3.create();
     this.worldOrientation = quat.create();
     this.vertices = PRISM_VERTICES.map(vertex => vec3.clone(vertex));
     this.polygonNormals = PRISM_POLYGON_NORMALS.map(normal => vec3.clone(normal));
-    this.colorMask = 0;
-    this.backgroundColor = 0x000000;
-    this.foregroundColor = 0xffffff;
   }
 
   applyTransform(shapeOrientation) {
@@ -81,13 +82,14 @@ class Prism {
 
   clone() {
     const prism = new Prism();
+    prism.id = this.id;
+    prism.colorMask = this.colorMask;
+    prism.backgroundColor = this.backgroundColor;
+    prism.foregroundColor = this.foregroundColor;
     vec3.copy(prism.position, this.position);
     quat.copy(prism.orientation, this.orientation);
     vec3.copy(prism.worldPosition, this.worldPosition);
     quat.copy(prism.worldOrientation, this.worldOrientation);
-    prism.colorMask = this.colorMask;
-    prism.backgroundColor = this.backgroundColor;
-    prism.foregroundColor = this.foregroundColor;
     return prism;
   }
 }
