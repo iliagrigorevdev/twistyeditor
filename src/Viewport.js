@@ -4,7 +4,7 @@ import ShapeView from './ShapeView';
 import './App.css';
 
 const COLOR_MASK_COUNT = 8;
-const POINTER_DRAG_THRESHOLD = 5;
+const POINTER_DRAG_THRESHOLD = 3;
 const POINTER_DRAG_THRESHOLD_SQUARED = POINTER_DRAG_THRESHOLD * POINTER_DRAG_THRESHOLD;
 const POINTER_DRAG_FACTOR = 0.01;
 const ELEVATION_LIMIT = 0.48 * Math.PI;
@@ -184,12 +184,6 @@ class Viewport extends Component {
     }
     const dx = e.clientX - this.pointerX;
     const dy = e.clientY - this.pointerY;
-    if (!this.dragging) {
-      const dragDistanceSquared = dx * dx + dy * dy;
-      if (dragDistanceSquared >= POINTER_DRAG_THRESHOLD_SQUARED) {
-        this.dragging = true;
-      }
-    }
     if (this.dragging) {
       this.elevation = Math.min(Math.max(
           this.elevation - dy * POINTER_DRAG_FACTOR, -ELEVATION_LIMIT), ELEVATION_LIMIT);
@@ -197,6 +191,13 @@ class Viewport extends Component {
       this.updateCamera();
       this.pointerX = e.clientX;
       this.pointerY = e.clientY;
+    } else {
+      const dragDistanceSquared = dx * dx + dy * dy;
+      if (dragDistanceSquared >= POINTER_DRAG_THRESHOLD_SQUARED) {
+        this.pointerX = e.clientX;
+        this.pointerY = e.clientY;
+        this.dragging = true;
+      }
     }
   }
 
