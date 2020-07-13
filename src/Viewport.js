@@ -50,17 +50,15 @@ class Viewport extends Component {
     }
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
-    const selectedPrism = this.shapeView.shape.findPrism(this.selectedPrismId);
-    this.selectPrism(selectedPrism, false);
+    this.activePrismView = null;
+    this.selectPrism(this.props.activePrism, false);
   }
 
   init() {
     this.elevation = 0;
     this.heading = 0;
     this.distance = 10;
-    this.selectedPrismId = 0;
-    this.selectedPrism = null;
-    this.selectedPrismView = null;
+    this.activePrismView = null;
     this.focalPoint = vec3.create();
     this.targetPosition = vec3.create();
     this.lastPosition = vec3.create();
@@ -166,7 +164,7 @@ class Viewport extends Component {
       this.updateCamera();
     }
 
-    if (this.selectedPrismView) {
+    if (this.activePrismView) {
       this.highlightTimer += deltaTime;
       if (this.highlightTimer > HIGHLIGHT_ANIMATION_TIME) {
         this.highlightTimer %= HIGHLIGHT_ANIMATION_TIME;
@@ -174,7 +172,7 @@ class Viewport extends Component {
       const t = 2 * Math.abs(this.highlightTimer / HIGHLIGHT_ANIMATION_TIME - 0.5);
       const k = t * t * (3 - 2 * t);
       const highlightIntensity = HIGHLIGHT_START_BLEND + k * HIGHLIGHT_RANGE_BLEND;
-      this.setHighlightIntensity(this.selectedPrismView, highlightIntensity);
+      this.setHighlightIntensity(this.activePrismView, highlightIntensity);
     }
 
     this.renderer.render(this.swapChain, this.view);
@@ -212,11 +210,9 @@ class Viewport extends Component {
     if (!this.dragging) {
       const ray = this.getCastingRay(e.clientX, e.clientY);
       const intersection = this.shapeView.shape.intersect(ray);
-      if (intersection) {
-        this.selectPrism(intersection.hitPrism, true);
-      } else {
-        this.selectPrism(null, true);
-      }
+      const pickedPrism = (intersection) ? intersection.hitPrism : null;
+      this.selectPrism(pickedPrism, true);
+      this.props.onActivePrismChange(pickedPrism);
     }
     this.pressing = false;
   }
@@ -263,19 +259,16 @@ class Viewport extends Component {
   }
 
   selectPrism(prism, animate) {
-    this.selectedPrism = prism;
     vec3.copy(this.lastPosition, this.targetPosition);
-    if (this.selectedPrismView) {
-      this.setHighlightIntensity(this.selectedPrismView, 0);
+    if (this.activePrismView) {
+      this.setHighlightIntensity(this.activePrismView, 0);
     }
     if (prism) {
-      this.selectedPrismId = prism.id;
-      this.selectedPrismView = this.shapeView.findPrismView(this.selectedPrismId);
+      this.activePrismView = this.shapeView.findPrismView(prism.id);
       this.highlightTimer = 0;
       vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
-      this.selectedPrismId = 0;
-      this.selectedPrismView = null;
+      this.activePrismView = null;
       vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
     }
     if (animate) {
@@ -294,7 +287,7 @@ class Viewport extends Component {
     HIGHLIGHT_COLOR[3] = intensity;
     prismMaterial.setColor4Parameter("highlightColor", window.Filament.RgbaType.sRGB, HIGHLIGHT_COLOR);
     prismRenderableInstance.delete();
-}
+  }
 
   render() {
     return <canvas className="Viewport" ref={ref => (this.filament = ref)} />
@@ -302,3 +295,4 @@ class Viewport extends Component {
 }
 
 export default Viewport;
+export { COLOR_MASK_COUNT };

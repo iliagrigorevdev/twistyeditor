@@ -30,19 +30,31 @@ class App extends Component {
     shape.applyTransform();
 
     this.state = {
-      shape: shape
+      shape: shape,
+      activePrism: null
     };
   }
 
   handleShapeChange(shape) {
-    this.setState({ shape: shape });
+    const nextState = { shape: shape };
+    if (this.state.activePrism) {
+      nextState.activePrism = shape.findPrism(this.state.activePrism.id);
+    }
+    this.setState(nextState);
+  }
+
+  handleActivePrismChange(activePrism) {
+    this.setState({ activePrism: activePrism });
   }
 
   render() {
     return (
       <div className="App">
-        <Viewport shape={this.state.shape} onShapeChange={(shape) => this.handleShapeChange(shape)} />
-        <Toolbar shape={this.state.shape} onShapeChange={(shape) => this.handleShapeChange(shape)} />
+        <Viewport shape={this.state.shape} activePrism={this.state.activePrism}
+          onShapeChange={(shape) => this.handleShapeChange(shape)}
+          onActivePrismChange={(activePrism) => this.handleActivePrismChange(activePrism)} />
+        <Toolbar shape={this.state.shape} activePrism={this.state.activePrism}
+          onShapeChange={(shape) => this.handleShapeChange(shape)} />
       </div>
     );
   }
