@@ -74,11 +74,15 @@ class Shape {
 
   clone() {
     const shape = new Shape();
-    shape.roll = this.roll;
-    shape.pitch = this.pitch;
     for (let i = 0; i < this.prisms.length; i++) {
       shape.prisms.push(this.prisms[i].clone());
     }
+    shape.lastPrismId = this.lastPrismId;
+    shape.roll = this.roll;
+    shape.pitch = this.pitch;
+    vec3.copy(shape.aabb.min, this.aabb.min);
+    vec3.copy(shape.aabb.max, this.aabb.max);
+    vec3.copy(shape.aabb.center, this.aabb.center);
     return shape;
   }
 }
