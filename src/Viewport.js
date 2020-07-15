@@ -265,7 +265,6 @@ class Viewport extends Component {
     }
     if (prism) {
       this.activePrismView = this.shapeView.findPrismView(prism.id);
-      this.highlightTimer = 0;
       vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
       this.activePrismView = null;
@@ -273,7 +272,9 @@ class Viewport extends Component {
     }
     if (animate) {
       this.animationTimer = 0;
+      this.highlightTimer = 0;
     } else {
+      this.highlightTimer = HIGHLIGHT_ANIMATION_TIME / 2;
       vec3.copy(this.lastPosition, this.targetPosition);
       vec3.copy(this.focalPoint, this.targetPosition);
       this.updateCamera();
