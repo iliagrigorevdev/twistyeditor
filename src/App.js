@@ -11,8 +11,8 @@ class App extends Component {
     super(props);
 
     // XXX test shape
-    const backgroundColors = [0x2a7fff, 0xff7f2a, 0xffd42a, 0x7f2aff];
-    const foregroundColor = 0xf9f9f9;
+    const backgroundColors = ["#2a7fff", "#ff7f2a", "#ffd42a", "#7f2aff"];
+    const foregroundColor = "#f9f9f9";
     const shape = new Shape();
     for (let i = 0; i < 8; i++) {
       const angle = i * 360 / 8;

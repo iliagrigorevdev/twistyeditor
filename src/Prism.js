@@ -53,8 +53,8 @@ class Prism {
   constructor() {
     this.id = 0;
     this.colorMask = 0;
-    this.backgroundColor = 0x000000;
-    this.foregroundColor = 0xffffff;
+    this.backgroundColor = "#000";
+    this.foregroundColor = "#fff";
     this.position = vec3.create();
     this.orientation = quat.create();
     this.worldPosition = vec3.create();

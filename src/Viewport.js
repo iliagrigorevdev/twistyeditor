@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { vec3, vec4 } from 'gl-matrix';
 import ShapeView from './ShapeView';
 import './App.css';
+import tinycolor from 'tinycolor2';
 
 const COLOR_MASK_COUNT = 8;
 const POINTER_DRAG_THRESHOLD = 3;
@@ -21,8 +22,10 @@ const skyboxUrl = "res/environment_skybox.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
 const getPrismTextureUrl = ((maskIndex) => "res/prism" + maskIndex + ".png");
-const convertColor = ((hex) =>
-  [((hex >> 16) & 0xff) / 0xff, ((hex >> 8) & 0xff) / 0xff, (hex & 0xff) / 0xff]);
+const colorToFloat3 = ((color) => {
+  const rgb = tinycolor(color).toRgb();
+  return [rgb.r / 255, rgb.g / 255, rgb.b / 255];
+});
 
 class Viewport extends Component {
   componentDidMount() {
@@ -124,9 +127,9 @@ class Viewport extends Component {
     prismMaterial.setTextureParameter("colorMask",
         this.prismTextures[validColorMask], this.prismTextureSampler);
     prismMaterial.setColor3Parameter("backgroundColor",
-        window.Filament.RgbType.sRGB, convertColor(backgroundColor));
+        window.Filament.RgbType.sRGB, colorToFloat3(backgroundColor));
     prismMaterial.setColor3Parameter("foregroundColor",
-        window.Filament.RgbType.sRGB, convertColor(foregroundColor));
+        window.Filament.RgbType.sRGB, colorToFloat3(foregroundColor));
     prismMaterial.setColor4Parameter("highlightColor",
         window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
 
