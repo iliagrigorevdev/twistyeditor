@@ -11,7 +11,8 @@ const POINTER_DRAG_FACTOR = 0.01;
 const ELEVATION_LIMIT = 0.48 * Math.PI;
 const CAMERA_ANIMATION_TIME = 0.3;
 
-const HIGHLIGHT_COLOR = [ 1, 1, 0.25, 0 ];
+const HIGHLIGHT_PRIMARY_COLOR = "#ffff40";
+const HIGHLIGHT_ALTERNATE_COLOR = "#b266ff";
 const HIGHLIGHT_OPAQUE_BLEND = 0.8;
 const HIGHLIGHT_START_BLEND = 0.3;
 const HIGHLIGHT_RANGE_BLEND = HIGHLIGHT_OPAQUE_BLEND - HIGHLIGHT_START_BLEND;
@@ -65,6 +66,7 @@ class Viewport extends Component {
     this.focalPoint = vec3.create();
     this.targetPosition = vec3.create();
     this.lastPosition = vec3.create();
+    this.highlightColor = [0, 0, 0, 0];
     this.animationTimer = 0;
     this.highlightTimer = 0;
 
@@ -267,6 +269,7 @@ class Viewport extends Component {
       this.setHighlightIntensity(this.activePrismView, 0);
     }
     if (prism) {
+      this.updateHighlightColor(prism);
       this.activePrismView = this.shapeView.findPrismView(prism.id);
       vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
@@ -284,12 +287,23 @@ class Viewport extends Component {
     }
   }
 
+  updateHighlightColor(prism) {
+    const primaryReadability = tinycolor.readability(prism.backgroundColor, HIGHLIGHT_PRIMARY_COLOR);
+    const alternateReadability = tinycolor.readability(prism.backgroundColor, HIGHLIGHT_ALTERNATE_COLOR);
+    const colorStr = (primaryReadability > alternateReadability)
+        ? HIGHLIGHT_PRIMARY_COLOR : HIGHLIGHT_ALTERNATE_COLOR;
+    const rgb = tinycolor(colorStr).toRgb();
+    this.highlightColor[0] = rgb.r / 255;
+    this.highlightColor[1] = rgb.g / 255;
+    this.highlightColor[2] = rgb.b / 255;
+  }
+
   setHighlightIntensity(prismView, intensity) {
     const renderableManager = this.engine.getRenderableManager();
     const prismRenderableInstance = renderableManager.getInstance(prismView.renderable);
     const prismMaterial = renderableManager.getMaterialInstanceAt(prismRenderableInstance, 0);
-    HIGHLIGHT_COLOR[3] = intensity;
-    prismMaterial.setColor4Parameter("highlightColor", window.Filament.RgbaType.sRGB, HIGHLIGHT_COLOR);
+    this.highlightColor[3] = intensity;
+    prismMaterial.setColor4Parameter("highlightColor", window.Filament.RgbaType.sRGB, this.highlightColor);
     prismRenderableInstance.delete();
   }
 
