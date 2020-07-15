@@ -26,6 +26,10 @@ class Toolbar extends Component {
     this.modifyShape(prevShape, (shape) => shape.pitch = parseFloat(pitch) || 0);
   }
 
+  handleYawChange(prevShape, yaw) {
+    this.modifyShape(prevShape, (shape) => shape.yaw = parseFloat(yaw) || 0);
+  }
+
   handleColorMaskChange(prevShape, prevPrism, colorMask) {
     this.modifyPrism(prevShape, prevPrism, (prism) => prism.colorMask = parseInt(colorMask) || 0);
   }
@@ -59,6 +63,12 @@ class Toolbar extends Component {
           <input type="number" id="pitch" name="pitch" min="-180" max="180"
             step="15" value={shape.pitch}
             onChange={e => this.handlePitchChange(shape, e.target.value)} />
+        </p>
+        <p>
+          <label htmlFor="yaw">Yaw : </label>
+          <input type="number" id="yaw" name="yaw" min="-180" max="180"
+            step="15" value={shape.yaw}
+            onChange={e => this.handleYawChange(shape, e.target.value)} />
         </p>
       </div>
     );

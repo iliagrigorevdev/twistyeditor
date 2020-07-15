@@ -1,11 +1,14 @@
 import { quat, vec3 } from 'gl-matrix';
 
+const RADIANS_TO_DEGREES = Math.PI / 180;
+
 class Shape {
   constructor() {
     this.prisms = [];
     this.lastPrismId = 0;
     this.roll = 0;
     this.pitch = 0;
+    this.yaw = 0;
     this.aabb = {
       min: vec3.create(),
       max: vec3.create(),
@@ -15,8 +18,9 @@ class Shape {
 
   applyTransform() {
     const shapeOrientation = quat.create();
-    quat.rotateX(shapeOrientation, shapeOrientation, this.roll / 180 * Math.PI);
-    quat.rotateZ(shapeOrientation, shapeOrientation, this.pitch / 180 * Math.PI);
+    quat.rotateY(shapeOrientation, shapeOrientation, this.yaw * RADIANS_TO_DEGREES);
+    quat.rotateX(shapeOrientation, shapeOrientation, this.roll * RADIANS_TO_DEGREES);
+    quat.rotateZ(shapeOrientation, shapeOrientation, this.pitch * RADIANS_TO_DEGREES);
 
     vec3.zero(this.aabb.min);
     vec3.zero(this.aabb.max);
@@ -80,6 +84,7 @@ class Shape {
     shape.lastPrismId = this.lastPrismId;
     shape.roll = this.roll;
     shape.pitch = this.pitch;
+    shape.yaw = this.yaw;
     vec3.copy(shape.aabb.min, this.aabb.min);
     vec3.copy(shape.aabb.max, this.aabb.max);
     vec3.copy(shape.aabb.center, this.aabb.center);
