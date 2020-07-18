@@ -78,7 +78,7 @@ class Viewport extends Component {
     this.canvas = this.filament;
     const engine = this.engine = window.Filament.Engine.create(this.canvas);
     this.transformManager = engine.getTransformManager();
-    this.camera = engine.createCamera();
+    this.camera = engine.createCamera(window.Filament.EntityManager.get().create());
     this.scene = engine.createScene();
 
     const indirectLight = engine.createIblFromKtx(iblUrl);
