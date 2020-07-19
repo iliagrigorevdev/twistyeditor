@@ -1,5 +1,6 @@
 import { vec3, quat } from 'gl-matrix';
-import { intersectTriangles } from './Collision';
+import { intersectTriangles, collideConvexHulls } from './Collision';
+import { createTransform, rotatedTransform, multiplyTransforms } from './Transform';
 
 const PRISM_HEIGHT = 1.0;
 const PRISM_HALF_HEIGHT = 0.5 * PRISM_HEIGHT;
@@ -7,6 +8,8 @@ const PRISM_BASE = 2.0 * PRISM_HEIGHT;
 const PRISM_HALF_BASE = 0.5 * PRISM_BASE;
 const PRISM_SIDE = Math.sqrt(PRISM_BASE);
 const PRISM_HALF_SIDE = 0.5 * PRISM_SIDE;
+const PRISM_DISTANCE = 0.5 * PRISM_BASE;
+const PRISM_HALF_DISTANCE = 0.5 * PRISM_DISTANCE;
 
 // Prism geometry
 //     2
@@ -49,6 +52,73 @@ const PRISM_POLYGON_NORMALS = PRISM_POLYGON_INDICES.map(indices => {
   return vec3.normalize(normal, normal);
 });
 
+const PRISM_LEFT_SLOPE_PIVOT_POINT = vec3.fromValues(-PRISM_HALF_DISTANCE, 0, 0);
+const PRISM_RIGHT_SLOPE_PIVOT_POINT = vec3.fromValues(PRISM_HALF_DISTANCE, 0, 0);
+const PRISM_SIDE_PIVOT_Y = -PRISM_HALF_HEIGHT / 6;
+const PRISM_LEFT_SLOPE_NORMAL = vec3.rotateZ(vec3.create(), vec3.fromValues(0, 1, 0),
+    vec3.fromValues(0, 0, 0), 0.25 * Math.PI);
+const PRISM_RIGHT_SLOPE_NORMAL = vec3.rotateZ(vec3.create(), vec3.fromValues(0, 1, 0),
+    vec3.fromValues(0, 0, 0), -0.25 * Math.PI);
+const PRISM_LEFT_TRANSFORM = createTransform(vec3.fromValues(-PRISM_DISTANCE, 0, 0),
+    quat.fromEuler(quat.create(), -180, 0, 0));
+const PRISM_RIGHT_TRANSFORM = createTransform(vec3.fromValues(PRISM_DISTANCE, 0, 0),
+    quat.fromEuler(quat.create(), 180, 0, 0));
+const PRISM_JUNCTIONS = [
+  {
+    swapColors: true,
+    pivot: PRISM_LEFT_SLOPE_PIVOT_POINT,
+    normal: PRISM_LEFT_SLOPE_NORMAL,
+    transforms: [
+      PRISM_LEFT_TRANSFORM, // left 0
+      rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
+          PRISM_LEFT_SLOPE_NORMAL, 0.5 * Math.PI), // left 1
+      rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
+          PRISM_LEFT_SLOPE_NORMAL, Math.PI), // left 2
+      rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
+          PRISM_LEFT_SLOPE_NORMAL, -0.5 * Math.PI) // left 3
+    ]
+  },
+  {
+    swapColors: true,
+    pivot: PRISM_RIGHT_SLOPE_PIVOT_POINT,
+    normal: PRISM_RIGHT_SLOPE_NORMAL,
+    transforms: [
+      PRISM_RIGHT_TRANSFORM, // right 0
+      rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
+          PRISM_RIGHT_SLOPE_NORMAL, -0.5 * Math.PI), // right 1
+      rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
+          PRISM_RIGHT_SLOPE_NORMAL, Math.PI), // right 2
+      rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
+          PRISM_RIGHT_SLOPE_NORMAL, 0.5 * Math.PI) // right 3
+    ]
+  },
+  {
+    swapColors: false,
+    pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, PRISM_HALF_SIDE),
+    normal: vec3.fromValues(0, 0, 1),
+    transforms: [
+      createTransform(vec3.fromValues(0, 0, PRISM_SIDE), quat.create()) // front
+    ]
+  },
+  {
+    swapColors: false,
+    pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, -PRISM_HALF_SIDE),
+    normal: vec3.fromValues(0, 0, -1),
+    transforms: [
+      createTransform(vec3.fromValues(0, 0, -PRISM_SIDE), quat.create()) // back
+    ]
+  },
+  {
+    swapColors: false,
+    pivot: vec3.fromValues(0, -PRISM_HALF_HEIGHT, 0),
+    normal: vec3.fromValues(0, -1, 0),
+    transforms: [
+      createTransform(vec3.fromValues(0, -PRISM_HEIGHT, 0),
+          quat.fromEuler(quat.create(), 180, 0, 0)) // bottom
+    ]
+  }
+];
+
 class Prism {
   constructor() {
     this.id = 0;
@@ -78,6 +148,39 @@ class Prism {
 
   intersect(ray) {
     return intersectTriangles(ray, this.vertices, PRISM_TRIANGLE_INDICES);
+  }
+
+  collides(prism) {
+    return collideConvexHulls(this.vertices, this.polygonNormals,
+        prism.vertices, prism.polygonNormals);
+  }
+
+  getJunctions() {
+    const junctions = [];
+    const transform = createTransform(this.position, this.orientation);
+    for (let i = 0; i < PRISM_JUNCTIONS.length; i++) {
+      const junction = PRISM_JUNCTIONS[i];
+      const junctionPrisms = [];
+      for (let j = 0; j < junction.transforms.length; j++) {
+        const junctionTransform = multiplyTransforms(transform, junction.transforms[j]);
+        const prism = new Prism();
+        prism.colorMask = this.colorMask;
+        prism.backgroundColor = (junction.swapColors) ? this.foregroundColor : this.backgroundColor;
+        prism.foregroundColor = (junction.swapColors) ? this.backgroundColor : this.foregroundColor;
+        vec3.copy(prism.position, junctionTransform.position);
+        quat.copy(prism.orientation, junctionTransform.orientation);
+        junctionPrisms.push(prism);
+      }
+      const pivot = vec3.transformQuat(vec3.create(), junction.pivot, this.orientation);
+      vec3.add(pivot, pivot, this.position);
+      const normal = vec3.transformQuat(vec3.create(), junction.normal, this.orientation);
+      junctions.push({
+        pivot: pivot,
+        normal: normal,
+        prisms: junctionPrisms
+      });
+    }
+    return junctions;
   }
 
   clone() {

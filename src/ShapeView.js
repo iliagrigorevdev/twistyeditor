@@ -1,5 +1,4 @@
 import PrismView from './PrismView';
-import { mat4 } from 'gl-matrix';
 
 class ShapeView {
   constructor(shape, viewport) {
@@ -38,14 +37,11 @@ class ShapeView {
   }
 
   syncTransform(viewport) {
-    const transform = mat4.create();
     for (let i = 0; i < this.prismViews.length; i++) {
       const prismView = this.prismViews[i];
       const prism = prismView.prism;
-      const transformInstance = viewport.transformManager.getInstance(prismView.renderable);
-      mat4.fromRotationTranslation(transform, prism.worldOrientation, prism.worldPosition);
-      viewport.transformManager.setTransform(transformInstance, transform);
-      transformInstance.delete();
+      viewport.setRenderableTransform(prismView.renderable, prism.worldPosition,
+          prism.worldOrientation);
     }
   }
 }

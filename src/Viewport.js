@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
-import { vec3, vec4 } from 'gl-matrix';
+import { vec3, vec4, quat, mat4 } from 'gl-matrix';
 import ShapeView from './ShapeView';
 import './App.css';
 import tinycolor from 'tinycolor2';
+import { intersectSphere, rayToPointDistance } from './Collision';
 
 const COLOR_MASK_COUNT = 8;
 const POINTER_DRAG_THRESHOLD = 3;
@@ -10,6 +11,8 @@ const POINTER_DRAG_THRESHOLD_SQUARED = POINTER_DRAG_THRESHOLD * POINTER_DRAG_THR
 const POINTER_DRAG_FACTOR = 0.01;
 const ELEVATION_LIMIT = 0.48 * Math.PI;
 const CAMERA_ANIMATION_TIME = 0.3;
+const DEFAULT_ELEVATION = -Math.PI / 10;
+const DEFAULT_HEADING = -Math.PI / 40;
 
 const HIGHLIGHT_PRIMARY_COLOR = "#ffff40";
 const HIGHLIGHT_ALTERNATE_COLOR = "#b266ff";
@@ -18,19 +21,30 @@ const HIGHLIGHT_START_BLEND = 0.3;
 const HIGHLIGHT_RANGE_BLEND = HIGHLIGHT_OPAQUE_BLEND - HIGHLIGHT_START_BLEND;
 const HIGHLIGHT_ANIMATION_TIME = 2;
 
+const KNOB_RADIUS = 0.2;
+const KNOB_IDLE_ALPHA = 0.3;
+const KNOB_ACTIVE_ALPHA = 1.0;
+
 const iblUrl = "res/environment_ibl.ktx";
 const skyboxUrl = "res/environment_skybox.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
+const ghostMaterialUrl = "res/ghost.filamat";
+const knobMeshUrl = "res/knob.filamesh";
+const knobMaterialUrl = "res/knob.filamat";
 const getPrismTextureUrl = ((maskIndex) => "res/prism" + maskIndex + ".png");
 const colorToFloat3 = ((color) => {
   const rgb = tinycolor(color).toRgb();
   return [rgb.r / 255, rgb.g / 255, rgb.b / 255];
 });
 
+const IDENTITY_QUAT = quat.create();
+const auxMat4 = mat4.create();
+
 class Viewport extends Component {
   componentDidMount() {
-    let assets = [iblUrl, skyboxUrl, prismMeshUrl, prismMaterialUrl];
+    let assets = [iblUrl, skyboxUrl, prismMeshUrl, prismMaterialUrl,
+        ghostMaterialUrl, knobMeshUrl, knobMaterialUrl];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
@@ -59,10 +73,11 @@ class Viewport extends Component {
   }
 
   init() {
-    this.elevation = 0;
-    this.heading = 0;
+    this.elevation = DEFAULT_ELEVATION;
+    this.heading = DEFAULT_HEADING;
     this.distance = 10;
     this.activePrismView = null;
+    this.availableJunctions = null;
     this.focalPoint = vec3.create();
     this.targetPosition = vec3.create();
     this.lastPosition = vec3.create();
@@ -72,12 +87,14 @@ class Viewport extends Component {
 
     this.pressing = false;
     this.dragging = false;
+    this.pickedPrism = null;
+    this.pickedJunction = null;
+    this.activeJunctionPrism = null;
     this.pointerX = 0;
     this.pointerY = 0;
 
     this.canvas = this.filament;
     const engine = this.engine = window.Filament.Engine.create(this.canvas);
-    this.transformManager = engine.getTransformManager();
     this.camera = engine.createCamera(window.Filament.EntityManager.get().create());
     this.scene = engine.createScene();
 
@@ -90,10 +107,15 @@ class Viewport extends Component {
 
     this.prismSourceMaterial = engine.createMaterial(prismMaterialUrl);
     this.prismSourceMesh = engine.loadFilamesh(prismMeshUrl);
-    const renderableManager = engine.getRenderableManager();
-    const prismRenderableInstance = renderableManager.getInstance(this.prismSourceMesh.renderable);
-    this.prismBoundingBox = renderableManager.getAxisAlignedBoundingBox(prismRenderableInstance);
-    prismRenderableInstance.delete();
+    this.prismBoundingBox = this.getBoundingBox(this.prismSourceMesh.renderable);
+
+    const ghostMaterial = engine.createMaterial(ghostMaterialUrl);
+    this.ghostRenderable = this.buildPrismRenderable(ghostMaterial.getDefaultInstance());
+
+    this.knobSourceMaterial = engine.createMaterial(knobMaterialUrl);
+    this.knobSourceMesh = engine.loadFilamesh(knobMeshUrl);
+    this.knobBoundingBox = this.getBoundingBox(this.knobSourceMesh.renderable);
+    this.knobRenderables = [];
 
     this.prismTextures = [];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
@@ -122,6 +144,18 @@ class Viewport extends Component {
     this.canvas.addEventListener("pointermove", (e) => this.handlePointerMove(e));
   }
 
+  buildPrismRenderable(material) {
+    const renderable = window.Filament.EntityManager.get()
+      .create();
+    window.Filament.RenderableManager.Builder(1)
+      .boundingBox(this.prismBoundingBox)
+      .material(0, material)
+      .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES,
+          this.prismSourceMesh.vertexBuffer, this.prismSourceMesh.indexBuffer)
+      .build(this.engine, renderable);
+    return renderable;
+  }
+
   createPrismRenderable(colorMask, backgroundColor, foregroundColor) {
     const validColorMask = (colorMask >= 0) && (colorMask < COLOR_MASK_COUNT)
         ? colorMask : 0;
@@ -134,16 +168,46 @@ class Viewport extends Component {
         window.Filament.RgbType.sRGB, colorToFloat3(foregroundColor));
     prismMaterial.setColor4Parameter("highlightColor",
         window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
+    return this.buildPrismRenderable(prismMaterial);
+  }
+
+  createKnobRenderable() {
+    const material = this.knobSourceMaterial.createInstance();
+    material.setFloatParameter("alpha", 0);
 
     const renderable = window.Filament.EntityManager.get()
       .create();
     window.Filament.RenderableManager.Builder(1)
-      .boundingBox(this.prismBoundingBox)
-      .material(0, prismMaterial)
+      .boundingBox(this.knobBoundingBox)
+      .material(0, material)
       .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES,
-          this.prismSourceMesh.vertexBuffer, this.prismSourceMesh.indexBuffer)
+          this.knobSourceMesh.vertexBuffer, this.knobSourceMesh.indexBuffer)
       .build(this.engine, renderable);
-      return renderable;
+    return renderable;
+  }
+
+  getBoundingBox(renderable) {
+    const renderableManager = this.engine.getRenderableManager();
+    const renderableInstance = renderableManager.getInstance(renderable);
+    const boundingBox = renderableManager.getAxisAlignedBoundingBox(renderableInstance);
+    renderableInstance.delete();
+    return boundingBox;
+  }
+
+  setRenderableTransform(renderable, position, orientation) {
+    const transformManager = this.engine.getTransformManager();
+    const transformInstance = transformManager.getInstance(renderable);
+    const transform = mat4.fromRotationTranslation(auxMat4, orientation, position);
+    transformManager.setTransform(transformInstance, transform);
+    transformInstance.delete();
+  }
+
+  getRenderableMaterial(renderable) {
+    const renderableManager = this.engine.getRenderableManager();
+    const renderableInstance = renderableManager.getInstance(renderable);
+    const material = renderableManager.getMaterialInstanceAt(renderableInstance, 0);
+    renderableInstance.delete();
+    return material;
   }
 
   updateCamera() {
@@ -202,6 +266,24 @@ class Viewport extends Component {
     if (!this.isPrimaryPointer(e)) {
       return;
     }
+
+    const ray = this.getCastingRay(e.clientX, e.clientY);
+    const prismIntersection = this.shapeView.shape.intersect(ray);
+    let junctionIntersection;
+    if (this.props.activePrism) {
+      junctionIntersection = this.intersectJunctions(ray);
+    }
+    if (junctionIntersection && (!prismIntersection
+        || (junctionIntersection.hitDistance < prismIntersection.hitDistance))) {
+      this.pickedPrism = null;
+      this.pickedJunction = junctionIntersection.hitJunction;
+      this.activatePrismKnob(this.availableJunctions, this.pickedJunction);
+    } else {
+      this.pickedPrism = (prismIntersection) ? prismIntersection.hitPrism : null;
+      this.pickedJunction = null;
+    }
+    this.activeJunctionPrism = null;
+
     this.pressing = true;
     this.dragging = false;
     this.pointerX = e.clientX;
@@ -212,14 +294,17 @@ class Viewport extends Component {
     if (!this.isPrimaryPointer(e)) {
       return;
     }
-    if (!this.dragging) {
-      const ray = this.getCastingRay(e.clientX, e.clientY);
-      const intersection = this.shapeView.shape.intersect(ray);
-      const pickedPrism = (intersection) ? intersection.hitPrism : null;
-      this.selectPrism(pickedPrism, true);
-      this.props.onActivePrismChange(pickedPrism);
+    if (this.activeJunctionPrism) {
+      this.addPrism(this.activeJunctionPrism);
+    } else if (!this.dragging && !this.pickedJunction) {
+      this.selectPrism(this.pickedPrism, true);
+      this.props.onActivePrismChange(this.pickedPrism);
     }
     this.pressing = false;
+    this.hideGhostPrism();
+    if (this.availableJunctions) {
+      this.showPrismKnobs(this.availableJunctions);
+    }
   }
 
   handlePointerMove(e) {
@@ -229,12 +314,21 @@ class Viewport extends Component {
     const dx = e.clientX - this.pointerX;
     const dy = e.clientY - this.pointerY;
     if (this.dragging) {
-      this.elevation = Math.min(Math.max(
-          this.elevation - dy * POINTER_DRAG_FACTOR, -ELEVATION_LIMIT), ELEVATION_LIMIT);
-      this.heading = (this.heading - dx * POINTER_DRAG_FACTOR) % (2 * Math.PI);
-      this.updateCamera();
-      this.pointerX = e.clientX;
-      this.pointerY = e.clientY;
+      if (this.pickedJunction) {
+        const ray = this.getCastingRay(e.clientX, e.clientY);
+        const nearestJunctionPrism = this.pickNearestJunctionPrism(ray, this.pickedJunction);
+        if (nearestJunctionPrism !== this.activeJunctionPrism) {
+          this.showGhostPrism(nearestJunctionPrism.worldPosition, nearestJunctionPrism.worldOrientation);
+          this.activeJunctionPrism = nearestJunctionPrism;
+        }
+      } else {
+        this.elevation = Math.min(Math.max(
+            this.elevation - dy * POINTER_DRAG_FACTOR, -ELEVATION_LIMIT), ELEVATION_LIMIT);
+        this.heading = (this.heading - dx * POINTER_DRAG_FACTOR) % (2 * Math.PI);
+        this.updateCamera();
+        this.pointerX = e.clientX;
+        this.pointerY = e.clientY;
+      }
     } else {
       const dragDistanceSquared = dx * dx + dy * dy;
       if (dragDistanceSquared >= POINTER_DRAG_THRESHOLD_SQUARED) {
@@ -263,6 +357,45 @@ class Viewport extends Component {
     };
   }
 
+  intersectJunctions(ray) {
+    if (!this.availableJunctions) {
+      return;
+    }
+    let hitJunction;
+    let hitDistance;
+    for (let i = 0; i < this.availableJunctions.length; i++) {
+      const junction = this.availableJunctions[i];
+      const junctionHitDistance = intersectSphere(ray, junction.pivot, KNOB_RADIUS);
+      if (junctionHitDistance !== undefined) {
+        if ((hitDistance === undefined) || (junctionHitDistance < hitDistance)) {
+          hitJunction = junction;
+          hitDistance = junctionHitDistance;
+        }
+      }
+    }
+    if (!hitJunction) {
+      return;
+    }
+    return {
+      hitJunction: hitJunction,
+      hitDistance: hitDistance
+    };
+  }
+
+  pickNearestJunctionPrism(ray, junction) {
+    let junctionPrism = null;
+    let rayDistance;
+    for (let i = 0; i < junction.prisms.length; i++) {
+      const prism = junction.prisms[i];
+      const prismRayDistance = rayToPointDistance(ray, prism.worldPosition);
+      if ((rayDistance === undefined) || (prismRayDistance < rayDistance)) {
+        junctionPrism = prism;
+        rayDistance = prismRayDistance;
+      }
+    }
+    return junctionPrism;
+  }
+
   selectPrism(prism, animate) {
     vec3.copy(this.lastPosition, this.targetPosition);
     if (this.activePrismView) {
@@ -271,9 +404,13 @@ class Viewport extends Component {
     if (prism) {
       this.updateHighlightColor(prism);
       this.activePrismView = this.shapeView.findPrismView(prism.id);
+      this.availableJunctions = this.shapeView.shape.getAvailableJunctions(prism);
+      this.showPrismKnobs(this.availableJunctions);
       vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
       this.activePrismView = null;
+      this.availableJunctions = null;
+      this.hidePrismKnobs();
       vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
     }
     if (animate) {
@@ -285,6 +422,14 @@ class Viewport extends Component {
       vec3.copy(this.focalPoint, this.targetPosition);
       this.updateCamera();
     }
+  }
+
+  addPrism(prism) {
+    const shape = this.shapeView.shape.clone();
+    prism.id = ++shape.lastPrismId;
+    shape.prisms.push(prism);
+    shape.applyTransform();
+    this.props.onShapeChange(shape);
   }
 
   updateHighlightColor(prism) {
@@ -299,12 +444,49 @@ class Viewport extends Component {
   }
 
   setHighlightIntensity(prismView, intensity) {
-    const renderableManager = this.engine.getRenderableManager();
-    const prismRenderableInstance = renderableManager.getInstance(prismView.renderable);
-    const prismMaterial = renderableManager.getMaterialInstanceAt(prismRenderableInstance, 0);
+    const prismMaterial = this.getRenderableMaterial(prismView.renderable);
     this.highlightColor[3] = intensity;
     prismMaterial.setColor4Parameter("highlightColor", window.Filament.RgbaType.sRGB, this.highlightColor);
-    prismRenderableInstance.delete();
+  }
+
+  showGhostPrism(position, orientation) {
+    this.setRenderableTransform(this.ghostRenderable, position, orientation);
+    this.scene.addEntity(this.ghostRenderable);
+  }
+
+  hideGhostPrism() {
+    this.scene.remove(this.ghostRenderable);
+  }
+
+  showPrismKnobs(junctions) {
+    while (this.knobRenderables.length < junctions.length) {
+      this.knobRenderables.push(this.createKnobRenderable());
+    }
+    for (let i = 0; i < junctions.length; i++) {
+      const junction = junctions[i];
+      const knobRenderable = this.knobRenderables[i];
+      const knobMaterial = this.getRenderableMaterial(knobRenderable);
+      knobMaterial.setFloatParameter("alpha", KNOB_IDLE_ALPHA);
+      this.setRenderableTransform(knobRenderable, junction.pivot, IDENTITY_QUAT);
+      this.scene.addEntity(knobRenderable);
+    }
+    for (let i = junctions.length; i < this.knobRenderables.length; i++) {
+      const knobRenderable = this.knobRenderables[i];
+      this.scene.remove(knobRenderable)
+    }
+  }
+
+  activatePrismKnob(junctions, activeJunction) {
+    const junctionIndex = junctions.indexOf(activeJunction);
+    const knobRenderable = this.knobRenderables[junctionIndex];
+    const knobMaterial = this.getRenderableMaterial(knobRenderable);
+    knobMaterial.setFloatParameter("alpha", KNOB_ACTIVE_ALPHA);
+    this.hidePrismKnobs();
+    this.scene.addEntity(knobRenderable);
+  }
+
+  hidePrismKnobs() {
+    this.knobRenderables.forEach(knobRenderable => this.scene.remove(knobRenderable));
   }
 
   render() {

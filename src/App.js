@@ -2,35 +2,14 @@ import './App.css';
 import React, { Component } from 'react';
 import Viewport from './Viewport';
 import Toolbar from './Toolbar';
-import { vec3, quat } from 'gl-matrix';
-import Prism from './Prism';
 import Shape from './Shape';
 
 class App extends Component {
   constructor(props) {
     super(props);
 
-    // XXX test shape
-    const backgroundColors = ["#2a7fff", "#ff7f2a", "#ffd42a", "#7f2aff"];
-    const foregroundColor = "#f9f9f9";
-    const shape = new Shape();
-    for (let i = 0; i < 8; i++) {
-      const angle = i * 360 / 8;
-      const prism = new Prism();
-      prism.id = ++shape.lastPrismId;
-      prism.colorMask = i;
-      prism.backgroundColor = backgroundColors[i % backgroundColors.length];
-      prism.foregroundColor = foregroundColor;
-      quat.fromEuler(prism.orientation, 0, 0, angle);
-      vec3.set(prism.position, 2, 0, 0);
-      vec3.transformQuat(prism.position, prism.position, prism.orientation);
-      prism.position[0] -= 2;
-      shape.prisms.push(prism);
-    }
-    shape.applyTransform();
-
     this.state = {
-      shape: shape,
+      shape: Shape.createInitialShape(),
       activePrism: null
     };
   }

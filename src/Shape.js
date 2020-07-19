@@ -1,6 +1,9 @@
 import { quat, vec3 } from 'gl-matrix';
+import Prism from './Prism';
 
 const RADIANS_TO_DEGREES = Math.PI / 180;
+const DEFAULT_BACKGROUND_COLOR = "#1976d2";
+const DEFAULT_FOREGROUND_COLOR = "#d9d9d9";
 
 class Shape {
   constructor() {
@@ -16,17 +19,32 @@ class Shape {
     };
   }
 
-  applyTransform() {
-    const shapeOrientation = quat.create();
-    quat.rotateY(shapeOrientation, shapeOrientation, this.yaw * RADIANS_TO_DEGREES);
-    quat.rotateX(shapeOrientation, shapeOrientation, this.roll * RADIANS_TO_DEGREES);
-    quat.rotateZ(shapeOrientation, shapeOrientation, this.pitch * RADIANS_TO_DEGREES);
+  static createInitialShape() {
+    const shape = new Shape();
+    const prism = new Prism();
+    prism.id = ++shape.lastPrismId;
+    prism.backgroundColor = DEFAULT_BACKGROUND_COLOR;
+    prism.foregroundColor = DEFAULT_FOREGROUND_COLOR;
+    shape.prisms.push(prism);
+    shape.applyTransform();
+    return shape;
+  }
 
+  getOrientation() {
+    const orientation = quat.create();
+    quat.rotateY(orientation, orientation, this.yaw * RADIANS_TO_DEGREES);
+    quat.rotateX(orientation, orientation, this.roll * RADIANS_TO_DEGREES);
+    quat.rotateZ(orientation, orientation, this.pitch * RADIANS_TO_DEGREES);
+    return orientation;
+  }
+
+  applyTransform() {
+    const orientation = this.getOrientation();
     vec3.zero(this.aabb.min);
     vec3.zero(this.aabb.max);
     for (let i = 0; i < this.prisms.length; i++) {
       const prism = this.prisms[i];
-      prism.applyTransform(shapeOrientation);
+      prism.applyTransform(orientation);
 
       // Compute axis aligned bounding box
       for (let j = 0; j < prism.vertices.length; j++) {
@@ -74,6 +92,19 @@ class Shape {
       hitPrism: hitPrism,
       hitDistance: hitDistance
     };
+  }
+
+  getAvailableJunctions(prism) {
+    const orientation = this.getOrientation();
+    let junctions = prism.getJunctions();
+    junctions.forEach(junction => {
+      vec3.transformQuat(junction.pivot, junction.pivot, orientation);
+      vec3.transformQuat(junction.normal, junction.normal, orientation);
+      junction.prisms.forEach(junctionPrism => junctionPrism.applyTransform(orientation));
+      junction.prisms = junction.prisms.filter(junctionPrism => this.prisms.every(shapePrism =>
+          (shapePrism === prism) || !shapePrism.collides(junctionPrism)));
+    });
+    return junctions.filter(junction => junction.prisms.length > 0);
   }
 
   clone() {
