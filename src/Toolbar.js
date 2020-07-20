@@ -52,6 +52,7 @@ class Toolbar extends Component {
   renderShapeParams(shape) {
     return (
       <div className="Params">
+        <h3>Shape</h3>
         <p>
           <label htmlFor="roll">Roll : </label>
           <input type="number" id="roll" name="roll" min="-180" max="180"
@@ -77,6 +78,7 @@ class Toolbar extends Component {
   renderPrismParams(shape, prism) {
     return (
       <div className="Params">
+        <h3>Prism</h3>
         <p>
           <label htmlFor="colorMask">Mask : </label>
           <input type="number" id="colorMask" name="colorMask" min="0" max={COLOR_MASK_COUNT - 1}
