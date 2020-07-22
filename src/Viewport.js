@@ -432,7 +432,7 @@ class Viewport extends Component {
     prism.id = ++shape.lastPrismId;
     shape.prisms.push(prism);
     shape.applyTransform();
-    this.props.onShapeChange(shape);
+    this.props.onShapeChange(shape, "Prism created");
   }
 
   updateHighlightColor(prism) {
