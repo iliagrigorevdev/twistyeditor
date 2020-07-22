@@ -54,7 +54,14 @@ class App extends Component {
       return;
     }
     const historyShape = this.state.historyShapes[index];
-    this.setState({ shape: historyShape, historyIndex: index });
+    const nextState = {
+      shape: historyShape,
+      historyIndex: index
+    };
+    if (this.state.activePrism) {
+      nextState.activePrism = historyShape.findPrism(this.state.activePrism.id);
+    }
+    this.setState(nextState);
   }
 
   render() {
