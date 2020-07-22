@@ -296,9 +296,9 @@ class Viewport extends Component {
     }
     if (this.activeJunctionPrism) {
       this.addPrism(this.activeJunctionPrism);
+      this.selectPrism(this.activeJunctionPrism, true);
     } else if (!this.dragging && !this.pickedJunction) {
       this.selectPrism(this.pickedPrism, true);
-      this.props.onActivePrismChange(this.pickedPrism);
     }
     this.pressing = false;
     this.hideGhostPrism();
@@ -397,7 +397,6 @@ class Viewport extends Component {
   }
 
   selectPrism(prism, animate) {
-    vec3.copy(this.lastPosition, this.targetPosition);
     if (this.activePrismView) {
       this.setHighlightIntensity(this.activePrismView, 0);
     }
@@ -410,20 +409,20 @@ class Viewport extends Component {
       this.updateHighlightColor(prism);
       this.availableJunctions = this.shapeView.shape.getAvailableJunctions(prism);
       this.showPrismKnobs(this.availableJunctions);
-      vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
       this.availableJunctions = null;
       this.hidePrismKnobs();
-      vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
     }
     if (animate) {
+      vec3.copy(this.lastPosition, this.targetPosition);
+      if (this.activePrismView) {
+        vec3.copy(this.targetPosition, prism.worldPosition);
+      } else {
+        vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
+      }
       this.animationTimer = 0;
       this.highlightTimer = 0;
-    } else {
-      this.highlightTimer = HIGHLIGHT_ANIMATION_TIME / 2;
-      vec3.copy(this.lastPosition, this.targetPosition);
-      vec3.copy(this.focalPoint, this.targetPosition);
-      this.updateCamera();
+      this.props.onActivePrismChange(prism);
     }
   }
 
