@@ -4,60 +4,52 @@ import { COLOR_MASK_COUNT } from './Viewport';
 import ColorPicker from './ColorPicker';
 
 class Toolbar extends Component {
-  modifyShape(prevShape, label, shapeModifier) {
+  modifyShape(prevShape, shapeModifier) {
     const shape = prevShape.clone();
     shapeModifier(shape);
     shape.applyTransform();
-    this.props.onShapeChange(shape, label);
+    this.props.onShapeChange(shape);
   }
 
-  modifyPrism(prevShape, prevPrism, label, prismModifier) {
-    this.modifyShape(prevShape, label, (shape) => {
+  modifyPrism(prevShape, prevPrism, prismModifier) {
+    this.modifyShape(prevShape, (shape) => {
       const prism = shape.findPrism(prevPrism.id);
       prismModifier(prism);
     });
   }
 
   handleRollChange(prevShape, roll) {
-    this.modifyShape(prevShape, "Roll changed",
-        (shape) => shape.roll = parseFloat(roll) || 0);
+    this.modifyShape(prevShape, (shape) => shape.roll = parseFloat(roll) || 0);
   }
 
   handlePitchChange(prevShape, pitch) {
-    this.modifyShape(prevShape, "Pitch changed",
-        (shape) => shape.pitch = parseFloat(pitch) || 0);
+    this.modifyShape(prevShape, (shape) => shape.pitch = parseFloat(pitch) || 0);
   }
 
   handleYawChange(prevShape, yaw) {
-    this.modifyShape(prevShape, "Yaw changed",
-        (shape) => shape.yaw = parseFloat(yaw) || 0);
+    this.modifyShape(prevShape, (shape) => shape.yaw = parseFloat(yaw) || 0);
   }
 
   handleColorMaskChange(prevShape, prevPrism, colorMask) {
-    this.modifyPrism(prevShape, prevPrism, "Mask changed",
+    this.modifyPrism(prevShape, prevPrism,
         (prism) => prism.colorMask = parseInt(colorMask) || 0);
   }
 
   handleBackgroundColorChange(prevShape, prevPrism, color) {
-    this.modifyPrism(prevShape, prevPrism, "Background changed",
+    this.modifyPrism(prevShape, prevPrism,
         (prism) => prism.backgroundColor = color);
   }
 
   handleForegroundColorChange(prevShape, prevPrism, color) {
-    this.modifyPrism(prevShape, prevPrism, "Foreground changed",
+    this.modifyPrism(prevShape, prevPrism,
         (prism) => prism.foregroundColor = color);
   }
 
   handleSwapColors(prevShape, prevPrism) {
-    this.modifyPrism(prevShape, prevPrism, "Colors swapped",
-        (prism) => {
-          prism.foregroundColor = prevPrism.backgroundColor;
-          prism.backgroundColor = prevPrism.foregroundColor;
-        });
-  }
-
-  handleHistoryChange(index) {
-    this.props.onHistoryChange(parseInt(index));
+    this.modifyPrism(prevShape, prevPrism, (prism) => {
+      prism.foregroundColor = prevPrism.backgroundColor;
+      prism.backgroundColor = prevPrism.foregroundColor;
+    });
   }
 
   renderShapeParams(shape) {
@@ -126,14 +118,10 @@ class Toolbar extends Component {
     return (
       <div className="Group">
         <h3>History</h3>
-        <select name="history" id="history" size="5" value={this.props.historyIndex}
-            onChange={e => this.handleHistoryChange(e.target.value)}>
-          {this.props.historyEntries.map((entry, index) => {
-            return <option value={index} key={index}>
-              {entry.label}
-            </option>
-          })}
-        </select>
+        <button id="undoHistory" name="undoHistory" disabled={this.props.historyIndex <= 0}
+            onClick={() => this.props.onHistoryChange(this.props.historyIndex - 1)}>Undo</button>
+        <button id="redoHistory" name="redoHistory" disabled={this.props.historyIndex >= this.props.historyShapes.length - 1}
+            onClick={() => this.props.onHistoryChange(this.props.historyIndex + 1)}>Redo</button>
       </div>
     );
   }

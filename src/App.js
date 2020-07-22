@@ -15,33 +15,30 @@ class App extends Component {
     this.state = {
       shape: shape,
       activePrism: null,
-      historyEntries: [],
+      historyShapes: [],
       historyIndex: -1
     };
 
-    this.addHistoryEntry(this.state, shape, "Shape created");
+    this.addHistoryShape(this.state, shape);
   }
 
-  addHistoryEntry(state, shape, label) {
+  addHistoryShape(state, shape) {
     let historyLength = state.historyIndex + 1;
     const historyStart = (historyLength >= HISTORY_LENGTH_MAX ?
         historyLength - HISTORY_LENGTH_MAX + 1 : 0);
     historyLength = Math.min(historyLength, HISTORY_LENGTH_MAX - 1);
-    state.historyEntries = state.historyEntries.splice(historyStart, historyLength);
-    state.historyEntries.push({
-      shape: shape,
-      label: label
-    });
-    state.historyIndex = state.historyEntries.length - 1;
+    state.historyShapes = state.historyShapes.splice(historyStart, historyLength);
+    state.historyShapes.push(shape);
+    state.historyIndex = state.historyShapes.length - 1;
   }
 
-  handleShapeChange(shape, label) {
+  handleShapeChange(shape) {
     const nextState = {
       shape: shape,
-      historyEntries: this.state.historyEntries,
+      historyShapes: this.state.historyShapes,
       historyIndex: this.state.historyIndex
     };
-    this.addHistoryEntry(nextState, shape, label);
+    this.addHistoryShape(nextState, shape);
     if (this.state.activePrism) {
       nextState.activePrism = shape.findPrism(this.state.activePrism.id);
     }
@@ -53,22 +50,22 @@ class App extends Component {
   }
 
   handleHistoryChange(index) {
-    if ((index < 0) || (index >= this.state.historyEntries.length)) {
+    if ((index < 0) || (index >= this.state.historyShapes.length)) {
       return;
     }
-    const historyEntry = this.state.historyEntries[index];
-    this.setState({ shape: historyEntry.shape, historyIndex: index });
+    const historyShape = this.state.historyShapes[index];
+    this.setState({ shape: historyShape, historyIndex: index });
   }
 
   render() {
     return (
       <div className="App">
         <Viewport shape={this.state.shape} activePrism={this.state.activePrism}
-          onShapeChange={(shape, label) => this.handleShapeChange(shape, label)}
+          onShapeChange={(shape) => this.handleShapeChange(shape)}
           onActivePrismChange={(activePrism) => this.handleActivePrismChange(activePrism)} />
         <Toolbar shape={this.state.shape} activePrism={this.state.activePrism}
-          historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
-          onShapeChange={(shape, label) => this.handleShapeChange(shape, label)}
+          historyShapes={this.state.historyShapes} historyIndex={this.state.historyIndex}
+          onShapeChange={(shape) => this.handleShapeChange(shape)}
           onHistoryChange={(index) => this.handleHistoryChange(index)} />
       </div>
     );
