@@ -402,13 +402,16 @@ class Viewport extends Component {
       this.setHighlightIntensity(this.activePrismView, 0);
     }
     if (prism) {
-      this.updateHighlightColor(prism);
       this.activePrismView = this.shapeView.findPrismView(prism.id);
+    } else {
+      this.activePrismView = null;
+    }
+    if (this.activePrismView) {
+      this.updateHighlightColor(prism);
       this.availableJunctions = this.shapeView.shape.getAvailableJunctions(prism);
       this.showPrismKnobs(this.availableJunctions);
       vec3.copy(this.targetPosition, prism.worldPosition);
     } else {
-      this.activePrismView = null;
       this.availableJunctions = null;
       this.hidePrismKnobs();
       vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
