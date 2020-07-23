@@ -52,6 +52,12 @@ class Toolbar extends Component {
     });
   }
 
+  handleDeletePrism(prevShape, prevPrism) {
+    this.modifyShape(prevShape, (shape) => {
+      shape.prisms = shape.prisms.filter(prism => prism.id !== prevPrism.id);
+    });
+  }
+
   renderShapeParams(shape) {
     return (
       <div className="Group">
@@ -101,6 +107,10 @@ class Toolbar extends Component {
         <p>
           <button id="swapColors" name="swapColors"
             onClick={() => this.handleSwapColors(shape, prism)}>Swap</button>
+        </p>
+        <p>
+          <button id="deletePrism" name="deletePrism" disabled={shape.prisms.length <= 1}
+            onClick={() => this.handleDeletePrism(shape, prism)}>Delete</button>
         </p>
       </div>
     );
