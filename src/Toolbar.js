@@ -120,7 +120,7 @@ class Toolbar extends Component {
         <h3>History</h3>
         <button id="undoHistory" name="undoHistory" disabled={this.props.historyIndex <= 0}
             onClick={() => this.props.onHistoryChange(this.props.historyIndex - 1)}>Undo</button>
-        <button id="redoHistory" name="redoHistory" disabled={this.props.historyIndex >= this.props.historyShapes.length - 1}
+        <button id="redoHistory" name="redoHistory" disabled={this.props.historyIndex >= this.props.historyEntries.length - 1}
             onClick={() => this.props.onHistoryChange(this.props.historyIndex + 1)}>Redo</button>
       </div>
     );

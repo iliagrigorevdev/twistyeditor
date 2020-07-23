@@ -68,8 +68,11 @@ class Viewport extends Component {
     }
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
+    const prevActivePrismId = (this.activePrismView ? this.activePrismView.prism.id : -1);
+    const nextActivePrismId = (this.props.activePrism ? this.props.activePrism.id : -1);
+    const animate = (prevActivePrismId !== nextActivePrismId);
     this.activePrismView = null;
-    this.selectPrism(this.props.activePrism, false);
+    this.selectPrism(this.props.activePrism, animate, false);
   }
 
   init() {
@@ -296,9 +299,8 @@ class Viewport extends Component {
     }
     if (this.activeJunctionPrism) {
       this.addPrism(this.activeJunctionPrism);
-      this.selectPrism(this.activeJunctionPrism, true);
     } else if (!this.dragging && !this.pickedJunction) {
-      this.selectPrism(this.pickedPrism, true);
+      this.selectPrism(this.pickedPrism, true, true);
     }
     this.pressing = false;
     this.hideGhostPrism();
@@ -396,7 +398,7 @@ class Viewport extends Component {
     return junctionPrism;
   }
 
-  selectPrism(prism, animate) {
+  selectPrism(prism, animate, notify) {
     if (this.activePrismView) {
       this.setHighlightIntensity(this.activePrismView, 0);
     }
@@ -422,6 +424,8 @@ class Viewport extends Component {
       }
       this.animationTimer = 0;
       this.highlightTimer = 0;
+    }
+    if (notify) {
       this.props.onActivePrismChange(prism);
     }
   }
@@ -431,6 +435,7 @@ class Viewport extends Component {
     prism.id = ++shape.lastPrismId;
     shape.prisms.push(prism);
     shape.applyTransform();
+    this.selectPrism(prism, false, true);
     this.props.onShapeChange(shape);
   }
 
