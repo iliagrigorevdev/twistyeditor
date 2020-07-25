@@ -107,6 +107,28 @@ class Shape {
     return junctions.filter(junction => junction.prisms.length > 0);
   }
 
+  toArchive() {
+    return {
+      prisms: this.prisms.map(prism => prism.toArchive()),
+      lastPrismId: this.lastPrismId,
+      roll: this.roll,
+      pitch: this.pitch,
+      yaw: this.yaw
+    };
+  }
+
+  fromArchive(archive) {
+    this.prisms = archive.prisms.map(prismArchive => {
+      const prism = new Prism();
+      prism.fromArchive(prismArchive);
+      return prism;
+    });
+    this.lastPrismId = archive.lastPrismId;
+    this.roll = archive.roll;
+    this.pitch = archive.pitch;
+    this.yaw = archive.yaw;
+  }
+
   clone() {
     const shape = new Shape();
     for (let i = 0; i < this.prisms.length; i++) {

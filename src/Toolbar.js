@@ -80,6 +80,13 @@ class Toolbar extends Component {
             step="15" value={shape.yaw}
             onChange={e => this.handleYawChange(shape, e.target.value)} />
         </p>
+        <h3>File</h3>
+        <button id="resetShape" name="resetShape"
+          onClick={() => this.props.onShapeReset()}>Reset</button>
+        <button id="importShape" name="importShape"
+          onClick={() => this.props.onShapeImport()}>Import</button>
+        <button id="exportShape" name="exportShape"
+          onClick={() => this.props.onShapeExport(shape)}>Export</button>
       </div>
     );
   }

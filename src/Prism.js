@@ -183,6 +183,26 @@ class Prism {
     return junctions;
   }
 
+  toArchive() {
+    return {
+      id: this.id,
+      colorMask: this.colorMask,
+      backgroundColor: this.backgroundColor,
+      foregroundColor: this.foregroundColor,
+      position: this.position,
+      orientation: this.orientation
+    };
+  }
+
+  fromArchive(archive) {
+    this.id = archive.id;
+    this.colorMask = archive.colorMask;
+    this.backgroundColor = archive.backgroundColor;
+    this.foregroundColor = archive.foregroundColor;
+    vec3.copy(this.position, archive.position);
+    quat.copy(this.orientation, archive.orientation);
+  }
+
   clone() {
     const prism = new Prism();
     prism.id = this.id;
