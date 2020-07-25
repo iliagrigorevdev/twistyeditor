@@ -68,11 +68,8 @@ class Viewport extends Component {
     }
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
-    const prevActivePrismId = (this.activePrismView ? this.activePrismView.prism.id : -1);
-    const nextActivePrismId = (this.props.activePrism ? this.props.activePrism.id : -1);
-    const animate = (prevActivePrismId !== nextActivePrismId);
     this.activePrismView = null;
-    this.selectPrism(this.props.activePrism, animate, false);
+    this.selectPrism(this.props.activePrism, true, false);
   }
 
   init() {
