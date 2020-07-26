@@ -62,6 +62,13 @@ class Shape {
     vec3.scale(this.aabb.center, this.aabb.center, 0.5);
   }
 
+  rotate(rotation) {
+    this.prisms.forEach(prism => {
+      vec3.transformQuat(prism.position, prism.position, rotation);
+      quat.multiply(prism.orientation, rotation, prism.orientation);
+    });
+  }
+
   findPrism(id) {
     for (let i = 0; i < this.prisms.length; i++) {
       const prism = this.prisms[i];

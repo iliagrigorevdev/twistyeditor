@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import Viewport from './Viewport';
 import Toolbar from './Toolbar';
 import Shape from './Shape';
+import ShapeFolder from './ShapeFolder';
 
 const ARCHIVE_VERSION = 1;
 const ARCHIVE_EXTENSION = ".twy";
@@ -20,6 +21,9 @@ class App extends Component {
       historyEntries: [],
       historyIndex: -1
     };
+    this.figures = null;
+    this.figureRandomIndices = null;
+    this.figureIndex = -1;
 
     this.addHistoryEntry(this.state, shape);
   }
@@ -35,6 +39,32 @@ class App extends Component {
       activePrism: this.state.activePrism
     });
     state.historyIndex = state.historyEntries.length - 1;
+  }
+
+  showFigure(name) {
+    const shape = ShapeFolder.build(name, this.figures);
+    if (shape) {
+      this.handleShapeChange(shape, true);
+    }
+  }
+
+  static shapeToArchive(shape) {
+    return JSON.stringify({
+      version: ARCHIVE_VERSION,
+      shape: shape.toArchive()
+    });
+  }
+
+  static archiveToShape(text) {
+    const archive = JSON.parse(text);
+    if (archive.version !== 1) {
+      alert("Unsupported version: " + archive.version);
+      return;
+    }
+    const shape = new Shape();
+    shape.fromArchive(archive.shape);
+    shape.applyTransform();
+    return shape;
   }
 
   handleShapeChange(shape, reset = false) {
@@ -69,27 +99,29 @@ class App extends Component {
     this.setState(nextState);
   }
 
-  static shapeToArchive(shape) {
-    return JSON.stringify({
-      version: ARCHIVE_VERSION,
-      shape: shape.toArchive()
-    });
-  }
-
-  static archiveToShape(text) {
-    const archive = JSON.parse(text);
-    if (archive.version !== 1) {
-      alert("Unsupported version: " + archive.version);
-      return;
-    }
-    const shape = new Shape();
-    shape.fromArchive(archive.shape);
-    shape.applyTransform();
-    return shape;
-  }
-
   handleShapeReset() {
     this.handleShapeChange(Shape.createInitialShape(), true);
+  }
+
+  handleShapeShowcase() {
+    if (!this.figures) {
+      fetch("res/figures.rsf")
+        .then(response => response.json())
+        .then(data => {
+          this.figures = data;
+          this.figureRandomIndices =
+            [...Array(this.figures.definitions.length).keys()]
+            .map(a => ({sort: Math.random(), value: a}))
+            .sort((a, b) => a.sort - b.sort)
+            .map(a => a.value);
+          this.figureIndex = -1;
+          this.handleShapeShowcase();
+        });
+    } else {
+      this.figureIndex = (this.figureIndex + 1) % this.figureRandomIndices.length;
+      const figureName = this.figures.definitions[this.figureRandomIndices[this.figureIndex]].name;
+      this.showFigure(figureName);
+    }
   }
 
   handleShapeImport() {
@@ -138,6 +170,7 @@ class App extends Component {
           onShapeChange={(shape) => this.handleShapeChange(shape)}
           onHistoryChange={(index) => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
+          onShapeShowcase={() => this.handleShapeShowcase()}
           onShapeImport={() => this.handleShapeImport()}
           onShapeExport={(shape) => this.handleShapeExport(shape)} />
       </div>

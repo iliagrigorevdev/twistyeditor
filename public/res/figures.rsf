@@ -1,0 +1,1131 @@
+{
+  "skins" : {
+    "patterns" : [
+      { "key" : "Inverse", "value" : [ [ 1, 2 ], [ 2, 1 ] ] },
+      { "key" : "TricolorInverse", "value" : [ [ 1, 2 ], [ 2, 3 ] ] },
+      { "key" : "Colorful", "value" : [
+        [ 1, 3 ], [ 2, 8 ], [ 1, 4 ], [ 2, 7 ], [ 1, 5 ], [ 2, 6 ],
+        [ 1, 6 ], [ 2, 5 ], [ 1, 7 ], [ 2, 4 ], [ 1, 8 ], [ 2, 3 ] ] },
+      { "key" : "Colorful2", "value" : [
+        [ 1, 3 ], [ 2, 3 ], [ 1, 4 ], [ 2, 4 ], [ 1, 5 ], [ 2, 5 ] ] },
+      { "key" : "Colorful3", "value" : [
+        [ 1, 3 ], [ 2, 4 ], [ 1, 5 ], [ 2, 6 ], [ 1, 7 ], [ 2, 8 ] ] }
+    ],
+    "colors" : [
+      { "key" : "White", "value" : "#f2f2f2" },
+      { "key" : "Black", "value" : "#262626" },
+      { "key" : "Gray", "value" : "#606060" },
+      { "key" : "BGBlue", "value" : "#3030f6" },
+      { "key" : "WBlue", "value" : "#0c0cf3" },
+      { "key" : "BBlue", "value" : "#2aa6f4" },
+      { "key" : "BGRed", "value" : "#ee2727" },
+      { "key" : "BWRed", "value" : "#da1414" },
+      { "key" : "WRed", "value" : "#f31b1b" },
+      { "key" : "BRed", "value" : "#fb5050" },
+      { "key" : "BGOrange", "value" : "#ffa500" },
+      { "key" : "WOrange", "value" : "#f39633" },
+      { "key" : "BOrange", "value" : "#faa74f" },
+      { "key" : "BGYellow", "value" : "#f9f938" },
+      { "key" : "BWYellow", "value" : "#edc70e" },
+      { "key" : "BYellow", "value" : "#f5e644" },
+      { "key" : "BGGreen", "value" : "#32c232" },
+      { "key" : "BWGreen", "value" : "#12af12" },
+      { "key" : "WGreen", "value" : "#13b413" },
+      { "key" : "BGreen", "value" : "#60e660" },
+      { "key" : "WPink", "value" : "#ff69b4" },
+      { "key" : "BPink", "value" : "#f47ade" },
+      { "key" : "DYellow", "value" : "#4d392e" },
+      { "key" : "LYellow", "value" : "#fee2a1" },
+      { "key" : "DGreen", "value" : "#3d4d2e" },
+      { "key" : "LGreen", "value" : "#acfea1" },
+      { "key" : "DBlue", "value" : "#2e4d4b" },
+      { "key" : "LBlue", "value" : "#a1e3fe" },
+      { "key" : "DRose", "value" : "#4d2e4b" },
+      { "key" : "LRose", "value" : "#fea1d8" }
+    ],
+    "definitions" : [
+      { "name" : "BlueWhiteColors", "pattern" : "Colorful2", "mask" : 1, "colors" : [ "WBlue", "White", "BWRed", "BWYellow", "BWGreen" ] },
+      { "name" : "BlackGrayColors2", "pattern" : "Colorful3", "mask" : 2, "colors" : [ "Black", "Gray", "BGBlue", "BGRed", "BGOrange", "BGYellow", "White", "BGGreen" ] },
+      { "name" : "BlackGrayColors", "pattern" : "Colorful", "mask" : 0, "colors" : [ "Black", "Gray", "BGBlue", "BGOrange", "White", "BGGreen", "BGYellow", "BGRed" ] },
+      { "name" : "BlueWhiteInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "WBlue", "White" ] },
+      { "name" : "RedWhiteInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "WRed", "White" ] },
+      { "name" : "OrangeWhiteInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "WOrange", "White" ] },
+      { "name" : "GreenWhiteInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "WGreen", "White" ] },
+      { "name" : "PinkWhiteInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "WPink", "White" ] },
+      { "name" : "BlackWhiteInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "Black", "White" ] },
+      { "name" : "BlueBlackInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "BBlue", "Black" ] },
+      { "name" : "RedBlackInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "BRed", "Black" ] },
+      { "name" : "OrangeBlackInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "BOrange", "Black" ] },
+      { "name" : "YellowBlackInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "BYellow", "Black" ] },
+      { "name" : "GreenBlackInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "BGreen", "Black" ] },
+      { "name" : "PinkBlackInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "BPink", "Black" ] },
+      { "name" : "DarkLightYellowInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "DYellow", "LYellow" ] },
+      { "name" : "DarkLightGreenInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "DGreen", "LGreen" ] },
+      { "name" : "DarkLightBlueInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "DBlue", "LBlue" ] },
+      { "name" : "DarkLightRoseInverse", "pattern" : "Inverse", "mask" : 0, "colors" : [ "DRose", "LRose" ] },
+      { "name" : "BlackWhiteBlueInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "Black", "White", "WBlue" ] },
+      { "name" : "BlackWhiteRedInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "Black", "White", "WRed" ] },
+      { "name" : "BlackWhiteOrangeInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "Black", "White", "WOrange" ] },
+      { "name" : "BlackWhiteGreenInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "Black", "White", "WGreen" ] },
+      { "name" : "BlackWhitePinkInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "Black", "White", "WPink" ] },
+      { "name" : "WhiteBlackBlueInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "White", "Black", "BBlue" ] },
+      { "name" : "WhiteBlackRedInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "White", "Black", "BRed" ] },
+      { "name" : "WhiteBlackOrangeInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "White", "Black", "BOrange" ] },
+      { "name" : "WhiteBlackYellowInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "White", "Black", "BYellow" ] },
+      { "name" : "WhiteBlackGreenInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "White", "Black", "BGreen" ] },
+      { "name" : "WhiteBlackPinkInverse", "pattern" : "TricolorInverse", "mask" : 0, "colors" : [ "White", "Black", "BPink" ] }
+    ]
+  },
+  "definitions" : [
+    {
+      "name" : "Snake",
+      "pieces" : 9,
+      "notation" : "2L2-3L2",
+      "rotations" : [ ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Diplodocus",
+      "pieces" : 19,
+      "notation" : "1R2-4R2-5L2-6L2-7R2-8R2-9L2",
+      "rotations" : [ [0,1,0, -90] ],
+      "skin" : "YellowBlackInverse"
+    },
+    {
+      "name" : "Rectangle",
+      "pieces" : 24,
+      "notation" : "4R2-7L2-10R2",
+      "rotations" : [ [0,1,0, -90], [1,0,0, 180] ],
+      "skin" : "BlackGrayColors2"
+    },
+    {
+      "name" : "Wolf",
+      "pieces" : 24,
+      "notation" : "1R2-3R2-4L2-6L2-7L2-7R2-8R2-10L2-11L2-11R2",
+      "rotations" : [ ],
+      "skin" : "~WhiteBlackRedInverse"
+    },
+    {
+      "name" : "Triangle",
+      "pieces" : 24,
+      "notation" : "4R3-5L3-8R3-9L3-12R3",
+      "rotations" : [ [0,0,1, -127.5], [0,1,0, -150] ],
+      "skin" : "GreenWhiteInverse"
+    },
+    {
+      "name" : "Terrier",
+      "pieces" : 24,
+      "notation" : "1R2-2R2-3L2-4L2-6L2-6R2-7R2-9L2-10L2-10R2",
+      "rotations" : [ ],
+      "skin" : "BlackGrayColors"
+    },
+    {
+      "name" : "Snowman",
+      "pieces" : 24,
+      "notation" : "2L2-2R2-3R2-4L2-6L2-6R2-7R2-8L2-10L2-10R2-11R2-12L2",
+      "rotations" : [ [0,1,0, 45] ],
+      "skin" : "RedWhiteInverse:3"
+    },
+    {
+      "name" : "Cat",
+      "pieces" : 24,
+      "notation" : "2L2-2R2-3R2-4L2-5L3-6L2-6R2-7R2-8L2-9L2-9R2",
+      "rotations" : [ ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Mirror",
+      "pieces" : 24,
+      "notation" : "2L2-4R2-6L2-7L2-9L2-11R2-9R2-12R2",
+      "rotations" : [ [0,1,0, -90] ],
+      "skin" : "BlueBlackInverse"
+    },
+    {
+      "name" : "Ostrich 2",
+      "pieces" : 24,
+      "notation" : "1R2-4R2-5L2-6L1-7L2-7R2-8R2-9L2-10L3-11L2-11R2",
+      "rotations" : [ [1,0,0, 180], [0,0,1, 45] ],
+      "skin" : "BlackWhiteOrangeInverse"
+    },
+    {
+      "name" : "Hexagon",
+      "pieces" : 24,
+      "notation" : "3R1-5L1-7R1-9L1-11R1",
+      "rotations" : [ [0,0,1, 125], [0,1,0, -150], [0,0,1, 180] ],
+      "skin" : "BlueWhiteInverse:3"
+    },
+    {
+      "name" : "Musical Note",
+      "pieces" : 24,
+      "notation" : "2L2-2R2-3R2-4L2-5L3-6R2-8L2-9L3-10L2-10R2-11R2-12L2",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 45] ],
+      "skin" : "PinkBlackInverse"
+    },
+    {
+      "name" : "Telephone Headset",
+      "pieces" : 24,
+      "notation" : "1R3-2R2-3L2-4L2-4R2-5R3-9L1-10L2-10R2-11R2-12L2",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 90] ],
+      "skin" : "BlackGrayColors:4"
+    },
+    {
+      "name" : "Airplane",
+      "pieces" : 24,
+      "notation" : "2R3-3L2-4L2-4R2-6L2-8L2-8R2-10R3-12R2",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 180] ],
+      "skin" : "PinkWhiteInverse"
+    },
+    {
+      "name" : "Shotgun",
+      "pieces" : 36,
+      "notation" : "4L2-6L2-6R2-8R2-10R2-11R2-12L2-13L2-15L3-16L2-16R2-17R2-18L2",
+      "rotations" : [ [0,1,0, 45], [1,0,0, -45], [0,0,1, 90] ],
+      "skin" : "OrangeBlackInverse:7"
+    },
+    {
+      "name" : "Rocket",
+      "pieces" : 24,
+      "notation" : "1R2-3L1-4L3-6R1-7R3-7L2-10L1-11L3-12R2",
+      "rotations" : [ [0,0,1, -90], [1,0,0, 180] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "Chess Knight",
+      "pieces" : 24,
+      "notation" : "1R2-2R2-3L2-4R1-4L2-5R2-6L2-7L2-7R2-8R3-9L2-10R2-10L2-12L2",
+      "rotations" : [ ],
+      "skin" : "WhiteBlackYellowInverse"
+    },
+    {
+      "name" : "Cross",
+      "pieces" : 24,
+      "notation" : "2L2-3L2-3R2-4R2-6R2-7L2-9L2-10L2-11R2-10R2-12R2",
+      "rotations" : [ ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Bone",
+      "pieces" : 24,
+      "notation" : "1R2-2L2-2R3-3R2-4L2-5L1-9L3-10L2-10R2-11R1-12L2-12R2",
+      "rotations" : [ [0,1,0, -45], [0,0,1, 135], [1,0,0, 45] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Microscope",
+      "pieces" : 24,
+      "notation" : "2L2-2R2-3R2-4L2-5L2-5R2-7L2-8L3-8R2-10L3-10R2-11L1-12R2",
+      "rotations" : [ [0,1,0, 135], [0,0,1, 45] ],
+      "skin" : "BlueBlackInverse:3"
+    },
+    {
+      "name" : "Cobra",
+      "pieces" : 24,
+      "notation" : "2L1-3L2-3R2-4R2-5L2-6L1-8R1-8L2-9L3-10L3-9R2-11L2-12L2",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 45] ],
+      "skin" : "GreenBlackInverse"
+    },
+    {
+      "name" : "Dinghy",
+      "pieces" : 24,
+      "notation" : "1R1-2L1-2R3-5L3-5R3-8R1-6L3-9L1-9R1-12R3-12L1",
+      "rotations" : [ [0,1,0, -135], [1,0,0, 45], [0,0,1, -90] ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Duck",
+      "pieces" : 24,
+      "notation" : "1R2-3R3-4R3-6L3-6R2-8R3-7L1-9L2-9R1-11L1-12L1",
+      "rotations" : [ [0,0,1, -135] ],
+      "skin" : "DarkLightRoseInverse"
+    },
+    {
+      "name" : "Clamp",
+      "pieces" : 24,
+      "notation" : "1R1-2R2-4L2-5R1-6R3-5R1-7L2-7R1-8R2-10L2-11R2-12R3",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 45] ],
+      "skin" : "BlueWhiteColors"
+    },
+    {
+      "name" : "Dog",
+      "pieces" : 24,
+      "notation" : "1R1-2L2-3L2-3R2-5L2-6L2-6R1-7L2-7R3-8L2-9L2-10R2-11L3-12L2-11L3-12R3",
+      "rotations" : [ [0,1,0, -45], [1,0,0, -45], [0,0,1, -45] ],
+      "skin" : "WhiteBlackOrangeInverse"
+    },
+    {
+      "name" : "Leaf",
+      "pieces" : 24,
+      "notation" : "2L3-3L1-2R2-4L3-5L1-4R2-6L1-7L2-7R2-9L1-10L1-11R2",
+      "rotations" : [ [0,1,0, 45], [1,0,0, -15], [0,0,1, -135] ],
+      "skin" : "GreenWhiteInverse"
+    },
+    {
+      "name" : "Flying Boat",
+      "pieces" : 24,
+      "notation" : "1R1-2R3-3R1-4R3-6R1-7R3-7L2-9R1-10R3-11R1-12R3",
+      "rotations" : [ [1,0,0, 180], [0,0,1, -45] ],
+      "skin" : "BlueWhiteInverse"
+    },
+    {
+      "name" : "Gift Bow",
+      "pieces" : 24,
+      "notation" : "2R2-3L1-4L3-4R2-5L1-6L1-7L2-8L3-9L3-9R2-11L3-10L1-11R2",
+      "rotations" : [ [0,1,0, 135], [0,0,1, 180] ],
+      "skin" : "RedBlackInverse:6"
+    },
+    {
+      "name" : "Prawn",
+      "pieces" : 24,
+      "notation" : "1R1-2L2-3L2-3R1-4R2-5L2-6R3-7L2-7R1-9L2-10R3-9R2-11L2-12R3-12L2",
+      "rotations" : [ [0,1,0, 90], [0,0,1, -90], [1,0,0, -20] ],
+      "skin" : "OrangeWhiteInverse"
+    },
+    {
+      "name" : "Mask",
+      "pieces" : 24,
+      "notation" : "1R2-2R2-4L2-5L2-5R3-6R3-7L3-8L3-10R3-11R3-12L3",
+      "rotations" : [ [1,0,0, 90], [0,0,1, -45], [0,1,0, 45] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "Peacock",
+      "pieces" : 24,
+      "notation" : "1R2-2R2-3R2-4R2-5L2-6L3-7L1-8L1-8R2-10L1-9L3-10R2-11L3-12L3",
+      "rotations" : [ [0,1,0, 45], [1,0,0, -135], [0,0,1, 90] ],
+      "skin" : "BlackGrayColors"
+    },
+    {
+      "name" : "Weapon Bow",
+      "pieces" : 24,
+      "notation" : "4L1-4R1-5L3-5R2-6L1-6R1-7R1-8L1-8R2-9R1-9L3-10L1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, -45] ],
+      "skin" : "DarkLightGreenInverse:3"
+    },
+    {
+      "name" : "Kayak",
+      "pieces" : 24,
+      "notation" : "2R2-3L1-3R2-4L1-4R1-5L3-5R1-5L3-6L2-7R3-8L2-8R1-12L1-12R2",
+      "rotations" : [ [1,0,0, 90], [0,0,1, -45], [0,1,0, 45] ],
+      "skin" : "PinkBlackInverse"
+    },
+    {
+      "name" : "Platform",
+      "pieces" : 24,
+      "notation" : "1R3-2R1-3L1-3R2-4R1-4L3-5L2-5R3-6L3-7L3-7R2-10L2-11R2-12L2",
+      "rotations" : [ [1,0,0, 180], [0,0,1, 45] ],
+      "skin" : "BlueWhiteColors"
+    },
+    {
+      "name" : "Propeller",
+      "pieces" : 24,
+      "notation" : "3L3-4L1-4R1-5L1-7L3-8L1-8R1-11L3-9L1-12L1-12R1",
+      "rotations" : [ [1,0,0, 90], [0,1,0, -35], [1,0,0, -20], [0,0,1, -90] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Turkey",
+      "pieces" : 24,
+      "notation" : "1R2-5R2-6L1-6R3-7L1-7R2-8L3-8R3-9R3-10L3-10R2-11R3-11L1-12L1",
+      "rotations" : [ [0,1,0, -90], [0,0,1, 45] ],
+      "skin" : "PinkWhiteInverse"
+    },
+    {
+      "name" : "Telephone",
+      "pieces" : 24,
+      "notation" : "4R1-5L3-5R3-6L3-7L1-6R3-10R1-11L3-11R3-12L3-12R3",
+      "rotations" : [ [1,0,0, -35], [0,0,1, 165] ],
+      "skin" : "RedBlackInverse:3"
+    },
+    {
+      "name" : "Giraffe",
+      "pieces" : 24,
+      "notation" : "1R2-5R3-6L1-6R3-7L2-7R1-8L1-9L1-9R1-10L2-11L1-10R3-11R3",
+      "rotations" : [ [0,1,0, -45], [0,0,1, -45], [1,0,0, -90], [0,0,1, -135] ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Parrot",
+      "pieces" : 24,
+      "notation" : "1R2-2R3-3L3-4L1-4R2-5L3-6L3-7L3-8L3-8R2-10L3-9L1-10R1",
+      "rotations" : [ [0,1,0, -160], [0,0,1, 135] ],
+      "skin" : "BlackGrayColors"
+    },
+    {
+      "name" : "Cook",
+      "pieces" : 24,
+      "notation" : "1R2-2R3-3R3-4L3-4R2-5L3-6L2-6R3-7R1-6R3-8L2-8R1-9L1-10L1-11L2-11R2",
+      "rotations" : [ [0,1,0, 90], [0,0,1, 45] ],
+      "skin" : "YellowBlackInverse"
+    },
+    {
+      "name" : "Cactus",
+      "pieces" : 24,
+      "notation" : "1R2-3L1-3R2-4L3-5L2-5R2-6R3-7L3-7R1-7L3-9L2-9R3-10L2-10R1-12L1-12R2",
+      "rotations" : [ [0,1,0, 45], [1,0,0, 45], [0,0,1, -45] ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Elephant",
+      "pieces" : 24,
+      "notation" : "2L3-3L3-3R3-4L2-5L3-4R1-5R2-6L1-6R1-7R1-8R2-9L2-10L2-10R2-11R2-12L2",
+      "rotations" : [ [0,1,0, -45], [1,0,0, 45], [0,0,1, 135] ],
+      "skin" : "DarkLightBlueInverse"
+    },
+    {
+      "name" : "Stork",
+      "pieces" : 24,
+      "notation" : "1R2-3R3-4L3-5L1-5R2-6L3-7L3-8L3-9L3-9R2-11L3-10L1-11R3-12R2",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 135] ],
+      "skin" : "OrangeWhiteInverse"
+    },
+    {
+      "name" : "Half Octahedron",
+      "pieces" : 24,
+      "notation" : "1R3-3L1-3R1-5L1-7L3-5R1-7R3-9L1-9R1-11L1-11R1",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 45], [1,0,0, 90] ],
+      "skin" : "GreenWhiteInverse:3"
+    },
+    {
+      "name" : "Heart",
+      "pieces" : 24,
+      "notation" : "1R1-2L1-2R2-3R2-4R2-5L1-5R1-6L3-7L2-8L2-8R1-8L3-9L1-10R3-12L1-10R3-12R1",
+      "rotations" : [ [0,1,0, 135], [0,0,1, -90] ],
+      "skin" : "PinkWhiteInverse"
+    },
+    {
+      "name" : "Penguin 2",
+      "pieces" : 24,
+      "notation" : "2L2-3L3-3R1-4L3-4R2-5L1-5R1-6R1-7L1-7R2-8R1-8L3-9L1-9R2-11L2",
+      "rotations" : [ ],
+      "skin" : "BlackWhiteBlueInverse"
+    },
+    {
+      "name" : "Chainlink",
+      "pieces" : 24,
+      "notation" : "1R2-3L2-4R2-5L1-5R3-6L2-6R1-7L3-7R2-9L2-10R3-11L1-11R3-12L2-12R1-10R3",
+      "rotations" : [ [0,1,0, -45], [0,0,1, 180] ],
+      "skin" : "RedBlackInverse"
+    },
+    {
+      "name" : "Eagle",
+      "pieces" : 24,
+      "notation" : "1R2-2L1-2R3-3R2-4L3-4R2-5L1-5R2-6R3-7R3-8R2-9L1-9R2-10L3-10R1-11R3-10R1-12L1",
+      "rotations" : [ [0,1,0, 180], [0,0,1, 45] ],
+      "skin" : "WhiteBlackYellowInverse"
+    },
+    {
+      "name" : "Glasses",
+      "pieces" : 24,
+      "notation" : "2L2-3L1-3R3-4R1-4L2-5L3-6L2-7L2-8L2-9L1-9R3-10R1-10L2-11L3-12L2",
+      "rotations" : [ [0,1,0, -45], [0,0,1, 180] ],
+      "skin" : "BlackWhitePinkInverse"
+    },
+    {
+      "name" : "Goldfish",
+      "pieces" : 24,
+      "notation" : "2R2-3R2-5L2-5R1-6L1-6R3-7L2-7R1-8L1-9L1-9R1-10L2-11L1-10R3-11R1-12R2",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 135] ],
+      "skin" : "OrangeWhiteInverse"
+    },
+    {
+      "name" : "Rocket 2",
+      "pieces" : 24,
+      "notation" : "2L1-3L1-3R2-5L1-4L3-5R2-6L3-7L1-7R2-8L3-9L3-10L1-11L3-11R2-12L1",
+      "rotations" : [ [0,1,0, 75], [0,0,1, 90] ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Twins",
+      "pieces" : 24,
+      "notation" : "1R2-2L3-2R3-3L2-3R3-4L2-5R2-6L3-6R2-7L3-7R3-8L1-8R3-8L1-9R2-12L2",
+      "rotations" : [ [0,1,0, -90], [0,0,1, 180] ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Bird",
+      "pieces" : 24,
+      "notation" : "1R2-2R2-3L2-5L3-5R1-6L3-6R2-7L1-7R1-8R1-9L1-9R2-10R1-10L3-11L3-11R2",
+      "rotations" : [ [0,0,1, 45] ],
+      "skin" : "BlueBlackInverse"
+    },
+    {
+      "name" : "Ring",
+      "pieces" : 24,
+      "notation" : "1R2-2L1-2R3-3L3-3R3-4R1-4L3-5L2-5R3-7L3-8R3-10L3-11R3",
+      "rotations" : [ [0,0,1, -55], [0,1,0, 150] ],
+      "skin" : "~WhiteBlackRedInverse"
+    },
+    {
+      "name" : "Snail",
+      "pieces" : 24,
+      "notation" : "1R2-3R2-4L2-5L3-5R3-6L2-6R3-7L3-7R1-8L3-7R1-8R3-9L1-9R3-10L1-9L1-10R2",
+      "rotations" : [ [0,1,0, 135], [1,0,0, -45], [0,0,1, -135] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Tripod",
+      "pieces" : 24,
+      "notation" : "1R2-2L3-3L1-3R1-4R3-5L2-5R1-6R3-7L3-8L1-8R2-9L3-11L2-10L3-12L1",
+      "rotations" : [ [0,1,0, 135] ],
+      "skin" : "PinkBlackInverse"
+    },
+    {
+      "name" : "Ostrich",
+      "pieces" : 24,
+      "notation" : "1R2-2R2-3L3-3R1-4L3-4R3-5L3-6L1-5R3-6R1-7L1-8L3-7R1-8R3-9L2-10L2-12R2",
+      "rotations" : [ [0,1,0, -45], [1,0,0, 45], [0,0,1, 135] ],
+      "skin" : "BlackWhiteOrangeInverse"
+    },
+    {
+      "name" : "Grotto",
+      "pieces" : 24,
+      "notation" : "1R3-2L2-3L3-3R3-4L3-5L2-5R2-6R3-7L3-7R3-8R2-9L3-9R2-10L1-12R1",
+      "rotations" : [ [0,1,0, -90], [0,0,1, -45] ],
+      "skin" : "YellowBlackInverse"
+    },
+    {
+      "name" : "Elephant 3",
+      "pieces" : 48,
+      "notation" : "3L3-4L3-4R3-5L2-6L3-5R1-6R2-7L1-7R1-8R1-11R2-12L2-15L2-15R2-16R2-17L2-18L2-18R2-21R2-22L2",
+      "rotations" : [ [0,1,0, -45], [1,0,0, 45], [0,0,1, 90] ],
+      "skin" : "DarkLightGreenInverse:4"
+    },
+    {
+      "name" : "Waterfowl",
+      "pieces" : 24,
+      "notation" : "1R2-2L1-3L2-3R2-4R2-5L2-6L3-6R1-7L1-7R3-8L2-8R1-9L1-10L1-10R1-11L2-12L1-11R3-12R3",
+      "rotations" : [ [1,0,0, -90] ],
+      "skin" : "BlueWhiteColors"
+    },
+    {
+      "name" : "Shelter",
+      "pieces" : 24,
+      "notation" : "2R2-5L3-5R3-6L1-6R1-7L1-8L3-7R1-8R3-9L3-10L1-9R3-10R1",
+      "rotations" : [ [0,0,1, -90], [1,0,0, -45], [0,1,0, -45] ],
+      "skin" : "BlackWhiteGreenInverse:3"
+    },
+    {
+      "name" : "Swan 2",
+      "pieces" : 24,
+      "notation" : "1R2-2L2-5L2-5R1-6L3-6R1-7L1-7R1-8R3-8L1-9L3-9R3-10R1-10L3-11L3-11R2-12R2",
+      "rotations" : [ [0,0,1, -45] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "Flower",
+      "pieces" : 24,
+      "notation" : "2L1-2R1-3L1-4L2-5L3-5R3-6L3-7L2-8L1-8R1-10L2-9L1-11L3-11R3-12L3",
+      "rotations" : [ [0,1,0, 45] ],
+      "skin" : "GreenWhiteInverse"
+    },
+    {
+      "name" : "Dog 2",
+      "pieces" : 24,
+      "notation" : "2L2-2R2-3R2-4L2-5L1-6L3-6R1-7L3-7R2-8L1-8R1-9R1-10L1-10R2-11R1-11L3-12L3-12R2",
+      "rotations" : [ [0,0,1, -45] ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Mushroom",
+      "pieces" : 24,
+      "notation" : "2L2-2R1-3L2-3R3-4L1-4R1-5L1-6L3-5R1-6R2-7L1-7R1-9L1-9R2-10R1-11R2-12L2",
+      "rotations" : [ [0,1,0, -90], [1,0,0, -145] ],
+      "skin" : "BlackWhiteRedInverse"
+    },
+    {
+      "name" : "Waterfall",
+      "pieces" : 24,
+      "notation" : "1R3-2R1-3L2-3R3-4R1-5L2-5R3-6R1-7L2-7R3-8R1-9L2-9R3-10R1-11L2-11R3-12R1",
+      "rotations" : [ [0,1,0, -45] ],
+      "skin" : "BlueWhiteInverse:6"
+    },
+    {
+      "name" : "Toad",
+      "pieces" : 24,
+      "notation" : "1R3-2L2-3L2-3R3-4L1-4R2-5L3-6L1-6R3-7L2-7R1-8L3-9L1-9R2-10L3-11L2-10R1-12L2-12R1",
+      "rotations" : [ [0,1,0, -135], [1,0,0, 15], [0,0,1, 45] ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Claw",
+      "pieces" : 24,
+      "notation" : "2R3-3L2-3R1-4L3-4R3-5L3-6L1-5R3-6R2-7L3-7R3-9L3-10R1-11R2-12L2",
+      "rotations" : [ [0,1,0, -90], [1,0,0, -35], [0,0,1, -90] ],
+      "skin" : "DarkLightRoseInverse"
+    },
+    {
+      "name" : "Camel 2",
+      "pieces" : 36,
+      "notation" : "1R2-3R2-4R2-5R2-6L2-7L3-8L3-8R3-9L2-9R3-10R1-11L2-12L1-10R1-12R2-13L1-13R1-14R1-15R2-16L2-18L2",
+      "rotations" : [ [0,1,0, -45], [1,0,0, -45], [0,0,1, -90] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Windwheel",
+      "pieces" : 24,
+      "notation" : "1R3-2R2-3L3-3R1-4L2-4R3-5R2-6L3-6R1-7L2-7R3-8R2-9L3-9R1-10L2-10R3-11R1-12L3-12R1-11R1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, -90], [0,1,0, -15] ],
+      "skin" : "YellowBlackInverse"
+    },
+    {
+      "name" : "Swan 3",
+      "pieces" : 48,
+      "notation" : "2L2-4L2-4R1-6R3-7L2-7R1-9L2-9R1-10R3-9R1-11L2-11R1-13L2-14R3-15L2-16R2-15R1-17L2-18R3-19L2-21R3-19R1-22L2-24L2",
+      "rotations" : [ [0,1,0, 180] ],
+      "skin" : "BlackWhiteOrangeInverse"
+    },
+    {
+      "name" : "Sandwich",
+      "pieces" : 24,
+      "notation" : "1R2-2L1-3R2-4L1-5L1-4L1-5R2-6L3-6R2-7L1-7R3-8L1-7R3-8R2-9L3-9R2-10L1-11R2",
+      "rotations" : [ [0,1,0, -135] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "Penguin",
+      "pieces" : 24,
+      "notation" : "1R2-2R1-3L1-3R3-4L3-4R3-5R1-5L3-6L1-6R1-7R3-7L1-8L1-8R2-9L3-10L2-10R2-11R2-12L2",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 180] ],
+      "skin" : "~BlackWhiteRedInverse"
+    },
+    {
+      "name" : "Mountain",
+      "pieces" : 24,
+      "notation" : "2L1-2R1-3L2-4L1-3R3-4R2-5L3-5R3-6R1-7L2-7R3-8R1-9L1-9R3-10L3-10R1-11L2-9R3-11R3-12L3",
+      "rotations" : [ [0,1,0, 135], [0,0,1, 75] ],
+      "skin" : "DarkLightBlueInverse"
+    },
+    {
+      "name" : "Bracelet",
+      "pieces" : 36,
+      "notation" : "2L2-2R2-3R2-4L2-5L1-5R3-6R2-7L2-8L2-8R2-9R3-10L1-11L2-11R2-12R2-13L2-14L1-14R3-15R2-16L2-17L2-17R2-18R3",
+      "rotations" : [ [ 1,0,0, -90 ], [0,0,1, 90] ],
+      "skin" : "BlackGrayColors2"
+    },
+    {
+      "name" : "Frog 2",
+      "pieces" : 24,
+      "notation" : "1R3-2R3-3L3-3R1-4L2-4R3-5L3-6R1-7L2-7R3-9L1-9R1-10L2-11L1-11R1-10R3-12R1",
+      "rotations" : [ [0,1,0, 135], [1,0,0, -30], [0,0,1, 135] ],
+      "skin" : "~WhiteBlackGreenInverse:3"
+    },
+    {
+      "name" : "Seal",
+      "pieces" : 24,
+      "notation" : "1R1-2R2-3L2-4L3-4R3-5L2-6L3-5R1-6R1-7R3-8L2-9R3-8R1-10L1-10R3-11L2-12L3-11R1-12R1",
+      "rotations" : [ [0,1,0, 135], [1,0,0, 45], [0,0,1, 45] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Symbol",
+      "pieces" : 24,
+      "notation" : "2L2-2R3-3L1-3R1-4L1-5L3-4R1-5R2-6R2-7L2-8L2-8R3-9L1-9R1-10L1-11L3-11R2-10R1-12R2",
+      "rotations" : [ [0,1,0, 180], [0,0,1, 180] ],
+      "skin" : "OrangeWhiteInverse"
+    },
+    {
+      "name" : "Kettle",
+      "pieces" : 36,
+      "notation" : "3L3-4L2-4R2-5R2-6L2-7L3-7R2-8L1-9L3-9R2-9L3-10R2-11L1-12L3-11L1-12R2-13L1-14L2-14R2-15R2-16L2-17L1-18L2-18R2",
+      "rotations" : [ [0,1,0, -45] ],
+      "skin" : "BlackWhiteBlueInverse:3"
+    },
+    {
+      "name" : "Swan",
+      "pieces" : 24,
+      "notation" : "2L2-3L2-3R1-4L3-4R2-5L3-5R2-6L1-6R2-7L1-7R1-8L3-8R1-8L3-9L1-9R3-10L1-10R2-9R3-11L3-11R1-12L3-11R1-12R3",
+      "rotations" : [ [0,1,0, -45], [1,0,0, -45], [0,0,1, 135] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "DNA",
+      "pieces" : 24,
+      "notation" : "1R1-2L2-2R1-3L2-3R1-4L2-4R1-5L2-5R1-6L2-6R1-7L2-7R1-8L2-8R1-9L2-9R1-10L2-10R1-11L2-11R1-12L2-12R1",
+      "rotations" : [ [1,0,0, -60] ],
+      "skin" : "BlackGrayColors"
+    },
+    {
+      "name" : "Frog",
+      "pieces" : 24,
+      "notation" : "1R3-2L1-2R1-3L1-3R3-4R1-5L2-5R3-6R3-7R1-8L2-8R3-9L2-9R1-10L3-10R1-10L3-11L1-11R3-12L3-12R1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 135] ],
+      "skin" : "~GreenWhiteInverse:4"
+    },
+    {
+      "name" : "Bat",
+      "pieces" : 24,
+      "notation" : "2L3-2R1-3L1-3R1-4R3-4L1-5L3-5R3-6R1-7L2-7R3-8R1-9L1-9R1-10L3-10R3-11L3-12L1-11R3",
+      "rotations" : [ [1,0,0, 90] ],
+      "skin" : "WhiteBlackOrangeInverse"
+    },
+    {
+      "name" : "Desk",
+      "pieces" : 24,
+      "notation" : "1R1-2L3-2R2-3L1-3R1-4R2-5L2-6L1-6R1-7L2-8L1-7R3-8R1-9L3-9R2-10R3-10L1-11L3-11R1-12L2-12R3",
+      "rotations" : [ [1,0,0, 90] ],
+      "skin" : "DarkLightBlueInverse"
+    },
+    {
+      "name" : "Turtle 2",
+      "pieces" : 24,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R3-5L2-5R3-6L1-6R1-7L1-8L3-7R1-8R2-9L1-9R1-11L1-11R1",
+      "rotations" : [ [1,0,0, -37.5], [0,0,1, 45] ],
+      "skin" : "GreenBlackInverse"
+    },
+    {
+      "name" : "Dinosaur",
+      "pieces" : 36,
+      "notation" : "1R2-5R3-6L1-6R3-7L2-7R1-8L1-9L1-9R1-10L2-11L1-10R3-12L1-12R3-13L2-13R1-15L1-14L1-15R1-16L2-17L1-16R3-17R3",
+      "rotations" : [ [0,1,0, 135], [0,0,1, -135] ],
+      "skin" : "PinkWhiteInverse"
+    },
+    {
+      "name" : "Robot",
+      "pieces" : 24,
+      "notation" : "2L3-3L1-3R1-4L3-4R1-5L1-5R3-6L1-6R3-7L2-7R1-8L3-8R1-9L3-9R3-10R3-10L1-11L3-12L1",
+      "rotations" : [ [0,1,0, 90], [0,0,1, -90] ],
+      "skin" : "WhiteBlackBlueInverse:3"
+    },
+    {
+      "name" : "Cat 2",
+      "pieces" : 24,
+      "notation" : "1R3-2L1-2R1-3L1-4L3-3R1-4R3-5L3-6L1-5R3-7L3-7R1-8L2-8R3-10L3-9L3-10R3-11L2-12L3-11R1-12R1",
+      "rotations" : [ [0,1,0, 90], [0,0,1, -45] ],
+      "skin" : "OrangeWhiteInverse"
+    },
+    {
+      "name" : "Turtle",
+      "pieces" : 24,
+      "notation" : "2L3-2R1-3L3-3R2-4L1-4R1-5R1-6L1-6R2-7R1-7L3-8R1-9L3-9R3-10L3-11L1-11R1-10R3-12L1-12R1",
+      "rotations" : [ [1,0,0, 90], [0,0,1, -90] ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Flower 2",
+      "pieces" : 48,
+      "notation" : "1R1-3R3-4L2-4R1-6R1-7R2-8L2-9L1-11L1-11R2-14L1-12L3-14R1-16R3-17L2-19R3-17R1-20L3-22L1-22R2-23L3",
+      "rotations" : [ [0,1,0, 135], [0,0,1, 135] ],
+      "skin" : "PinkWhiteInverse:3"
+    },
+    {
+      "name" : "Support",
+      "pieces" : 48,
+      "notation" : "1R2-2R3-4L3-5R3-7L3-10L1-8R3-10R1-12L1-14L3-12R1-15R3-17L1-19L3-17R1-20R3-22L1-24L3-22R1",
+      "rotations" : [ [1,0,0, 35] ],
+      "skin" : "GreenWhiteInverse"
+    },
+    {
+      "name" : "Pyramid",
+      "pieces" : 36,
+      "notation" : "2L3-2R1-3L1-3R1-4R3-4L1-5L2-5R1-6L1-7R1-8L1-10L3-9R1-10R2-11L1-11R1-14L1-14R1-17L1-17R1",
+      "rotations" : [ [1,0,0, -145], [0,0,1, 60] ],
+      "skin" : "~YellowBlackInverse"
+    },
+    {
+      "name" : "Rocket 3",
+      "pieces" : 24,
+      "notation" : "7L2-7R3-8L3-6R3-6L3-8R1-9L3-8R1-5R1-5L3-5R1-4L3-3R1-3L3-3R1-10L3-10R1-11L3-10R1-2R1-1R2-11R1-12R2",
+      "rotations" : [ [0,1,0, 135] ],
+      "skin" : "RedWhiteInverse:7"
+    },
+    {
+      "name" : "Ra",
+      "pieces" : 24,
+      "notation" : "1R2-2L1-2R3-3L1-3R1-4L1-5L3-4R1-5R3-6L3-7L1-6R3-8L1-8R3-9L3-9R3-10R1-11L1-10L3-11R1-12R3-12L1",
+      "rotations" : [ [0,1,0, -45], [0,0,1, -45] ],
+      "skin" : "DarkLightRoseInverse"
+    },
+    {
+      "name" : "Snowflake",
+      "pieces" : 24,
+      "notation" : "1R3-2L1-2R3-3L3-3R1-4L3-4R1-5L1-5R3-6L1-6R3-7L3-7R1-8L3-8R1-9L1-9R3-10L1-10R3-12L3-11R1-11L3-12R1",
+      "rotations" : [ [1,0,0, 60] ],
+      "skin" : "BlueWhiteColors"
+    },
+    {
+      "name" : "Swan 4",
+      "pieces" : 36,
+      "notation" : "1R2-4R2-5L3-5R1-6L3-7L3-7R1-8L1-8R1-9R3-10L3-9L1-10R3-11R1-11L3-12L1-12R1-13R3-14L2-13L1-14R1-15L1-16L2-16R1-16L3-17L1",
+      "rotations" : [ [0,0,1, 180] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Infinity",
+      "pieces" : 24,
+      "notation" : "1R3-2L1-2R3-3L3-3R1-4L1-4R3-5L3-5R1-6L1-7L1-6R3-7R3-8L1-8R3-9L3-9R1-10L1-10R3-11L3-12R3-12L1-11R1",
+      "rotations" : [ [1,0,0, 90], [0,0,1, -45], [0,1,0, 45], [1,0,0, 90] ],
+      "skin" : "BlackWhiteGreenInverse"
+    },
+    {
+      "name" : "Dog 4",
+      "pieces" : 48,
+      "notation" : "3L2-5L2-6L2-4R2-7R2-8R2-9L2-11L2-13L2-13R2-14R1-15L3-15R1-16L3-17L2-17R1-18R3-17R1-19R3-19L1-20L3-20R3-21L1-22L2-22R1-23R3-22R1-24L1",
+      "rotations" : [ [0,1,0, 180] ],
+      "skin" : "WhiteBlackOrangeInverse"
+    },
+    {
+      "name" : "Pretties",
+      "pieces" : 24,
+      "notation" : "1R1-2L3-2R1-3L1-3R3-4L3-4R3-5R1-5L3-6L1-7L1-6R3-7R1-8L3-8R1-9L1-9R3-10L3-10R3-11R1-11L3-12L1-12R3",
+      "rotations" : [ [0,0,1, 180] ],
+      "skin" : "~YellowBlackInverse"
+    },
+    {
+      "name" : "Bow",
+      "pieces" : 24,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R3-5L3-5R1-6L3-6R3-7L3-8L1-7R3-8R3-9L3-9R1-10L3-10R3-11R3-12L1-12R3-11L3",
+      "rotations" : [ [0,0,1, 52.5], [0,1,0, -150] ],
+      "skin" : "~PinkBlackInverse"
+    },
+    {
+      "name" : "Ball",
+      "pieces" : 24,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R1-5L1-6L3-5R1-6R3-7L1-8L3-7R1-8R3-9L3-10L1-9R3-10R3-11L1-10R2-12L3-11R1-12R3",
+      "rotations" : [ [0,1,0, -135 ] ],
+      "skin" : "BlackGrayColors"
+    },
+    {
+      "name" : "Octahedron",
+      "pieces" : 48,
+      "notation" : "1R1-3L1-3R1-5L3-5R3-7L3-9L1-7R3-9R1-11L3-13L1-11R3-13R1-15L1-17L3-15R1-17R2-19L3-17R1-21L1-19R3-23L3-21R1-23R3",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 45] ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Diamond",
+      "pieces" : 36,
+      "notation" : "2R1-3L1-3R1-4R2-5L2-6L1-6R3-7R1-7L3-8L1-8R3-9R2-10L2-11L2-11R3-11L1-13L1-12R3-13R1-14L1-15L3-15R3-16L3-14R1-17L1-16R3-17R1",
+      "rotations" : [ [0,1,0, -45] ],
+      "skin" : "RedBlackInverse"
+    },
+    {
+      "name" : "Coffin",
+      "pieces" : 48,
+      "notation" : "1R1-2L1-2R1-3L3-3R3-6L3-6R3-9L2-7L3-9R2-11R3-12L3-15L1-12R3-15R1-16L1-19L3-18R1-19R2-20L3-19R1-21L1-20R3-24L3-23R1-24R3",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 45] ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Microphone",
+      "pieces" : 36,
+      "notation" : "1R3-2L1-2R1-3L1-4L3-3R1-4R3-5L3-6L1-5R3-6R1-7L3-7R1-10R2-11L1-14L3-11L1-14R1-15L1-16L3-15R1-16R2-17L3-16R1-18L1-17R3-18R1",
+      "rotations" : [ [0,1,0, -45], [1,0,0, 45], [0,0,1, -90] ],
+      "skin" : "BlackWhitePinkInverse:3"
+    },
+    {
+      "name" : "Volleyball",
+      "pieces" : 48,
+      "notation" : "1R2-2R1-3L1-4R1-5L1-7L3-6R1-7R3-8L3-9L1-8R3-10R1-11L1-12R1-14L2-13L1-14R2-15R1-16L3-17L1-16R3-18R2-19L1-18R3-20R1-22L3-22R1-22L3-21L1-22R1-23R2-24L1-23R3",
+      "rotations" : [ [1,0,0, 55] ],
+      "skin" : "OrangeWhiteInverse"
+    },
+    {
+      "name" : "Cannibal Plant",
+      "pieces" : 36,
+      "notation" : "1R1-2L2-2R1-3L1-3R3-4L1-3R3-4R3-5L3-5R1-6L2-6R1-7L1-7R3-8L1-7R3-8R3-9L3-9R1-10L2-10R1-11L1-12L1-11R2-12R1-13L3-13R1-13L3-14L2-15R1-14L3-16L2-17R1-16L3-18R2-18L1",
+      "rotations" : [ [1,0,0, 127.5] ],
+      "skin" : "DarkLightRoseInverse"
+    },
+    {
+      "name" : "Big Octahedron",
+      "pieces" : 72,
+      "notation" : "1R1-4L1-4R1-7L3-7R3-10L3-13L1-10R3-13R1-16L3-19L1-16R3-19R1-22L1-25L3-22R1-25R2-28L3-25R1-31L1-28R3-34L3-31R1-34R3",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 45] ],
+      "skin" : "BlueWhiteInverse"
+    },
+    {
+      "name" : "Ship",
+      "pieces" : 72,
+      "notation" : "1R3-2L1-2R3-6L3-6R3-7L2-8L3-10R3-7R1-11L3-13L2-11R3-14R2-15R2-16L2-17L2-17R2-18R2-19L2-20L2-21L2-21R2-25R3-26L1-25R3-26R1-27L1-30L3-30R2-29R1-31L1-31R1-35R3-35L1-36L3",
+      "rotations" : [ [0,0,1, 180] ],
+      "skin" : "DarkLightBlueInverse"
+    },
+    {
+      "name" : "Heart 2",
+      "pieces" : 60,
+      "notation" : "1R1-4L2-6R1-7L1-7R1-9R2-12L1-11R3-12R1-13L1-14L3-15R2-13R1-17L1-17R3-18R1-18L3-19L1-19R1-20R3-21L3-22L2-23L1-20L1-23R1-25R2-26R2-27L2-24L1-28R2-30R1",
+      "rotations" : [ [0,1,0, -45] ],
+      "skin" : "RedWhiteInverse:3"
+    },
+    {
+      "name" : "Elephant 2",
+      "pieces" : 60,
+      "notation" : "1R2-3L2-4L3-4R3-5L3-7L2-7R2-9R3-10L1-11L3-10R1-11R3-12L1-14L2-14R2-16R2-17L1-16R3-18R3-18L1-19L2-20L2-21L2-21R2-22R3-23L1-24R3-25L1-25R1-23R1-26L2-27L2-28L2-28R2-29R2-30L1-29R3-30R1",
+      "rotations" : [ [0,1,0, 45], [1,0,0, -45], [0,0,1, 90] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Sword",
+      "pieces" : 72,
+      "notation" : "2L3-2R1-3L3-4L2-4R2-5R3-6R3-6L1-7L3-7R3-8L1-16L2-16R1-24R3-16R1-25L1-25R1-26R3-26L1-27L1-28L2-28R3-29R1-28R3-30R1-30L3-31L2-31R1-31L3-32L3-34L2-34R3-36R1-34R3-1R3",
+      "rotations" : [ [0,1,0, 45], [1,0,0, -135], [0,0,1, 90] ],
+      "skin" : "WhiteBlackYellowInverse:5"
+    },
+    {
+      "name" : "Deer",
+      "pieces" : 72,
+      "notation" : "2L1-2R3-3L3-3R1-4L2-4R1-5L2-6L2-6R2-7R2-8R2-9L2-11L1-12L1-12R3-13L3-14L1-13R3-14R3-15L1-15R3-16L2-16R3-17L2-18L2-18R2-19R2-20R2-21L2-23L3-24L3-25L3-24R1-25R3-27L2-26L2-29R2-30R2-29L2-32L2-33L2-33R2-35L2",
+      "rotations" : [ [0,1,0, 135], [1,0,0, 45], [0,0,1, -45] ],
+      "skin" : "~BlackWhiteRedInverse"
+    },
+    {
+      "name" : "Symmetry",
+      "pieces" : 48,
+      "notation" : "2R3-3L3-4R3-5L3-6R1-7L1-7R1-9R3-9L1-10L3-10R1-12R3-12L1-13L3-13R1-14R2-15L2-16L2-16R1-16L3-18L2-18R1-18L3-19L2-20L1-20R1-21L1-19R3-22L3-22R2-21R1-23R3-24L3-24R1-23L1",
+      "rotations" : [ [0,0,1, -55], [0,1,0, -30] ],
+      "skin" : "BlueWhiteColors"
+    },
+    {
+      "name" : "Ant",
+      "pieces" : 48,
+      "notation" : "2R1-3R3-4L1-4R2-5L1-5R3-6R2-7L3-8L2-7L3-8R2-9R3-10L3-10R2-11L3-11R1-12R2-13L1-14L2-13L1-15L2-15R3-16R1-15R3-17L3-17R1-18L3-18R1-17R1-19R1-20R3-19R1-21L1-21R3-22L1-21R3-22R3-23R3",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 180] ],
+      "skin" : "PinkWhiteInverse"
+    },
+    {
+      "name" : "Ellipsoid",
+      "pieces" : 36,
+      "notation" : "1R1-2R3-2L3-3L3-4R2-4L1-3R3-5L3-5R3-6R3-7L1-8R3-8L3-7R1-9L3-10L1-9R3-11R3-11L1-12R3-12L3-13R1-14R1-14L1-13L3-15R3-15L1-16L2-16R3-16L1-17R1-18L2-17L3-18R3",
+      "rotations" : [ [0,1,0, -45] ],
+      "skin" : "GreenWhiteInverse"
+    },
+    {
+      "name" : "Tank 2",
+      "pieces" : 60,
+      "notation" : "1R3-2L1-2R1-3L1-4L3-3R1-4R1-7R2-8L2-11L1-12L1-11R3-12R1-13L1-14L3-13R1-14R1-15L3-16L2-16R2-20L2-20R3-21R1-20R3-21R1-22L3-22R1-23L1-21R1-23R3-24L3-25L2-25R2-29L1-29R2-29L1-30R3",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 45] ],
+      "skin" : "WhiteBlackGreenInverse"
+    },
+    {
+      "name" : "Building",
+      "pieces" : 48,
+      "notation" : "1R1-2L1-2R3-3L3-3R3-4R1-4L3-5L1-5R3-6L3-6R1-7R1-8L3-9L3-9R3-10R3-11L3-12L3-12R1-13R1-14L3-15L3-15R3-16R3-17L3-18L3-18R1-19R1-20L3-21L3-21R3-22R3-23L3-24L3-24R1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 90] ],
+      "skin" : "OrangeBlackInverse:5"
+    },
+    {
+      "name" : "Dog 5",
+      "pieces" : 48,
+      "notation" : "1R2-2R2-3L1-3R1-4L3-4R3-5L3-6L1-5R3-6R1-7L1-8L3-7R1-8R1-9L3-10L3-10R3-11L2-11R3-12R2-13L3-14L1-13L3-14R2-15L1-15R1-16R3-17L1-18L3-18R3-19L2-19R3-20R1-21L2-22L1-20R1-22R2-23L1-23R1-24R1",
+      "rotations" : [ [0,1,0, 45], [1,0,0, 135], [0,0,1, -90] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "Bridge",
+      "pieces" : 48,
+      "notation" : "4R3-5L1-5R3-6L1-6R3-7L1-7R3-8L1-8R1-9L1-10L3-9R1-10R1-11R1-11L3-12L3-13L3-12R1-16R3-17L1-17R3-18L1-18R3-19L1-19R3-20L1-20R1-21L1-22L3-21R1-22R1-23R1-23L3-24L3-24R1",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 45] ],
+      "skin" : "BlueWhiteInverse"
+    },
+    {
+      "name" : "Star",
+      "pieces" : 36,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R3-5L3-5R3-6R1-6L3-7L1-7R3-8L3-9L1-8R3-9R1-10L3-10R3-11R1-11L3-12L1-12R3-13L3-14L1-13R3-14R1-15L3-15R3-16R1-16L3-17L1-17R3-18L3-18R3",
+      "rotations" : [ [0,0,1, 125], [0,1,0, 30] ],
+      "skin" : "WhiteBlackYellowInverse:6"
+    },
+    {
+      "name" : "Grenade",
+      "pieces" : 48,
+      "notation" : "2R2-3L3-3R1-4L3-4R2-5L1-5R1-6R1-7L1-7R2-8R1-8L3-9R1-10L3-10R3-11L3-12L1-12R1-11R3-13L1-14L3-13R1-14R3-15L1-16L3-16R2-15R1-17L1-17R1-18R2-19L1-19R2-18R3-20R1-20L3-21L1-22L2-23L2-23R3-24R2-23R3",
+      "rotations" : [ [1,0,0, -90], [0,0,1, 45] ],
+      "skin" : "GreenBlackInverse"
+    },
+    {
+      "name" : "Mickey Mouse",
+      "pieces" : 36,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R1-5L1-6L3-5R1-6R3-7L3-8L1-7R3-8R3-9L3-9R1-10L1-10R1-11R3-12L3-11L1-13L3-12R1-13R2-14L3-13R1-14R1-15L1-15R3-16L3-16R3-17R1-18L3-17L3-18R1",
+      "rotations" : [ [0,0,1, 90 ], [1,0,0, -45] ],
+      "skin" : "BlackWhiteInverse"
+    },
+    {
+      "name" : "Filled Octahedron",
+      "pieces" : 72,
+      "notation" : "1R1-2R3-2L3-3L3-4R1-4L1-3R3-5L1-6R3-6L3-5R1-7L1-8R3-8L3-7R1-9L3-10R1-10L1-11L1-9R3-12R1-12L3-11R1-13L2-13R3-14L3-15R3-16L3-17R1-18L1-19R1-21R3-20L1-22L3-23R1-25R3-24L1-26L3-27R3-29R1-28L3-31R1-30L1-33R3-32L1-35R1-34L3-36R2-36L1",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 45] ],
+      "skin" : "BlueBlackInverse"
+    },
+    {
+      "name" : "Lock",
+      "pieces" : 48,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R1-5L1-6L3-5R1-6R2-7L1-7R1-8R2-9R3-10L1-10R1-11L1-12L3-12R2-11R1-13L1-13R3-14R1-15L1-14L3-15R3-16R2-17L2-18L2-18R3-19L2-18L1-20L3-19R1-21L1-20R3-21R3-22R2-24L2",
+      "rotations" : [ [0,1,0, -90] ],
+      "skin" : "YellowBlackInverse"
+    },
+    {
+      "name" : "Tipi",
+      "pieces" : 72,
+      "notation" : "1R2-2R1-3L3-3R1-4L3-7L2-7R2-10R3-11R3-11L1-12L1-13L2-13R2-14R1-15R1-15L3-16L3-19L2-19R1-22R3-19R1-23R3-23L1-24L1-25L2-25R3-26R1-25R3-27R1-27L3-28L3-31L2-31R1-34R3-31R1-35R3-36L1-36R1-35L1-36R3",
+      "rotations" : [ [0,1,0, -90], [1,0,0, 35], [0,0,1, -120] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Water Gun",
+      "pieces" : 60,
+      "notation" : "1R2-2L2-4L2-4R2-8R3-9L1-9R3-10L3-10R3-11R1-11L3-12L1-12R1-13R3-13L1-14R3-15L3-16L3-16R3-17L2-18L3-17R1-18R3-19L1-20L3-20R3-19R1-21L3-22L1-21R3-22R2-23L1-22R3-24L3-24R2-23R1-25R3-26L1-27R2-25L1-29L2-29R3-30R2-29R3",
+      "rotations" : [ [0,1,0, 180] ],
+      "skin" : "GreenWhiteInverse:3"
+    },
+    {
+      "name" : "Airplane 2",
+      "pieces" : 72,
+      "notation" : "1R3-3L1-3R3-4L2-4R1-5L1-7L2-8L1-8R1-9L3-9R3-10L3-10R1-11R2-12L1-13L3-12L1-13R1-14L3-16L1-15R3-16R3-18L2-19L2-19R2-22R2-23R2-25L3-22L2-26L3-25R1-27R2-28L3-27R1-29R2-28R3-31R1-32R2-33L3-33R1-35L3-32L1-35R1-36L3-36R3",
+      "rotations" : [ [0,1,0, 135], [0,0,1, -45]  ],
+      "skin" : "BlueWhiteColors"
+    },
+    {
+      "name" : "Train",
+      "pieces" : 72,
+      "notation" : "1R2-2R2-3L2-4L2-4R2-6R2-7L2-9L2-12L2-12R2-17R2-18L3-18R3-19L1-19R1-20L1-21L3-20R1-21R3-22L3-23L1-23R3-22R3-24L1-24R3-25L1-25R1-26L1-27L3-26R1-27R3-28L3-29L1-29R3-28R3-30L3-30R1-31L3-31R3-32L3-33L1-32R3-33R1-34L1-35L3-34R1-35R3",
+      "rotations" : [ [0,1,0, 90] ],
+      "skin" : "WhiteBlackRedInverse"
+    },
+    {
+      "name" : "Tortoise",
+      "pieces" : 60,
+      "notation" : "2L1-2R1-3L2-4L1-3R3-4R1-5L1-6L3-5R1-6R2-7L1-7R1-8R3-9L3-9R2-10R3-10L1-11L1-11R3-12R1-12L3-13L2-13R3-14L3-15L1-15R1-16L2-17L1-16R3-17R1-18L3-18R1-19L1-19R1-20R3-21L3-20L1-22L3-22R2-21R1-23L1-23R1-24R3-25L3-25R2-26R3-26L1-27L2-27R1-27L3-28L3-28R1-29L3-30L2-29L3",
+      "rotations" : [ [0,1,0, 135] ],
+      "skin" : "DarkLightGreenInverse"
+    },
+    {
+      "name" : "Guinea Pig",
+      "pieces" : 60,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R1-5L1-6L3-5R1-7L3-7R3-8R3-9L3-9R2-10R3-10L1-11R1-12L3-12R1-13L2-13R3-14L3-15L3-15R1-16L1-17L3-17R1-16R1-18L1-18R3-19L2-19R1-20L1-21L1-22L1-21R3-22R1-23L3-24L1-24R2-25L3-23R3-25R3-26R2-27L3-27R2-26R1-28R3-29L2-28L1-30L3-29R1-30R3",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 90] ],
+      "skin" : "BlackWhiteOrangeInverse"
+    },
+    {
+      "name" : "Stone",
+      "pieces" : 60,
+      "notation" : "1R1-2L3-2R3-3L3-4L1-3R3-4R1-5L1-6L3-5R1-7L3-7R1-8L2-8R3-10L1-9L3-10L2-10R3-11L2-12L3-11R1-13L3-13R1-14L1-14R1-15R3-16L3-15L1-16R3-17R1-17L3-18L1-18R1-19R3-20L2-19L1-20R1-21L1-22L2-22R1-23L2-22L3-24L1-23R3-25R3-26L2-25L1-26R1-28L3-27L1-28L3-28R1-29L2-28L3-30L1-29R3-30R1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 90] ],
+      "skin" : "WhiteBlackPinkInverse:3"
+    },
+    {
+      "name" : "Lava Lamp Gun",
+      "pieces" : 60,
+      "notation" : "2L3-2R1-3L3-3R3-4L3-5L1-4R3-5R1-6L1-7L3-6R1-7R1-8L3-8R1-9L3-9R3-10L3-11L1-10R3-11R1-12L1-13L3-12R1-13R1-14L2-15L2-15R2-17L2-18L1-19L1-18R3-19R1-20L1-21L3-20R1-21R2-22L3-21R1-23L1-23R3-22R3-24L1-25L1-24R3-25R1-26L1-27L3-26R1-27R2-28L3-27R1-29L1-29R3-28R3-30R2",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 45], [1,0,0, -90] ],
+      "skin" : "RedWhiteInverse:7"
+    },
+    {
+      "name" : "Lotus",
+      "pieces" : 48,
+      "notation" : "1R3-2L1-2R2-3L1-3R1-4L3-4R1-4L3-5L1-5R3-6L1-5R3-6R1-7R2-8L2-9L1-9R1-10L2-10R1-11L1-11R3-12L1-11R3-12R1-13L3-13R1-14L3-13L3-14R1-15L3-15R2-16L3-16R3-17L1-17R3-17L1-18L3-18R1-19L3-19R1-18R1-20L3-20R1-21L2-21R1-22L1-22R3-23L1-22R3-23R1-24L3-24R1-22R1-24L3-22R3",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 90], [0,1,0, 45] ],
+      "skin" : "PinkWhiteInverse:5"
+    },
+    {
+      "name" : "Star 2",
+      "pieces" : 72,
+      "notation" : "1R1-2R2-3L2-4L1-4R1-5R2-6L2-7L3-7R3-8R2-9L2-10L3-10R3-11R2-12L3-13L1-12L3-13R1-14R2-15L2-16L1-16R1-17R2-18L1-19L3-18L1-19R3-20R2-21L1-22L3-21L1-22R3-23R2-24L3-25L1-24L3-25R1-26R2-27L3-28L1-27L3-28R1-29R2-30L1-31L3-30L1-31R3-32R2-33L1-34L3-33L1-34R3-35R2-36L2",
+      "rotations" : [ ],
+      "skin" : "BlackWhiteGreenInverse:4"
+    },
+    {
+      "name" : "Samurai",
+      "pieces" : 60,
+      "notation" : "1R1-2L3-2R1-3L1-3R1-4R3-4L1-5L3-5R3-6R1-6L3-7R1-8L3-8R3-9L3-10L1-10R1-9R3-11L1-12L3-11R1-12R3-13L1-13R3-14L3-14R2-13R1-15L1-13R1-15R1-16R2-17L1-17R2-16R3-18R1-19L3-18L3-19R2-20L3-20R3-22L1-22R2-23L3-24R3-25R3-27L3-27R2-29R3-28L1-30L1-30R2",
+      "rotations" : [ [0,1,0, -45], [1,0,0, -90] ],
+      "skin" : "BlueBlackInverse"
+    },
+    {
+      "name" : "Vase",
+      "pieces" : 48,
+      "notation" : "1R1-2L1-2R3-3L1-3R3-4L1-4R3-5L3-5R3-6R1-6L3-7L3-8L3-7R1-8R1-9L1-9R1-10R3-10L1-11L1-12L1-11R3-12R3-13L3-13R3-14R1-14L3-15L3-16L3-15R1-16R1-17L1-17R1-18R3-18L1-19L1-20L1-19R3-20R3-21R3-22L3-22R1-23L3-23R1-24L3-24R1-21L3",
+      "rotations" : [ [1,0,0, 90], [0,1,0, -55] ],
+      "skin" : "DarkLightRoseInverse:3"
+    },
+    {
+      "name" : "Camel",
+      "pieces" : 72,
+      "notation" : "1R3-2L1-2R3-3L3-3R3-4L1-5L2-5R1-6R3-5R1-7L1-7R1-8R3-8L1-9L1-9R3-10L1-10R3-11L3-11R3-12L1-13L3-13R2-14R3-13L3-15L1-15R1-16R3-16L1-17L3-17R1-18R3-18L1-19L3-19R3-20L1-21L2-21R1-22R3-21R1-23L2-23R1-23L3-24R3-25L1-24L1-25R1-26R1-26L3-27L1-27R1-28L3-29L1-29R2-30R1-29L1-31L2-31R3-31L1-32R1-33L3-32L3-33R2-36R2",
+      "rotations" : [ [0,1,0, -90] ],
+      "skin" : "OrangeBlackInverse"
+    },
+    {
+      "name" : "Football",
+      "pieces" : 72,
+      "notation" : "1R1-2R3-2L3-3L3-4R2-4L1-3R3-5L3-5R1-6R1-6L1-7R3-7L1-8R1-8L2-9L1-10R1-12L2-11L1-13L3-13R3-14R2-15L2-16R1-16L3-17R3-18R1-18L2-17L1-19L3-20R2-20L1-19R3-21L3-22R1-23R3-22R1-21R3-23R1-24L3-23R1-24R3-25L3-26L1-26R2-25R3-27L3-27R1-28R3-29L2-28L1-29R1-31L3-31R1-31L3-30L1-31R1-32R2-33L1-33R2-34L3-34R1-35L1-35R1-36R3-36L1-32R3",
+      "rotations" : [ [1,0,0, 90], [0,0,1, 45] ],
+      "skin" : "BlackWhiteInverse:3"
+    },
+    {
+      "name" : "Lotus 2",
+      "pieces" : 72,
+      "notation" : "1R1-3L3-3R2-4L1-5R1-6R2-7L2-8L1-9R1-10L2-12L1-10R3-12R1-14L3-14R2-16R3-15L1-17L3-18R1-19L2-20R2-19R3-21L1-21R3-22L1-21R3-23L3-23R3-24R1-25L1-25R3-25L1-26R3-27R2-28L2-29L3-30L3-30R3-31L1-32L3-30R3-32R3-33R1-34L1-34R3-35R1-36L1-36R2-34L1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 135] ],
+      "skin" : "BlueWhiteInverse"
+    },
+    {
+      "name" : "Tank",
+      "pieces" : 84,
+      "notation" : "1R2-3L2-4L2-4R2-5R3-6L2-6R3-9L3-9R1-10L3-9R1-10R2-11L1-11R2-12L1-12R1-13L3-13R1-14L2-13L3-14R3-15L2-15R3-17R1-18R2-17R1-19L2-20L1-20R3-21L1-23L2-23R1-20R3-24R3-25L1-25R2-26L3-26R2-27R3-28L3-27L1-28R3-29R1-29L3-30L2-31L2-31R3-30R3-32L3-32R1-33L3-32R1-33R2-36R2-37L1-40L2-37L1-42R2-41R1-40R3-41L2",
+      "rotations" : [ [0,1,0, 135], [0,0,1, -135] ],
+      "skin" : "GreenBlackInverse"
+    },
+    {
+      "name" : "Lobster",
+      "pieces" : 72,
+      "notation" : "2L2-2R2-4L2-5R1-6L1-6R3-7L2-7R3-8L1-8R2-9L1-9R3-10L1-10R3-11L2-11R1-12L3-12R3-13L1-13R2-14L1-14R3-15R3-16L3-16R2-17R3-18L2-17L1-18R1-19L3-19R2-20L1-21R3-20R1-22L1-22R3-23L1-23R1-24R2-25L2-22R3-26L3-27L2-27R1-28L3-28R3-8R1-26R3-8R3-29L1-29R3-30L1-29R3-30R3-31L2-32L3-31R1-32R3-34L2-35R2-36L2",
+      "rotations" : [ [0,1,0, 135], [0,0,1, 90] ],
+      "skin" : "RedWhiteInverse"
+    },
+    {
+      "name" : "Scooter",
+      "pieces" : 72,
+      "notation" : "1R1-2L3-2R1-3L2-3R1-5L1-5R3-6L3-6R3-7L1-7R3-9L3-9R1-10L3-10R3-11L3-11R1-12L1-12R2-13L1-13R2-14L3-14R2-16L3-15L1-16R1-17L1-18L3-17R1-18R3-19L3-20L1-19R3-20R1-21L1-22L3-21R1-22R2-23L3-22R1-24L1-24R3-23R3-26L3-27L3-26R1-27R3-28L3-29L1-28R3-29R1-30L1-31L3-30R1-31R2-32L3-31R1-33L1-33R2-32R3-34L1-34R3-33R3-36L3-36R3",
+      "rotations" : [ [0,1,0, 90] ],
+      "skin" : "YellowBlackInverse"
+    },
+    {
+      "name" : "Triple Ball",
+      "pieces" : 72,
+      "notation" : "1R3-2L1-2R1-3L1-4L3-3R1-4R1-5L1-5R3-6L1-6R1-7L1-8L3-7R1-8R1-9L1-9R3-10L1-10R1-12L3-11L1-11R1-12R3-13L3-14L1-13R3-14R1-15L1-16L3-15R1-16R3-17L3-18L1-17R3-18R2-19L1-18R3-20L3-20R1-19R1-21L1-22L1-21R3-22R1-23L1-24L3-23R1-24R3-25L3-26L1-25R3-26R2-27L1-26R3-28L3-28R1-27R1-29L1-30L1-29R3-30R1-31L1-32L3-32R3-31R1-33L3-34L1-33R3-34R2-35L1-35R1-36L3-36R3-34R3",
+      "rotations" : [ [0,0,1, 52.5], [0,1,0, -30] ],
+      "skin" : "BlackGrayColors:3"
+    },
+    {
+      "name" : "Dinosaur 2",
+      "pieces" : 96,
+      "notation" : "2L1-2R3-3L1-3R2-4L3-4R3-5R3-6L3-6R2-7R3-7L1-8L1-8R3-9L1-9R3-10L3-10R3-11R1-11L3-12L1-12R1-13R3-13L1-14R3-15L1-15R1-16L1-16R3-17R2-18L3-19L1-19R3-18L3-20L3-21L1-20R3-21R3-23R2-24L3-26L1-24L3-27L1-27R2-26R3-28L3-28R3-29R2-30L3-30R2-29R1-31R3-32L1-31L1-32R3-33R3-33L1-34L2-34R1-35L1-36L2-36R1-36L3-37L2-38L1-37R3-38R1-39L3-40L1-39R3-41R1-42L1-44L3-42R1-44R2-45L3-44R1-47L1-47R3-46R3-48R2",
+      "rotations" : [ [0,1,0, 180] ],
+      "skin" : "DarkLightBlueInverse"
+    },
+    {
+      "name" : "Dog 3",
+      "pieces" : 108,
+      "notation" : "1R3-2R2-3L2-4L1-4R3-5L3-6L1-5R3-6R3-7R2-8L2-9L3-10L3-9R1-10R1-11L3-11R1-12L3-12R3-13L3-13R1-14R2-15L1-16R1-16L3-15L1-17L1-18L3-17R1-18R3-19L1-19R3-20L1-20R3-21L3-21R3-22R1-23L1-22L3-23R3-24L3-25L1-24R3-25R3-26L3-26R1-27L1-27R1-28R3-29L3-28L1-30L3-30R1-29R1-31L3-32L3-31R1-33L3-33R1-34L2-34R1-35R2-36L2-37L3-37R1-38L1-39L3-39R1-38R1-40R2-41L2-42L1-43L1-42R3-43R3-44R2-32R3-46L1-46R3-47L1-47R1-48L3-47R1-48R3-49R3-50L3-50R2-51R3-51L1-52L2-52R1-53L1-54L1-54R1-32R1-45L2",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 30] ],
+      "skin" : "WhiteBlackBlueInverse:3"
+    },
+    {
+      "name" : "Cat 3",
+      "pieces" : 120,
+      "notation" : "1R3-2R2-3L2-4L1-4R3-5L3-6L1-5R3-6R3-7R2-8L2-9L3-10L3-9R1-10R1-11L3-11R1-12L3-12R3-13L3-14L1-13R3-14R1-15L1-16L3-15R1-16R3-17L1-17R3-18L1-18R3-19L3-19R3-20R1-21L1-20L3-21R3-22L3-23L1-22R3-23R3-24L3-24R1-25L1-25R1-26R3-27L3-26L1-28L3-28R1-27R1-29L1-30L1-29R3-31L1-31R3-32R3-33L1-33R2-34L1-35L2-35R2-37R3-36R1-38L3-38R2-39L3-40L2-40R3-41R1-40R3-42L3-42R3-43R1-44L1-43L3-44R1-45L3-47L2-47R3-49R1-50L3-50R3-51L3-51R1-52R1-53L3-53R2-54L1-55R1-54R1-56L1-56R2-57R1-57L3-58L2-58R3-59L3-60L3-60R3-47R3",
+      "rotations" : [ [0,1,0, 135], [0,0,1, -60] ],
+      "skin" : "DarkLightYellowInverse"
+    },
+    {
+      "name" : "Box",
+      "pieces" : 144,
+      "notation" : "1R3-2L1-2R1-3L1-4L3-3R1-6R3-7L1-7R1-8L1-9L3-9R2-8R1-10L1-10R1-12L1-12R1-14R3-16L3-14L1-16R3-17L2-18L3-18R3-17R1-19L1-21R1-22L3-22R3-23L3-24L1-23R3-26R2-27L1-26R3-28L3-29L2-28L3-30L1-30R3-31L2-31R1-33L3-34L1-33L3-34L1-35L3-32L1-35L3-35R1-37L1-35L3-37R1-38L2-39L1-39R1-40L1-38R3-41L3-40R1-42L1-43L2-42L1-44R3-45R2-46L2-44L3-47R3-49L1-50L3-49L1-50L3-51L2-48L3-51R3-52L2-51L1-53L3-52R1-54L1-54R2-55L3-55R1-56L2-56R3-53R3-59L2-57L3-59R2-61R2-62L3-63R2-61R1-65L1-66L2-66R2-64R1-68L3-68R3-69L1-69R2-70L3-72L3-70R3-72R1-67R1",
+      "rotations" : [ [0,1,0, 45], [0,0,1, 180] ],
+      "skin" : "RedBlackInverse:6"
+    },
+    {
+      "name" : "Battlemaster",
+      "pieces" : 144,
+      "notation" : "2R1-3R1-4R3-5L2-5R3-6L1-6R2-7L1-8L1-8R3-9L1-8R3-10L1-10R2-11L1-11R1-12R1-13L3-13R2-14L3-15L3-15R2-16L3-16R3-17R1-18R3-19L3-19R2-20R3-20L1-21R3-22L3-23L3-23R1-22R1-24L2-22R1-24L1-14R1-24R1-25L3-25R1-24R1-25R3-26L3-14R3-27L3-27R3-26R1-28R3-29L1-26R1-10R1-29R3-30L1-31L3-29R3-10R3-7L3-31L2-31R3-32L1-32R3-31R3-32R1-33L1-7L1-33R3-34L1-33R3-35L3-35R2-36L3-36R3-37L1-37R3-38L3-37L1-38R1-39L3-38R1-40L1-40R2-41L1-42R2-43L1-42L1-44L1-44R2-45L1-45R3-46R3-47L3-47R2-48L3-49L3-49R2-50L3-50R1-51L1-51R2-52L1-52R1-53R1-54L3-54R2-55R1-56R3-57R3-58L3-55L1-49R3-58R1-59L3-59R1-58R1-60L1-59R3-49R1-46R3-60L2-60R1-61L3-61R1-60R1-62R1-63L1-46R1-44R1-63R3-64L1-64R3-63R3-65L3-64R1-44R3-41L3-65L2-66L1-66R3-65R3-67L3-65R3-66R1-67L2-41L1-67R3-68L1-67R3-68R3-69L2-69R1-70R3-71R3",
+      "rotations" : [ [0,1,0, -135], [0,0,1, 180] ],
+      "skin" : "BlueBlackInverse"
+    },
+    {
+      "name" : "Cup",
+      "pieces" : 94,
+      "notation" : "2R2-3R2-5L2-6R2-7R2-8L1-8R3-9L3-9R2-10R2-11L2-12L2-12R2-13R2-14L2-15R2-17R3-18L1-19L3-18R1-19R3-20L3-21L1-20R3-22R3-22L1-23L3-23R3-24R1-25L1-24L3-25R3-27R2-28L2-29L2-29R2-30R2-31L3-32R2-33R2-34L3-35L1-34R3-31L3-35R2-36R2-39R2-40R2-38L2-42L2-43L3-43R3-45L2-44L3-46L1-46R1-47L1",
+      "rotations" : [ [0,1,0, -45], [1,0,0, -90] ],
+      "skin" : "OrangeWhiteInverse"
+    }
+  ]
+}
