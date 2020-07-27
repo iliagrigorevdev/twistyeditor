@@ -62,6 +62,10 @@ class Shape {
     vec3.scale(this.aabb.center, this.aabb.center, 0.5);
   }
 
+  translate(translation) {
+    this.prisms.forEach(prism => vec3.add(prism.position, prism.position, translation));
+  }
+
   rotate(rotation) {
     this.prisms.forEach(prism => {
       vec3.transformQuat(prism.position, prism.position, rotation);

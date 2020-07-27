@@ -31,6 +31,8 @@ class ShapeFolder {
     }
     const shape = shapeFolder.shape;
     shape.applyTransform();
+    shape.translate(vec3.negate(vec3.create(), shape.aabb.center));
+    shape.applyTransform();
     return shape;
   }
 
