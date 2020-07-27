@@ -64,7 +64,7 @@ class Viewport extends Component {
       return;
     }
     if (this.shapeView) {
-      this.shapeView.removeFromScene(this);
+      this.shapeView.destroy(this);
     }
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
@@ -184,6 +184,14 @@ class Viewport extends Component {
           this.knobSourceMesh.vertexBuffer, this.knobSourceMesh.indexBuffer)
       .build(this.engine, renderable);
     return renderable;
+  }
+
+  destroyRenderable(renderable) {
+    const material = this.getRenderableMaterial(renderable);
+    this.engine.destroyMaterialInstance(material);
+    this.engine.destroyEntity(renderable);
+    const renderableManager = this.engine.getRenderableManager();
+    renderableManager.destroy(renderable);
   }
 
   getBoundingBox(renderable) {

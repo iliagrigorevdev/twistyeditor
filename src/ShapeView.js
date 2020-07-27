@@ -18,6 +18,11 @@ class ShapeView {
     return new PrismView(prism, renderable);
   }
 
+  destroy(viewport) {
+    this.prismViews.forEach(prismView => viewport.destroyRenderable(prismView.renderable));
+    this.prismViews = null;
+  }
+
   findPrismView(id) {
     for (let i = 0; i < this.prismViews.length; i++) {
       const prismView = this.prismViews[i];
@@ -30,10 +35,6 @@ class ShapeView {
 
   addToScene(viewport) {
     this.prismViews.forEach((prismView) => viewport.scene.addEntity(prismView.renderable));
-  }
-
-  removeFromScene(viewport) {
-    this.prismViews.forEach((prismView) => viewport.scene.remove(prismView.renderable));
   }
 
   syncTransform(viewport) {
