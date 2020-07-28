@@ -3,6 +3,8 @@ import Prism from "./Prism";
 import { vec3, quat } from 'gl-matrix';
 import { createTransform, rotatedTransform } from './Transform';
 
+const DEGREES_TO_RADIANS = Math.PI / 180;
+
 class ShapeFolder {
   constructor() {
     this.pieceCount = 0;
@@ -197,7 +199,7 @@ class ShapeFolder {
       if (aa.length === 4) {
         vec3.set(axis, aa[0], aa[2], -aa[1]);
         vec3.normalize(axis, axis);
-        quat.setAxisAngle(rotation, axis, aa[3] * Math.PI / 180);
+        quat.setAxisAngle(rotation, axis, aa[3] * DEGREES_TO_RADIANS);
         quat.multiply(shapeRotation, rotation, shapeRotation);
       } else {
         return false;

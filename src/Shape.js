@@ -1,7 +1,7 @@
 import { quat, vec3 } from 'gl-matrix';
 import Prism from './Prism';
 
-const RADIANS_TO_DEGREES = Math.PI / 180;
+const DEGREES_TO_RADIANS = Math.PI / 180;
 const DEFAULT_BACKGROUND_COLOR = "#1976d2";
 const DEFAULT_FOREGROUND_COLOR = "#d9d9d9";
 
@@ -32,9 +32,9 @@ class Shape {
 
   getOrientation() {
     const orientation = quat.create();
-    quat.rotateY(orientation, orientation, this.yaw * RADIANS_TO_DEGREES);
-    quat.rotateX(orientation, orientation, this.roll * RADIANS_TO_DEGREES);
-    quat.rotateZ(orientation, orientation, this.pitch * RADIANS_TO_DEGREES);
+    quat.rotateY(orientation, orientation, this.yaw * DEGREES_TO_RADIANS);
+    quat.rotateX(orientation, orientation, this.roll * DEGREES_TO_RADIANS);
+    quat.rotateZ(orientation, orientation, this.pitch * DEGREES_TO_RADIANS);
     return orientation;
   }
 
