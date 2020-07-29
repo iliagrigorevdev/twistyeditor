@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/twistyeditor/static/css/main.769848a0.chunk.css",
+    "main.js": "/twistyeditor/static/js/main.2c716421.chunk.js",
+    "main.js.map": "/twistyeditor/static/js/main.2c716421.chunk.js.map",
+    "runtime-main.js": "/twistyeditor/static/js/runtime-main.7b0c9671.js",
+    "runtime-main.js.map": "/twistyeditor/static/js/runtime-main.7b0c9671.js.map",
+    "static/js/2.b562de93.chunk.js": "/twistyeditor/static/js/2.b562de93.chunk.js",
+    "static/js/2.b562de93.chunk.js.map": "/twistyeditor/static/js/2.b562de93.chunk.js.map",
+    "index.html": "/twistyeditor/index.html",
+    "precache-manifest.f99bfc715908e2c6d0f5e1b00d10d1fe.js": "/twistyeditor/precache-manifest.f99bfc715908e2c6d0f5e1b00d10d1fe.js",
+    "service-worker.js": "/twistyeditor/service-worker.js",
+    "static/css/main.769848a0.chunk.css.map": "/twistyeditor/static/css/main.769848a0.chunk.css.map",
+    "static/js/2.b562de93.chunk.js.LICENSE.txt": "/twistyeditor/static/js/2.b562de93.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.7b0c9671.js",
+    "static/js/2.b562de93.chunk.js",
+    "static/css/main.769848a0.chunk.css",
+    "static/js/main.2c716421.chunk.js"
+  ]
+}
