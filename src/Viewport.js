@@ -31,6 +31,10 @@ function focalLengthToFovY(fl) {
   return 2 * Math.atan(0.5 * CAMERA_SENSOR_HEIGHT / fl) * RADIANS_TO_DEGREES;
 }
 
+const ENVIRONMENT_COLOR = "#e6e6e6ff";
+const GROUND_HALF_SIZE = 1000;
+const GROUND_GRID_SIZE = 4;
+
 const HIGHLIGHT_PRIMARY_COLOR = "#ffff40";
 const HIGHLIGHT_ALTERNATE_COLOR = "#b266ff";
 const HIGHLIGHT_OPAQUE_BLEND = 0.8;
@@ -43,16 +47,21 @@ const KNOB_IDLE_ALPHA = 0.3;
 const KNOB_ACTIVE_ALPHA = 1.0;
 
 const iblUrl = "res/environment_ibl.ktx";
-const skyboxUrl = "res/environment_skybox.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
 const ghostMaterialUrl = "res/ghost.filamat";
 const knobMeshUrl = "res/knob.filamesh";
 const knobMaterialUrl = "res/knob.filamat";
+const groundMaterialUrl = "res/ground.filamat";
+const groundTextureUrl = "res/ground.png";
 const getPrismTextureUrl = ((maskIndex) => "res/prism" + maskIndex + ".png");
 const colorToFloat3 = ((color) => {
   const rgb = tinycolor(color).toRgb();
   return [rgb.r / 255, rgb.g / 255, rgb.b / 255];
+});
+const colorToFloat4 = ((color) => {
+  const rgb = tinycolor(color).toRgb();
+  return [rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a / 255];
 });
 
 const IDENTITY_QUAT = quat.create();
@@ -60,8 +69,9 @@ const auxMat4 = mat4.create();
 
 class Viewport extends Component {
   componentDidMount() {
-    let assets = [iblUrl, skyboxUrl, prismMeshUrl, prismMaterialUrl,
-        ghostMaterialUrl, knobMeshUrl, knobMaterialUrl];
+    let assets = [iblUrl, prismMeshUrl, prismMaterialUrl,
+        ghostMaterialUrl, knobMeshUrl, knobMaterialUrl,
+        groundMaterialUrl, groundTextureUrl];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
@@ -123,9 +133,6 @@ class Viewport extends Component {
     indirectLight.setIntensity(50000);
     this.scene.setIndirectLight(indirectLight);
 
-    const skybox = engine.createSkyFromKtx(skyboxUrl);
-    this.scene.setSkybox(skybox);
-
     this.prismSourceMaterial = engine.createMaterial(prismMaterialUrl);
     this.prismSourceMesh = engine.loadFilamesh(prismMeshUrl);
     this.prismBoundingBox = this.getBoundingBox(this.prismSourceMesh.renderable);
@@ -147,6 +154,9 @@ class Viewport extends Component {
         window.Filament.MagFilter.LINEAR,
         window.Filament.WrapMode.CLAMP_TO_EDGE);
 
+    const ground = this.createGround(GROUND_HALF_SIZE, GROUND_GRID_SIZE);
+    this.scene.addEntity(ground);
+
     this.handleShapeChange();
 
     this.swapChain = engine.createSwapChain();
@@ -154,6 +164,7 @@ class Viewport extends Component {
     this.view = engine.createView();
     this.view.setCamera(this.camera);
     this.view.setScene(this.scene);
+    this.renderer.setClearOptions({ clearColor: colorToFloat4(ENVIRONMENT_COLOR), clear: true });
 
     this.resize();
     this.renderFrame = this.renderFrame.bind(this);
@@ -163,6 +174,49 @@ class Viewport extends Component {
     this.canvas.addEventListener("pointerdown", (e) => this.handlePointerDown(e));
     this.canvas.addEventListener("pointerup", (e) => this.handlePointerUp(e));
     this.canvas.addEventListener("pointermove", (e) => this.handlePointerMove(e));
+  }
+
+  createGround(halfSize, gridSize) {
+    const vb = window.Filament.VertexBuffer.Builder()
+      .vertexCount(4)
+      .bufferCount(2)
+      .attribute(window.Filament.VertexAttribute.POSITION, 0,
+          window.Filament.VertexBuffer$AttributeType.FLOAT3, 0, 12)
+      .attribute(window.Filament.VertexAttribute.UV0, 1,
+          window.Filament.VertexBuffer$AttributeType.FLOAT2, 0, 8)
+      .build(this.engine);
+    vb.setBufferAt(this.engine, 0, new Float32Array([
+      -halfSize, 0, -halfSize,
+      -halfSize, 0, halfSize,
+      halfSize, 0, -halfSize,
+      halfSize, 0, halfSize
+    ]));
+    const reps = 2 * halfSize / gridSize;
+    vb.setBufferAt(this.engine, 1, new Float32Array([0, 0, 0, reps, reps, 0, reps, reps]));
+
+    const ib = window.Filament.IndexBuffer.Builder()
+      .indexCount(6)
+      .bufferType(window.Filament.IndexBuffer$IndexType.USHORT)
+      .build(this.engine);
+    ib.setBuffer(this.engine, new Uint16Array([0, 1, 2, 2, 1, 3]));
+
+    const material = this.engine.createMaterial(groundMaterialUrl);
+    const texture = this.engine.createTextureFromPng(groundTextureUrl);
+    const sampler = new window.Filament.TextureSampler(
+        window.Filament.MinFilter.LINEAR_MIPMAP_LINEAR,
+        window.Filament.MagFilter.LINEAR,
+        window.Filament.WrapMode.REPEAT);
+    const materialInstance = material.getDefaultInstance();
+    materialInstance.setTextureParameter("baseColor", texture, sampler);
+
+    const entity = window.Filament.EntityManager.get()
+      .create();
+    window.Filament.RenderableManager.Builder(1)
+      .boundingBox({ center: [0, 0, 0], halfExtent: [halfSize, 0, halfSize] })
+      .material(0, materialInstance)
+      .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES, vb, ib)
+      .build(this.engine, entity);
+    return entity;
   }
 
   buildPrismRenderable(material) {

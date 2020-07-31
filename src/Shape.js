@@ -40,26 +40,37 @@ class Shape {
 
   applyTransform() {
     const orientation = this.getOrientation();
-    vec3.zero(this.aabb.min);
-    vec3.zero(this.aabb.max);
-    for (let i = 0; i < this.prisms.length; i++) {
-      const prism = this.prisms[i];
-      prism.applyTransform(orientation);
+    for (let i = 0; i < 2; i++) {
+      vec3.zero(this.aabb.min);
+      vec3.zero(this.aabb.max);
+      for (let j = 0; j < this.prisms.length; j++) {
+        const prism = this.prisms[j];
+        prism.applyTransform(orientation);
 
-      // Compute axis aligned bounding box
-      for (let j = 0; j < prism.vertices.length; j++) {
-        const vertex = prism.vertices[j];
-        if ((i === 0) && (j === 0)) {
-          vec3.copy(this.aabb.min, vertex);
-          vec3.copy(this.aabb.max, vertex);
-        } else {
-          vec3.min(this.aabb.min, this.aabb.min, vertex);
-          vec3.max(this.aabb.max, this.aabb.max, vertex);
+        // Compute axis aligned bounding box
+        for (let k = 0; k < prism.vertices.length; k++) {
+          const vertex = prism.vertices[k];
+          if ((j === 0) && (k === 0)) {
+            vec3.copy(this.aabb.min, vertex);
+            vec3.copy(this.aabb.max, vertex);
+          } else {
+            vec3.min(this.aabb.min, this.aabb.min, vertex);
+            vec3.max(this.aabb.max, this.aabb.max, vertex);
+          }
         }
       }
+
+      if (i === 0) {
+        // Align to ground
+        const inverseOrientation = quat.invert(quat.create(), orientation);
+        const translation = vec3.fromValues(0, -this.aabb.min[1], 0);
+        vec3.transformQuat(translation, translation, inverseOrientation);
+        this.translate(translation);
+      } else {
+        vec3.add(this.aabb.center, this.aabb.min, this.aabb.max);
+        vec3.scale(this.aabb.center, this.aabb.center, 0.5);
+      }
     }
-    vec3.add(this.aabb.center, this.aabb.min, this.aabb.max);
-    vec3.scale(this.aabb.center, this.aabb.center, 0.5);
   }
 
   translate(translation) {
