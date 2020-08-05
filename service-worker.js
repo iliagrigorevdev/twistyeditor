@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/twistyeditor/precache-manifest.f99bfc715908e2c6d0f5e1b00d10d1fe.js"
+  "/twistyeditor/precache-manifest.f2059ee7278ac91347cef9dbf546df6c.js"
 );
 
 self.addEventListener('message', (event) => {
