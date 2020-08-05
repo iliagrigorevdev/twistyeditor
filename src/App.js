@@ -9,6 +9,11 @@ const ARCHIVE_VERSION = 1;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 
+const Modes = Object.freeze({
+  EDIT: 0,
+  SIMULATION: 1
+});
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -16,6 +21,7 @@ class App extends Component {
     const shape = Shape.createInitialShape();
 
     this.state = {
+      mode: Modes.EDIT,
       shape: shape,
       activePrism: null,
       historyEntries: [],
@@ -159,23 +165,34 @@ class App extends Component {
     element.click();
   }
 
+  handleSimulationStart() {
+    this.setState({ mode: Modes.SIMULATION });
+  }
+
+  handleSimulationStop() {
+    this.setState({ mode: Modes.EDIT });
+  }
+
   render() {
     return (
       <div className="App">
-        <Viewport shape={this.state.shape} activePrism={this.state.activePrism}
+        <Viewport mode={this.state.mode} shape={this.state.shape} activePrism={this.state.activePrism}
           onShapeChange={(shape) => this.handleShapeChange(shape)}
           onActivePrismChange={(activePrism) => this.handleActivePrismChange(activePrism)} />
-        <Toolbar shape={this.state.shape} activePrism={this.state.activePrism}
+        <Toolbar mode={this.state.mode} shape={this.state.shape} activePrism={this.state.activePrism}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
           onShapeChange={(shape) => this.handleShapeChange(shape)}
           onHistoryChange={(index) => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
           onShapeShowcase={() => this.handleShapeShowcase()}
           onShapeImport={() => this.handleShapeImport()}
-          onShapeExport={(shape) => this.handleShapeExport(shape)} />
+          onShapeExport={(shape) => this.handleShapeExport(shape)}
+          onSimulationStart={() => this.handleSimulationStart()}
+          onSimulationStop={() => this.handleSimulationStop()} />
       </div>
     );
   }
 }
 
 export default App;
+export { Modes };

@@ -97,7 +97,7 @@ const PRISM_JUNCTIONS = [
     pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, PRISM_HALF_SIDE),
     normal: vec3.fromValues(0, 0, 1),
     transforms: [
-      createTransform(vec3.fromValues(0, 0, PRISM_SIDE), quat.create()) // front
+      createTransform(vec3.fromValues(0, 0, PRISM_SIDE)) // front
     ]
   },
   {
@@ -105,7 +105,7 @@ const PRISM_JUNCTIONS = [
     pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, -PRISM_HALF_SIDE),
     normal: vec3.fromValues(0, 0, -1),
     transforms: [
-      createTransform(vec3.fromValues(0, 0, -PRISM_SIDE), quat.create()) // back
+      createTransform(vec3.fromValues(0, 0, -PRISM_SIDE)) // back
     ]
   },
   {
@@ -162,7 +162,8 @@ class Prism {
       const junction = PRISM_JUNCTIONS[i];
       const junctionPrisms = [];
       for (let j = 0; j < junction.transforms.length; j++) {
-        const junctionTransform = multiplyTransforms(transform, junction.transforms[j]);
+        const junctionTransform = multiplyTransforms(createTransform(),
+            transform, junction.transforms[j]);
         const prism = new Prism();
         prism.colorMask = this.colorMask;
         prism.backgroundColor = (junction.swapColors) ? this.foregroundColor : this.backgroundColor;
@@ -218,3 +219,4 @@ class Prism {
 }
 
 export default Prism;
+export { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE };

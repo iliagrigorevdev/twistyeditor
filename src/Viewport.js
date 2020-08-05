@@ -4,6 +4,8 @@ import ShapeView from './ShapeView';
 import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
+import { Modes } from './App';
+import Simulation from './Simulation';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -65,9 +67,14 @@ const colorToFloat4 = ((color) => {
 });
 
 const IDENTITY_QUAT = quat.create();
-const auxMat4 = mat4.create();
 
 class Viewport extends Component {
+  constructor(props) {
+    super(props);
+
+    this.auxMat4 = mat4.create();
+  }
+
   componentDidMount() {
     let assets = [iblUrl, prismMeshUrl, prismMaterialUrl,
         ghostMaterialUrl, knobMeshUrl, knobMaterialUrl,
@@ -81,12 +88,29 @@ class Viewport extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.shape !== this.props.shape) {
+    if (prevProps.mode !== this.props.mode) {
+      this.handleModeChange();
+    } else if (prevProps.shape !== this.props.shape) {
       this.handleShapeChange();
     }
   }
 
+  handleModeChange() {
+    this.refreshShapeView();
+    if (this.props.mode === Modes.SIMULATION) {
+      this.simulation = new Simulation(this.props.shape);
+    } else if (this.simulation) {
+      this.simulation = null;
+    }
+  }
+
   handleShapeChange() {
+    if (this.props.mode === Modes.EDIT) {
+      this.refreshShapeView();
+    }
+  }
+
+  refreshShapeView() {
     if (!this.engine) {
       return;
     }
@@ -96,7 +120,8 @@ class Viewport extends Component {
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
     this.activePrismView = null;
-    this.selectPrism(this.props.activePrism, true, false);
+    const activePrism = (this.props.mode === Modes.EDIT ? this.props.activePrism : null);
+    this.selectPrism(activePrism, true, false);
   }
 
   init() {
@@ -280,7 +305,7 @@ class Viewport extends Component {
   setRenderableTransform(renderable, position, orientation) {
     const transformManager = this.engine.getTransformManager();
     const transformInstance = transformManager.getInstance(renderable);
-    const transform = mat4.fromRotationTranslation(auxMat4, orientation, position);
+    const transform = mat4.fromRotationTranslation(this.auxMat4, orientation, position);
     transformManager.setTransform(transformInstance, transform);
     transformInstance.delete();
   }
@@ -335,6 +360,19 @@ class Viewport extends Component {
       this.setHighlightIntensity(this.activePrismView, highlightIntensity);
     }
 
+    if (this.props.mode === Modes.SIMULATION) {
+      this.simulation.step(deltaTime);
+      const transforms = this.simulation.prismWorldTransforms;
+      if (transforms && (transforms.length === this.shapeView.prismViews.length)) {
+        for (let i = 0; i < this.shapeView.prismViews.length; i++) {
+          const prismView = this.shapeView.prismViews[i];
+          const transform = transforms[i];
+          this.setRenderableTransform(prismView.renderable, transform.position,
+              transform.orientation);
+        }
+      }
+    }
+
     this.renderer.render(this.swapChain, this.view);
     window.requestAnimationFrame(this.renderFrame);
   }
@@ -364,22 +402,25 @@ class Viewport extends Component {
       return;
     }
 
-    const ray = this.getCastingRay(e.clientX, e.clientY);
-    const prismIntersection = this.shapeView.shape.intersect(ray);
-    let junctionIntersection;
-    if (this.props.activePrism) {
-      junctionIntersection = this.intersectJunctions(ray);
-    }
-    if (junctionIntersection && (!prismIntersection
-        || (junctionIntersection.hitDistance < prismIntersection.hitDistance))) {
-      this.pickedPrism = null;
-      this.pickedJunction = junctionIntersection.hitJunction;
-      this.activatePrismKnob(this.availableJunctions, this.pickedJunction);
-    } else {
-      this.pickedPrism = (prismIntersection) ? prismIntersection.hitPrism : null;
-      this.pickedJunction = null;
-    }
+    this.pickedPrism = null;
+    this.pickedJunction = null;
     this.activeJunctionPrism = null;
+
+    if (this.props.mode === Modes.EDIT) {
+      const ray = this.getCastingRay(e.clientX, e.clientY);
+      const prismIntersection = this.shapeView.shape.intersect(ray);
+      let junctionIntersection;
+      if (this.props.activePrism) {
+        junctionIntersection = this.intersectJunctions(ray);
+      }
+      if (junctionIntersection && (!prismIntersection
+          || (junctionIntersection.hitDistance < prismIntersection.hitDistance))) {
+        this.pickedJunction = junctionIntersection.hitJunction;
+        this.activatePrismKnob(this.availableJunctions, this.pickedJunction);
+      } else {
+        this.pickedPrism = (prismIntersection) ? prismIntersection.hitPrism : null;
+      }
+    }
 
     this.pressing = true;
     this.dragging = false;
@@ -391,16 +432,20 @@ class Viewport extends Component {
     if (!this.isPrimaryPointer(e)) {
       return;
     }
-    if (this.activeJunctionPrism) {
-      this.addPrism(this.activeJunctionPrism);
-    } else if (!this.dragging && !this.pickedJunction) {
-      this.selectPrism(this.pickedPrism, true, true);
+
+    if (this.props.mode === Modes.EDIT) {
+      if (this.activeJunctionPrism) {
+        this.addPrism(this.activeJunctionPrism);
+      } else if (!this.dragging && !this.pickedJunction) {
+        this.selectPrism(this.pickedPrism, true, true);
+      }
+      this.hideGhostPrism();
+      if (this.availableJunctions) {
+        this.showPrismKnobs(this.availableJunctions);
+      }
     }
+
     this.pressing = false;
-    this.hideGhostPrism();
-    if (this.availableJunctions) {
-      this.showPrismKnobs(this.availableJunctions);
-    }
   }
 
   handlePointerMove(e) {
