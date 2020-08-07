@@ -9,7 +9,7 @@ const ARCHIVE_VERSION = 1;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 
-const Modes = Object.freeze({
+const AppMode = Object.freeze({
   EDIT: 0,
   SIMULATION: 1
 });
@@ -21,7 +21,7 @@ class App extends Component {
     const shape = Shape.createInitialShape();
 
     this.state = {
-      mode: Modes.EDIT,
+      mode: AppMode.EDIT,
       shape: shape,
       activePrism: null,
       historyEntries: [],
@@ -166,11 +166,11 @@ class App extends Component {
   }
 
   handleSimulationStart() {
-    this.setState({ mode: Modes.SIMULATION });
+    this.setState({ mode: AppMode.SIMULATION });
   }
 
   handleSimulationStop() {
-    this.setState({ mode: Modes.EDIT });
+    this.setState({ mode: AppMode.EDIT });
   }
 
   render() {
@@ -195,4 +195,4 @@ class App extends Component {
 }
 
 export default App;
-export { Modes };
+export { AppMode };

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import './App.css';
 import { COLOR_MASK_COUNT } from './Viewport';
 import ColorPicker from './ColorPicker';
-import { Modes } from './App';
+import { AppMode } from './App';
 
 class Toolbar extends Component {
   modifyShape(prevShape, shapeModifier) {
@@ -95,9 +95,9 @@ class Toolbar extends Component {
             onClick={() => this.props.onShapeExport(shape)}>Export</button>
         </p>
         <h3>Simulation</h3>
-        <button id="startSimulation" name="startSimulation" disabled={this.props.mode === Modes.SIMULATION}
+        <button id="startSimulation" name="startSimulation" disabled={this.props.mode === AppMode.SIMULATION}
             onClick={() => this.props.onSimulationStart()}>Start</button>
-        <button id="stopSimulation" name="stopSimulation" disabled={this.props.mode !== Modes.SIMULATION}
+        <button id="stopSimulation" name="stopSimulation" disabled={this.props.mode !== AppMode.SIMULATION}
             onClick={() => this.props.onSimulationStop()}>Stop</button>
       </div>
     );

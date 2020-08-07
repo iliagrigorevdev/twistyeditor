@@ -4,7 +4,7 @@ import ShapeView from './ShapeView';
 import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
-import { Modes } from './App';
+import { AppMode } from './App';
 import Simulation from './Simulation';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
@@ -97,7 +97,7 @@ class Viewport extends Component {
 
   handleModeChange() {
     this.refreshShapeView();
-    if (this.props.mode === Modes.SIMULATION) {
+    if (this.props.mode === AppMode.SIMULATION) {
       this.simulation = new Simulation(this.props.shape);
     } else if (this.simulation) {
       this.simulation = null;
@@ -105,7 +105,7 @@ class Viewport extends Component {
   }
 
   handleShapeChange() {
-    if (this.props.mode === Modes.EDIT) {
+    if (this.props.mode === AppMode.EDIT) {
       this.refreshShapeView();
     }
   }
@@ -120,7 +120,7 @@ class Viewport extends Component {
     this.shapeView = new ShapeView(this.props.shape, this);
     this.shapeView.addToScene(this);
     this.activePrismView = null;
-    const activePrism = (this.props.mode === Modes.EDIT ? this.props.activePrism : null);
+    const activePrism = (this.props.mode === AppMode.EDIT ? this.props.activePrism : null);
     this.selectPrism(activePrism, true, false);
   }
 
@@ -360,7 +360,7 @@ class Viewport extends Component {
       this.setHighlightIntensity(this.activePrismView, highlightIntensity);
     }
 
-    if (this.props.mode === Modes.SIMULATION) {
+    if (this.props.mode === AppMode.SIMULATION) {
       this.simulation.step(deltaTime);
       const transforms = this.simulation.prismWorldTransforms;
       if (transforms && (transforms.length === this.shapeView.prismViews.length)) {
@@ -406,7 +406,7 @@ class Viewport extends Component {
     this.pickedJunction = null;
     this.activeJunctionPrism = null;
 
-    if (this.props.mode === Modes.EDIT) {
+    if (this.props.mode === AppMode.EDIT) {
       const ray = this.getCastingRay(e.clientX, e.clientY);
       const prismIntersection = this.shapeView.shape.intersect(ray);
       let junctionIntersection;
@@ -433,7 +433,7 @@ class Viewport extends Component {
       return;
     }
 
-    if (this.props.mode === Modes.EDIT) {
+    if (this.props.mode === AppMode.EDIT) {
       if (this.activeJunctionPrism) {
         this.addPrism(this.activeJunctionPrism);
       } else if (!this.dragging && !this.pickedJunction) {
