@@ -5,7 +5,7 @@ import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
 
-const ARCHIVE_VERSION = 1;
+const ARCHIVE_VERSION = 2;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 
@@ -23,7 +23,7 @@ class App extends Component {
     this.state = {
       mode: AppMode.EDIT,
       shape: shape,
-      activePrism: null,
+      activePlaceableId: 0,
       historyEntries: [],
       historyIndex: -1
     };
@@ -31,10 +31,10 @@ class App extends Component {
     this.figureRandomIndices = null;
     this.figureIndex = -1;
 
-    this.addHistoryEntry(this.state, shape);
+    this.addHistoryEntry(this.state, shape, 0);
   }
 
-  addHistoryEntry(state, shape) {
+  addHistoryEntry(state, shape, activePlaceableId) {
     let historyLength = state.historyIndex + 1;
     const historyStart = (historyLength >= HISTORY_LENGTH_MAX ?
         historyLength - HISTORY_LENGTH_MAX + 1 : 0);
@@ -42,7 +42,7 @@ class App extends Component {
     state.historyEntries = state.historyEntries.splice(historyStart, historyLength);
     state.historyEntries.push({
       shape: shape,
-      activePrism: this.state.activePrism
+      activePlaceableId: activePlaceableId
     });
     state.historyIndex = state.historyEntries.length - 1;
   }
@@ -68,28 +68,29 @@ class App extends Component {
       return;
     }
     const shape = new Shape();
-    shape.fromArchive(archive.shape);
+    shape.fromArchive(archive.shape, archive.version);
     shape.applyTransform();
     return shape;
   }
 
-  handleShapeChange(shape, reset = false) {
+  handleShapeChange(shape, reset = false, activePlaceableId = undefined) {
     const nextState = {
       shape: shape,
       historyEntries: this.state.historyEntries,
       historyIndex: this.state.historyIndex
     };
-    if (reset) {
-      nextState.activePrism = null;
-    } else if (this.state.activePrism) {
-      nextState.activePrism = shape.findPrism(this.state.activePrism.id);
+    if (reset || (this.state.activePlaceableId
+        && !shape.findPlaceable(this.state.activePlaceableId))) {
+      nextState.activePlaceableId = 0;
+    } else if (activePlaceableId) {
+      nextState.activePlaceableId = activePlaceableId;
     }
-    this.addHistoryEntry(nextState, shape);
+    this.addHistoryEntry(nextState, shape, nextState.activePlaceableId);
     this.setState(nextState);
   }
 
-  handleActivePrismChange(activePrism) {
-    this.setState({ activePrism: activePrism });
+  handleActivePlaceableChange(activePlaceableId) {
+    this.setState({ activePlaceableId: activePlaceableId });
   }
 
   handleHistoryChange(index) {
@@ -99,7 +100,7 @@ class App extends Component {
     const historyEntry = this.state.historyEntries[index];
     const nextState = {
       shape: historyEntry.shape,
-      activePrism: historyEntry.activePrism,
+      activePlaceableId: historyEntry.activePlaceableId,
       historyIndex: index
     };
     this.setState(nextState);
@@ -176,17 +177,19 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <Viewport mode={this.state.mode} shape={this.state.shape} activePrism={this.state.activePrism}
-          onShapeChange={(shape) => this.handleShapeChange(shape)}
-          onActivePrismChange={(activePrism) => this.handleActivePrismChange(activePrism)} />
-        <Toolbar mode={this.state.mode} shape={this.state.shape} activePrism={this.state.activePrism}
+        <Viewport mode={this.state.mode} shape={this.state.shape}
+          activePlaceableId={this.state.activePlaceableId}
+          onShapeChange={(shape, activePlaceableId) => this.handleShapeChange(shape, false, activePlaceableId)}
+          onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)} />
+        <Toolbar mode={this.state.mode} shape={this.state.shape}
+          activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
-          onShapeChange={(shape) => this.handleShapeChange(shape)}
-          onHistoryChange={(index) => this.handleHistoryChange(index)}
+          onShapeChange={shape => this.handleShapeChange(shape)}
+          onHistoryChange={index => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
           onShapeShowcase={() => this.handleShapeShowcase()}
           onShapeImport={() => this.handleShapeImport()}
-          onShapeExport={(shape) => this.handleShapeExport(shape)}
+          onShapeExport={shape => this.handleShapeExport(shape)}
           onSimulationStart={() => this.handleSimulationStart()}
           onSimulationStop={() => this.handleSimulationStop()} />
       </div>

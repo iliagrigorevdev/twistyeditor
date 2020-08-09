@@ -2,8 +2,10 @@
 
 filamesh --compress prism.obj ../public/res/prism.filamesh
 filamesh --compress knob.obj ../public/res/knob.filamesh
+filamesh --compress actuator.obj ../public/res/actuator.filamesh
 
 matc -a opengl -p mobile -o ../public/res/prism.filamat prism.mat
 matc -a opengl -p mobile -o ../public/res/ghost.filamat ghost.mat
 matc -a opengl -p mobile -o ../public/res/knob.filamat knob.mat
 matc -a opengl -p mobile -o ../public/res/ground.filamat ground.mat
+matc -a opengl -p mobile -o ../public/res/actuator.filamat actuator.mat

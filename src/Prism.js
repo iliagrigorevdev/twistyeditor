@@ -1,6 +1,13 @@
 import { vec3, quat } from 'gl-matrix';
 import { intersectTriangles, collideConvexHulls } from './Collision';
 import { createTransform, rotatedTransform, multiplyTransforms } from './Transform';
+import Placeable from './Placeable';
+
+const ActuatorFace = Object.freeze({
+  NONE: 0,
+  LEFT: 1,
+  RIGHT: 2
+});
 
 const PRISM_HEIGHT = 1.0;
 const PRISM_HALF_HEIGHT = 0.5 * PRISM_HEIGHT;
@@ -68,6 +75,7 @@ const PRISM_JUNCTIONS = [
     swapColors: true,
     pivot: PRISM_LEFT_SLOPE_PIVOT_POINT,
     normal: PRISM_LEFT_SLOPE_NORMAL,
+    tangent: PRISM_RIGHT_SLOPE_NORMAL,
     transforms: [
       PRISM_LEFT_TRANSFORM, // left 0
       rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
@@ -76,12 +84,14 @@ const PRISM_JUNCTIONS = [
           PRISM_LEFT_SLOPE_NORMAL, Math.PI), // left 2
       rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
           PRISM_LEFT_SLOPE_NORMAL, -0.5 * Math.PI) // left 3
-    ]
+    ],
+    actuatorFace: ActuatorFace.LEFT
   },
   {
     swapColors: true,
     pivot: PRISM_RIGHT_SLOPE_PIVOT_POINT,
     normal: PRISM_RIGHT_SLOPE_NORMAL,
+    tangent: PRISM_LEFT_SLOPE_NORMAL,
     transforms: [
       PRISM_RIGHT_TRANSFORM, // right 0
       rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
@@ -90,52 +100,71 @@ const PRISM_JUNCTIONS = [
           PRISM_RIGHT_SLOPE_NORMAL, Math.PI), // right 2
       rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
           PRISM_RIGHT_SLOPE_NORMAL, 0.5 * Math.PI) // right 3
-    ]
+    ],
+    actuatorFace: ActuatorFace.RIGHT
   },
   {
     swapColors: false,
     pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, PRISM_HALF_SIDE),
     normal: vec3.fromValues(0, 0, 1),
+    tangent: vec3.fromValues(0, 1, 0),
     transforms: [
       createTransform(vec3.fromValues(0, 0, PRISM_SIDE)) // front
-    ]
+    ],
+    actuatorFace: ActuatorFace.NONE
   },
   {
     swapColors: false,
     pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, -PRISM_HALF_SIDE),
     normal: vec3.fromValues(0, 0, -1),
+    tangent: vec3.fromValues(0, 1, 0),
     transforms: [
       createTransform(vec3.fromValues(0, 0, -PRISM_SIDE)) // back
-    ]
+    ],
+    actuatorFace: ActuatorFace.NONE
   },
   {
     swapColors: false,
     pivot: vec3.fromValues(0, -PRISM_HALF_HEIGHT, 0),
     normal: vec3.fromValues(0, -1, 0),
+    tangent: vec3.fromValues(0, 0, -1),
     transforms: [
       createTransform(vec3.fromValues(0, -PRISM_HEIGHT, 0),
           quat.fromEuler(quat.create(), 180, 0, 0)) // bottom
-    ]
+    ],
+    actuatorFace: ActuatorFace.NONE
   }
 ];
 
-class Prism {
+const COINCIDING_VERTICES_SQUARED_DISTANCE_MAX = 1e-3;
+function coincideVertices(v1, v2) {
+  return vec3.squaredDistance(v1, v2) < COINCIDING_VERTICES_SQUARED_DISTANCE_MAX;
+}
+function coincideRectangleVertices(vertices1, vertices2, i11, i12, i13, i14, i21, i22, i23, i24) {
+  return coincideVertices(vertices1[i11], vertices2[i21])
+      && coincideVertices(vertices1[i12], vertices2[i22])
+      && coincideVertices(vertices1[i13], vertices2[i23])
+      && coincideVertices(vertices1[i14], vertices2[i24]);
+}
+function coincideSquareVertices(vertices1, vertices2, i11, i12, i13, i14, i21, i22, i23, i24) {
+  return coincideRectangleVertices(vertices1, vertices2, i11, i12, i13, i14, i21, i22, i23, i24)
+      || coincideRectangleVertices(vertices1, vertices2, i11, i12, i13, i14, i22, i23, i24, i21)
+      || coincideRectangleVertices(vertices1, vertices2, i11, i12, i13, i14, i23, i24, i21, i22)
+      || coincideRectangleVertices(vertices1, vertices2, i11, i12, i13, i14, i24, i21, i22, i23);
+}
+
+class Prism extends Placeable {
   constructor() {
-    this.id = 0;
+    super();
     this.colorMask = 0;
     this.backgroundColor = "#000";
     this.foregroundColor = "#fff";
-    this.position = vec3.create();
-    this.orientation = quat.create();
-    this.worldPosition = vec3.create();
-    this.worldOrientation = quat.create();
     this.vertices = PRISM_VERTICES.map(vertex => vec3.clone(vertex));
     this.polygonNormals = PRISM_POLYGON_NORMALS.map(normal => vec3.clone(normal));
   }
 
-  applyTransform(shapeOrientation) {
-    vec3.transformQuat(this.worldPosition, this.position, shapeOrientation);
-    quat.multiply(this.worldOrientation, shapeOrientation, this.orientation);
+  applyTransform(parentOrientation) {
+    super.applyTransform(parentOrientation);
     for (let i = 0; i < this.vertices.length; i++) {
       const vertex = this.vertices[i];
       vec3.transformQuat(vertex, PRISM_VERTICES[i], this.worldOrientation);
@@ -175,13 +204,29 @@ class Prism {
       const pivot = vec3.transformQuat(vec3.create(), junction.pivot, this.orientation);
       vec3.add(pivot, pivot, this.position);
       const normal = vec3.transformQuat(vec3.create(), junction.normal, this.orientation);
+      const tangent = vec3.transformQuat(vec3.create(), junction.tangent, this.orientation);
       junctions.push({
         pivot: pivot,
         normal: normal,
-        prisms: junctionPrisms
+        tangent: tangent,
+        prisms: junctionPrisms,
+        actuatorFace: junction.actuatorFace
       });
     }
     return junctions;
+  }
+
+  coincidesActuatorFace(prism, face) {
+    switch (face) {
+      case ActuatorFace.LEFT:
+        return coincideSquareVertices(this.vertices, prism.vertices, 0, 1, 3, 2, 4, 5, 3, 2) // left-right
+            || coincideSquareVertices(this.vertices, prism.vertices, 0, 1, 3, 2, 1, 0, 2, 3); // left-left
+      case ActuatorFace.RIGHT:
+        return coincideSquareVertices(this.vertices, prism.vertices, 2, 3, 5, 4, 2, 3, 1, 0) // right-left
+            || coincideSquareVertices(this.vertices, prism.vertices, 2, 3, 5, 4, 3, 2, 4, 5); // right-right
+      default:
+        return false;
+    }
   }
 
   toArchive() {
@@ -206,17 +251,14 @@ class Prism {
 
   clone() {
     const prism = new Prism();
-    prism.id = this.id;
+    prism.copy(this);
     prism.colorMask = this.colorMask;
     prism.backgroundColor = this.backgroundColor;
     prism.foregroundColor = this.foregroundColor;
-    vec3.copy(prism.position, this.position);
-    quat.copy(prism.orientation, this.orientation);
-    vec3.copy(prism.worldPosition, this.worldPosition);
-    quat.copy(prism.worldOrientation, this.worldOrientation);
     return prism;
   }
 }
 
 export default Prism;
 export { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE };
+export { ActuatorFace };

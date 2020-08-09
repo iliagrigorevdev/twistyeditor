@@ -88,7 +88,7 @@ class ShapeFolder {
     } else {
       prism = new Prism();
     }
-    prism.id = ++this.shape.lastPrismId;
+    prism.id = ++this.shape.lastPlaceableId;
     prism.colorMask = colorMask;
     prism.backgroundColor = backgroundColor;
     prism.foregroundColor = foregroundColor;

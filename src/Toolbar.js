@@ -3,6 +3,7 @@ import './App.css';
 import { COLOR_MASK_COUNT } from './Viewport';
 import ColorPicker from './ColorPicker';
 import { AppMode } from './App';
+import Prism from './Prism';
 
 class Toolbar extends Component {
   modifyShape(prevShape, shapeModifier) {
@@ -14,7 +15,7 @@ class Toolbar extends Component {
 
   modifyPrism(prevShape, prevPrism, prismModifier) {
     this.modifyShape(prevShape, (shape) => {
-      const prism = shape.findPrism(prevPrism.id);
+      const prism = shape.findPlaceable(prevPrism.id);
       prismModifier(prism);
     });
   }
@@ -56,6 +57,12 @@ class Toolbar extends Component {
   handleDeletePrism(prevShape, prevPrism) {
     this.modifyShape(prevShape, (shape) => {
       shape.prisms = shape.prisms.filter(prism => prism.id !== prevPrism.id);
+    });
+  }
+
+  handleDeleteActuator(prevShape, prevActuator) {
+    this.modifyShape(prevShape, (shape) => {
+      shape.actuators = shape.actuators.filter(actuator => actuator.id !== prevActuator.id);
     });
   }
 
@@ -135,9 +142,26 @@ class Toolbar extends Component {
     );
   }
 
+  renderActuatorParams(shape, actuator) {
+    return (
+      <div className="Group">
+        <h3>Actuator</h3>
+        <p>
+          <button id="deleteActuator" name="deleteActuator"
+            onClick={() => this.handleDeleteActuator(shape, actuator)}>Delete</button>
+        </p>
+      </div>
+    );
+  }
+
   renderParams() {
-    if (this.props.activePrism) {
-      return this.renderPrismParams(this.props.shape, this.props.activePrism);
+    const activePlaceable = this.props.shape.findPlaceable(this.props.activePlaceableId);
+    if (activePlaceable) {
+      if (activePlaceable instanceof Prism) {
+        return this.renderPrismParams(this.props.shape, activePlaceable);
+      } else {
+        return this.renderActuatorParams(this.props.shape, activePlaceable);
+      }
     } else {
       return this.renderShapeParams(this.props.shape);
     }

@@ -1,5 +1,6 @@
-import { quat, vec3 } from 'gl-matrix';
-import Prism from './Prism';
+import { mat3, quat, vec3 } from 'gl-matrix';
+import Prism, { ActuatorFace } from './Prism';
+import Actuator from './Actuator';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const DEFAULT_BACKGROUND_COLOR = "#1976d2";
@@ -8,7 +9,8 @@ const DEFAULT_FOREGROUND_COLOR = "#d9d9d9";
 class Shape {
   constructor() {
     this.prisms = [];
-    this.lastPrismId = 0;
+    this.actuators = [];
+    this.lastPlaceableId = 0;
     this.roll = 0;
     this.pitch = 0;
     this.yaw = 0;
@@ -22,7 +24,7 @@ class Shape {
   static createInitialShape() {
     const shape = new Shape();
     const prism = new Prism();
-    prism.id = ++shape.lastPrismId;
+    prism.id = ++shape.lastPlaceableId;
     prism.backgroundColor = DEFAULT_BACKGROUND_COLOR;
     prism.foregroundColor = DEFAULT_FOREGROUND_COLOR;
     shape.prisms.push(prism);
@@ -67,6 +69,10 @@ class Shape {
         vec3.transformQuat(translation, translation, inverseOrientation);
         this.translate(translation);
       } else {
+        for (const actuator of this.actuators) {
+          actuator.applyTransform(orientation);
+        }
+
         vec3.add(this.aabb.center, this.aabb.min, this.aabb.max);
         vec3.scale(this.aabb.center, this.aabb.center, 0.5);
       }
@@ -74,44 +80,58 @@ class Shape {
   }
 
   translate(translation) {
-    this.prisms.forEach(prism => vec3.add(prism.position, prism.position, translation));
+    this.prisms.forEach(prism => prism.translate(translation));
+    this.actuators.forEach(actuator => actuator.translate(translation));
   }
 
   rotate(rotation) {
-    this.prisms.forEach(prism => {
-      vec3.transformQuat(prism.position, prism.position, rotation);
-      quat.multiply(prism.orientation, rotation, prism.orientation);
-    });
+    this.prisms.forEach(prism => prism.rotate(rotation));
+    this.actuators.forEach(actuator => actuator.rotate(rotation));
   }
 
-  findPrism(id) {
-    for (let i = 0; i < this.prisms.length; i++) {
-      const prism = this.prisms[i];
+  findPlaceable(id) {
+    if (!id) {
+      return null;
+    }
+    for (const prism of this.prisms) {
       if (prism.id === id) {
         return prism;
+      }
+    }
+    for (const actuator of this.actuators) {
+      if (actuator.id === id) {
+        return actuator;
       }
     }
     return null;
   }
 
   intersect(ray) {
-    let hitPrism;
+    let hitPlaceable;
     let hitDistance;
-    for (let i = 0; i < this.prisms.length; i++) {
-      const prism = this.prisms[i];
+    for (const prism of this.prisms) {
       const prismHitDistance = prism.intersect(ray);
       if (prismHitDistance !== undefined) {
         if ((hitDistance === undefined) || (prismHitDistance < hitDistance)) {
-          hitPrism = prism;
+          hitPlaceable = prism;
           hitDistance = prismHitDistance;
         }
       }
     }
-    if (!hitPrism) {
+    for (const actuator of this.actuators) {
+      const actuatorHitDistance = actuator.intersect(ray);
+      if (actuatorHitDistance !== undefined) {
+        if ((hitDistance === undefined) || (actuatorHitDistance < hitDistance)) {
+          hitPlaceable = actuator;
+          hitDistance = actuatorHitDistance;
+        }
+      }
+    }
+    if (!hitPlaceable) {
       return;
     }
     return {
-      hitPrism: hitPrism,
+      hitPlaceable: hitPlaceable,
       hitDistance: hitDistance
     };
   }
@@ -120,32 +140,68 @@ class Shape {
     const orientation = this.getOrientation();
     let junctions = prism.getJunctions();
     junctions.forEach(junction => {
-      vec3.transformQuat(junction.pivot, junction.pivot, orientation);
-      vec3.transformQuat(junction.normal, junction.normal, orientation);
       junction.prisms.forEach(junctionPrism => junctionPrism.applyTransform(orientation));
       junction.prisms = junction.prisms.filter(junctionPrism => this.prisms.every(shapePrism =>
           (shapePrism === prism) || !shapePrism.collides(junctionPrism)));
+
+      if ((junction.prisms.length === 0) && (junction.actuatorFace !== ActuatorFace.NONE)) {
+        for (const shapePrism of this.prisms) {
+          if ((shapePrism !== prism) && prism.coincidesActuatorFace(shapePrism, junction.actuatorFace)) {
+            if (this.actuators.some(actuator =>
+                ((actuator.basePrismId === prism.id) && (actuator.targetPrismId === shapePrism.id))
+                || ((actuator.basePrismId === shapePrism.id) && (actuator.targetPrismId === prism.id)))) {
+              continue;
+            }
+            const actuator = new Actuator();
+            const binormal = vec3.cross(vec3.create(), junction.normal, junction.tangent);
+            vec3.copy(actuator.position, junction.pivot);
+            quat.fromMat3(actuator.orientation, mat3.fromValues(
+                junction.normal[0], junction.normal[1], junction.normal[2],
+                junction.tangent[0], junction.tangent[1], junction.tangent[2],
+                binormal[0], binormal[1], binormal[2]));
+            actuator.basePrismId = prism.id;
+            actuator.targetPrismId = shapePrism.id;
+            actuator.applyTransform(orientation);
+            junction.actuator = actuator;
+            break;
+          }
+        }
+      }
+
+      vec3.transformQuat(junction.pivot, junction.pivot, orientation);
+      vec3.transformQuat(junction.normal, junction.normal, orientation);
+      vec3.transformQuat(junction.tangent, junction.tangent, orientation);
     });
-    return junctions.filter(junction => junction.prisms.length > 0);
+    return junctions.filter(junction => (junction.prisms.length > 0) || junction.actuator);
   }
 
   toArchive() {
     return {
       prisms: this.prisms.map(prism => prism.toArchive()),
-      lastPrismId: this.lastPrismId,
+      actuators: this.actuators.map(actuator => actuator.toArchive()),
+      lastPlaceableId: this.lastPlaceableId,
       roll: this.roll,
       pitch: this.pitch,
       yaw: this.yaw
     };
   }
 
-  fromArchive(archive) {
+  fromArchive(archive, version) {
     this.prisms = archive.prisms.map(prismArchive => {
       const prism = new Prism();
       prism.fromArchive(prismArchive);
       return prism;
     });
-    this.lastPrismId = archive.lastPrismId;
+    if (version < 2) {
+      this.lastPlaceableId = archive.lastPrismId;
+    } else {
+      this.actuators = archive.actuators.map(actuatorArchive => {
+        const actuator = new Actuator();
+        actuator.fromArchive(actuatorArchive);
+        return actuator;
+      });
+      this.lastPlaceableId = archive.lastPlaceableId;
+    }
     this.roll = archive.roll;
     this.pitch = archive.pitch;
     this.yaw = archive.yaw;
@@ -153,10 +209,13 @@ class Shape {
 
   clone() {
     const shape = new Shape();
-    for (let i = 0; i < this.prisms.length; i++) {
-      shape.prisms.push(this.prisms[i].clone());
+    for (const prism of this.prisms) {
+      shape.prisms.push(prism.clone());
     }
-    shape.lastPrismId = this.lastPrismId;
+    for (const actuator of this.actuators) {
+      shape.actuators.push(actuator.clone());
+    }
+    shape.lastPlaceableId = this.lastPlaceableId;
     shape.roll = this.roll;
     shape.pitch = this.pitch;
     shape.yaw = this.yaw;

@@ -1,0 +1,19 @@
+material {
+  name : actuator,
+  shadingModel : lit,
+  blending : transparent,
+  parameters : [
+    { type : float4, name : baseColor },
+    { type : float4, name : highlightColor }
+  ]
+}
+
+fragment {
+  void material(inout MaterialInputs material) {
+    prepareMaterial(material);
+    vec3 surfaceColor = mix(materialParams.baseColor.rgb, materialParams.highlightColor.rgb, materialParams.highlightColor.a);
+    material.baseColor = vec4(surfaceColor * materialParams.baseColor.a, materialParams.baseColor.a);
+    material.roughness = 0.2;
+    material.metallic = 0.0;
+  }
+}
