@@ -1,14 +1,16 @@
 material {
   name : ghost,
   shadingModel : lit,
-  blending : transparent
+  blending : transparent,
+  parameters : [
+    { type : float4, name : baseColor }
+  ]
 }
 
 fragment {
   void material(inout MaterialInputs material) {
     prepareMaterial(material);
-    const float alpha = 0.125;
-    material.baseColor = vec4(alpha); // white color with premultiplied alpha
+    material.baseColor = materialParams.baseColor;
     material.roughness = 0.2;
     material.metallic = 0.0;
   }

@@ -8,15 +8,6 @@ import { AppMode } from './App';
 import Simulation from './Simulation';
 import Prism from './Prism';
 
-const colorToFloat3 = ((color) => {
-  const rgb = tinycolor(color).toRgb();
-  return [rgb.r / 255, rgb.g / 255, rgb.b / 255];
-});
-const colorToFloat4 = ((color) => {
-  const rgb = tinycolor(color).toRgb();
-  return [rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a];
-});
-
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
 
@@ -55,24 +46,30 @@ const HIGHLIGHT_RANGE_BLEND = HIGHLIGHT_OPAQUE_BLEND - HIGHLIGHT_START_BLEND;
 const HIGHLIGHT_ANIMATION_TIME = 2;
 
 const KNOB_RADIUS = 0.4;
-const KNOB_IDLE_ALPHA = 0.3;
-const KNOB_ACTIVE_ALPHA = 1.0;
 
-const ACTUATOR_COLOR = colorToFloat4("#ffa000ff");
-const ACTUATOR_INDICATION_COLOR = colorToFloat4("#ffffff4d");
-const ACTUATOR_CREATION_COLOR = colorToFloat4("#ffffffff");
+const ACTUATOR_COLOR = "#ffa000";
+const INDICATION_COLOR = "#90caf960";
+const CREATION_COLOR = "#fff59d60";
 
 const iblUrl = "res/environment_ibl.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
 const ghostMaterialUrl = "res/ghost.filamat";
+const highcolMaterialUrl = "res/highcol.filamat";
 const knobMeshUrl = "res/knob.filamesh";
-const knobMaterialUrl = "res/knob.filamat";
 const groundMaterialUrl = "res/ground.filamat";
 const groundTextureUrl = "res/ground.png";
 const actuatorMeshUrl = "res/actuator.filamesh";
-const actuatorMaterialUrl = "res/actuator.filamat";
+
 const getPrismTextureUrl = ((maskIndex) => "res/prism" + maskIndex + ".png");
+const colorToFloat3 = ((color) => {
+  const rgb = tinycolor(color).toRgb();
+  return [rgb.r / 255, rgb.g / 255, rgb.b / 255];
+});
+const colorToFloat4 = ((color) => {
+  const rgb = tinycolor(color).toRgb();
+  return [rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a];
+});
 
 class Viewport extends Component {
   constructor(props) {
@@ -83,9 +80,8 @@ class Viewport extends Component {
 
   componentDidMount() {
     let assets = [iblUrl, prismMeshUrl, prismMaterialUrl,
-        ghostMaterialUrl, knobMeshUrl, knobMaterialUrl,
-        groundMaterialUrl, groundTextureUrl,
-        actuatorMeshUrl, actuatorMaterialUrl];
+        ghostMaterialUrl, highcolMaterialUrl, knobMeshUrl,
+        groundMaterialUrl, groundTextureUrl, actuatorMeshUrl];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
@@ -167,21 +163,14 @@ class Viewport extends Component {
     indirectLight.setIntensity(50000);
     this.scene.setIndirectLight(indirectLight);
 
-    this.prismSourceMaterial = engine.createMaterial(prismMaterialUrl);
-    this.prismSourceMesh = engine.loadFilamesh(prismMeshUrl);
-    this.prismBoundingBox = this.getBoundingBox(this.prismSourceMesh.renderable);
-
-    const ghostMaterial = engine.createMaterial(ghostMaterialUrl);
-    this.ghostRenderable = this.buildPrismRenderable(ghostMaterial.getDefaultInstance());
-
-    this.knobSourceMaterial = engine.createMaterial(knobMaterialUrl);
-    this.knobSourceMesh = engine.loadFilamesh(knobMeshUrl);
-    this.knobBoundingBox = this.getBoundingBox(this.knobSourceMesh.renderable);
+    this.prismMaterial = engine.createMaterial(prismMaterialUrl);
+    this.prismMesh = engine.loadFilamesh(prismMeshUrl);
+    this.ghostMaterial = engine.createMaterial(ghostMaterialUrl);
+    this.ghostRenderable = this.buildRenderable(this.createGhostMaterial(), this.prismMesh);
+    this.highcolMaterial = engine.createMaterial(highcolMaterialUrl);
+    this.knobMesh = engine.loadFilamesh(knobMeshUrl);
     this.knobRenderables = [];
-
-    this.actuatorSourceMaterial = engine.createMaterial(actuatorMaterialUrl);
-    this.actuatorSourceMesh = engine.loadFilamesh(actuatorMeshUrl);
-    this.actuatorBoundingBox = this.getBoundingBox(this.actuatorSourceMesh.renderable);
+    this.actuatorMesh = engine.loadFilamesh(actuatorMeshUrl);
     this.actuatorRenderables = [];
 
     this.prismTextures = [];
@@ -258,14 +247,14 @@ class Viewport extends Component {
     return entity;
   }
 
-  buildPrismRenderable(material) {
+  buildRenderable(material, mesh) {
     const renderable = window.Filament.EntityManager.get()
       .create();
     window.Filament.RenderableManager.Builder(1)
-      .boundingBox(this.prismBoundingBox)
+      .boundingBox(this.getBoundingBox(mesh.renderable))
       .material(0, material)
       .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES,
-          this.prismSourceMesh.vertexBuffer, this.prismSourceMesh.indexBuffer)
+          mesh.vertexBuffer, mesh.indexBuffer)
       .build(this.engine, renderable);
     return renderable;
   }
@@ -273,49 +262,42 @@ class Viewport extends Component {
   createPrismRenderable(colorMask, backgroundColor, foregroundColor) {
     const validColorMask = (colorMask >= 0) && (colorMask < COLOR_MASK_COUNT)
         ? colorMask : 0;
-    const prismMaterial = this.prismSourceMaterial.createInstance();
-    prismMaterial.setTextureParameter("colorMask",
+    const material = this.prismMaterial.createInstance();
+    material.setTextureParameter("colorMask",
         this.prismTextures[validColorMask], this.prismTextureSampler);
-    prismMaterial.setColor3Parameter("backgroundColor",
+    material.setColor3Parameter("backgroundColor",
         window.Filament.RgbType.sRGB, colorToFloat3(backgroundColor));
-    prismMaterial.setColor3Parameter("foregroundColor",
+    material.setColor3Parameter("foregroundColor",
         window.Filament.RgbType.sRGB, colorToFloat3(foregroundColor));
-    prismMaterial.setColor4Parameter("highlightColor",
+    material.setColor4Parameter("highlightColor",
         window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
-    return this.buildPrismRenderable(prismMaterial);
+    return this.buildRenderable(material, this.prismMesh);
+  }
+
+  createGhostMaterial() {
+    const material = this.ghostMaterial.createInstance();
+    material.setColor4Parameter("baseColor",
+        window.Filament.RgbaType.sRGB, colorToFloat4(INDICATION_COLOR));
+    return material;
+  }
+
+  createHighcolMaterial(color) {
+    const material = this.highcolMaterial.createInstance();
+    material.setColor3Parameter("baseColor",
+        window.Filament.RgbaType.sRGB, colorToFloat3(color));
+    material.setColor4Parameter("highlightColor",
+        window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
+    return material;
   }
 
   createKnobRenderable() {
-    const material = this.knobSourceMaterial.createInstance();
-    material.setFloatParameter("alpha", 0);
-
-    const renderable = window.Filament.EntityManager.get()
-      .create();
-    window.Filament.RenderableManager.Builder(1)
-      .boundingBox(this.knobBoundingBox)
-      .material(0, material)
-      .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES,
-          this.knobSourceMesh.vertexBuffer, this.knobSourceMesh.indexBuffer)
-      .build(this.engine, renderable);
-    return renderable;
+    return this.buildRenderable(this.createGhostMaterial(), this.knobMesh);
   }
 
-  createActuatorRenderable() {
-    const material = this.actuatorSourceMaterial.createInstance();
-    material.setColor4Parameter("baseColor",
-        window.Filament.RgbaType.PREMULTIPLIED_sRGB, ACTUATOR_COLOR);
-    material.setColor4Parameter("highlightColor",
-        window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
-
-    const renderable = window.Filament.EntityManager.get()
-      .create();
-    window.Filament.RenderableManager.Builder(1)
-      .boundingBox(this.actuatorBoundingBox)
-      .material(0, material)
-      .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES,
-          this.actuatorSourceMesh.vertexBuffer, this.actuatorSourceMesh.indexBuffer)
-      .build(this.engine, renderable);
-    return renderable;
+  createActuatorRenderable(ghost = false) {
+    return this.buildRenderable(
+        (ghost ? this.createGhostMaterial() : this.createHighcolMaterial(ACTUATOR_COLOR)),
+        this.actuatorMesh);
   }
 
   destroyRenderable(renderable) {
@@ -691,6 +673,12 @@ class Viewport extends Component {
         window.Filament.RgbaType.sRGB, this.highlightColor);
   }
 
+  setGhostColor(renderable, color) {
+    const material = this.getRenderableMaterial(renderable);
+    material.setColor4Parameter("baseColor",
+        window.Filament.RgbaType.sRGB, colorToFloat4(color));
+  }
+
   showGhostPrism(position, orientation) {
     this.setRenderableTransform(this.ghostRenderable, position, orientation);
     this.scene.addEntity(this.ghostRenderable);
@@ -707,8 +695,7 @@ class Viewport extends Component {
     for (let i = 0; i < junctions.length; i++) {
       const junction = junctions[i];
       const knobRenderable = this.knobRenderables[i];
-      const knobMaterial = this.getRenderableMaterial(knobRenderable);
-      knobMaterial.setFloatParameter("alpha", KNOB_IDLE_ALPHA);
+      this.setGhostColor(knobRenderable, INDICATION_COLOR);
       this.setRenderableTransform(knobRenderable, junction.pivot, quat.create());
       this.scene.addEntity(knobRenderable);
     }
@@ -720,8 +707,7 @@ class Viewport extends Component {
   activatePrismKnob(junctions, activeJunction) {
     const junctionIndex = junctions.indexOf(activeJunction);
     const knobRenderable = this.knobRenderables[junctionIndex];
-    const knobMaterial = this.getRenderableMaterial(knobRenderable);
-    knobMaterial.setFloatParameter("alpha", KNOB_ACTIVE_ALPHA);
+    this.setGhostColor(knobRenderable, CREATION_COLOR);
     this.hidePrismKnobs();
     this.scene.addEntity(knobRenderable);
   }
@@ -737,12 +723,10 @@ class Viewport extends Component {
         continue;
       }
       if (this.actuatorRenderables.length <= index) {
-        this.actuatorRenderables.push(this.createActuatorRenderable());
+        this.actuatorRenderables.push(this.createActuatorRenderable(true));
       }
       const actuatorRenderable = this.actuatorRenderables[index];
-      const actuatorMaterial = this.getRenderableMaterial(actuatorRenderable);
-      actuatorMaterial.setColor4Parameter("baseColor",
-          window.Filament.RgbaType.PREMULTIPLIED_sRGB, ACTUATOR_INDICATION_COLOR);
+      this.setGhostColor(actuatorRenderable, INDICATION_COLOR);
       this.setRenderableTransform(actuatorRenderable, junction.actuator.worldPosition,
           junction.actuator.worldOrientation);
       this.scene.addEntity(actuatorRenderable);
@@ -765,9 +749,7 @@ class Viewport extends Component {
       }
     }
     const actuatorRenderable = this.actuatorRenderables[index];
-    const actuatorMaterial = this.getRenderableMaterial(actuatorRenderable);
-    actuatorMaterial.setColor4Parameter("baseColor",
-        window.Filament.RgbaType.PREMULTIPLIED_sRGB, ACTUATOR_CREATION_COLOR);
+    this.setGhostColor(actuatorRenderable, CREATION_COLOR);
     this.hidePrismActuators();
     this.scene.addEntity(actuatorRenderable);
   }
