@@ -40,17 +40,6 @@ function intersectTriangle(ray, p1, p2, p3) {
   return vec3.dot(edge2, qvec) / det;
 }
 
-function intersectPlane(ray, normal, d) {
-	const denom = vec3.dot(normal, ray.direction);
-	if (Math.abs(denom) > 1e-6) { // must not be parallel
-		const nom = vec3.dot(normal, ray.origin) + d;
-		const t = -(nom / denom);
-		if (t >= 0) {
-			return t;
-		}
-	}
-}
-
 function intersectSphere(ray, center, radius) {
   const rayorig = vec3.sub(auxVec1, ray.origin, center);
   const squaredRadius = radius * radius;
@@ -98,50 +87,18 @@ function createCylinder(position, normal, radius, height, centered = false) {
   };
 }
 
-function intersectCylinder(ray, cylinder, intersectCaps = true, discardInside = true) {
-  // Check intersection with caps
-  const cp1 = cylinder.position;
-  const cp2 = vec3.add(auxVec1, vec3.scale(auxVec1, cylinder.normal, cylinder.height), cylinder.position);
-  const cd1 = vec3.dot(cylinder.normal, cp1);
-  const cd2 = vec3.dot(cylinder.normal, cp2);
-  if (intersectCaps) {
-    let intersectsCap1 = false;
-    const ct1 = intersectPlane(ray, vec3.negate(auxVec2, cylinder.normal), cd1);
-    if (ct1 !== undefined) {
-      const ci1 = vec3.add(auxVec2, vec3.scale(auxVec2, ray.direction, ct1), ray.origin);
-      if (vec3.distance(cp1, ci1) < cylinder.radius) {
-        intersectsCap1 = true;
-      }
-    }
-    let intersectsCap2 = false;
-    const ct2 = intersectPlane(ray, cylinder.normal, -cd2);
-    if (ct2 !== undefined) {
-      const ci2 = vec3.add(auxVec2, vec3.scale(auxVec2, ray.direction, ct2), ray.origin);
-      if (vec3.distance(cp2, ci2) < cylinder.radius) {
-        intersectsCap2 = true;
-      }
-    }
-    if (intersectsCap1 && intersectsCap2) {
-      return (ct1 < ct2) ? ct1 : ct2;
-    } else if (intersectsCap1) {
-      return ct1;
-    } else if (intersectsCap2) {
-      return ct2;
-    }
-  }
-
-  const a = vec3.sub(auxVec2, ray.direction, vec3.scale(auxVec2, cylinder.normal,
+function intersectCylinder(ray, cylinder) {
+  const a = vec3.sub(auxVec1, ray.direction, vec3.scale(auxVec1, cylinder.normal,
       vec3.dot(ray.direction, cylinder.normal)));
   const A = vec3.dot(a, a);
   if (A < 1e-12) {
     return;
   }
-  const dp = vec3.sub(auxVec3, ray.origin, cylinder.position);
-  const b = vec3.sub(auxVec4, dp, vec3.scale(auxVec4, cylinder.normal, vec3.dot(dp, cylinder.normal)));
+  const dp = vec3.sub(auxVec2, ray.origin, cylinder.position);
+  const b = vec3.sub(auxVec3, dp, vec3.scale(auxVec3, cylinder.normal, vec3.dot(dp, cylinder.normal)));
   const B = 2 * vec3.dot(a, b);
   const C = vec3.dot(b, b) - cylinder.radius * cylinder.radius;
 
-  // Solve a quadratic equation
   const d = B * B - 4 * A * C;
   if (d < 0) {
     return;
@@ -154,14 +111,15 @@ function intersectCylinder(ray, cylinder, intersectCaps = true, discardInside = 
     return;
   }
 
-  // Check if the intersection is between the planes
+  const cp1 = cylinder.position;
+  const cp2 = vec3.add(auxVec1, vec3.scale(auxVec1, cylinder.normal, cylinder.height), cylinder.position);
+  const cd1 = vec3.dot(cylinder.normal, cp1);
+  const cd2 = vec3.dot(cylinder.normal, cp2);
   if (t1 >= 0) {
     const p1 = vec3.add(auxVec1, vec3.scale(auxVec1, ray.direction, t1), ray.origin);
     const d1 = vec3.dot(cylinder.normal, p1);
     if ((cd1 - d1) * (cd2 - d1) < 0) {
       return t1;
-    } else if (discardInside) {
-      return;
     }
   }
   if (t2 >= 0) {
