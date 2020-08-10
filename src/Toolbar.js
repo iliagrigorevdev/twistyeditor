@@ -57,6 +57,8 @@ class Toolbar extends Component {
   handleDeletePrism(prevShape, prevPrism) {
     this.modifyShape(prevShape, (shape) => {
       shape.prisms = shape.prisms.filter(prism => prism.id !== prevPrism.id);
+      shape.actuators = shape.actuators.filter(actuator => (actuator.basePrismId !== prevPrism.id)
+          && (actuator.targetPrismId !== prevPrism.id));
     });
   }
 
