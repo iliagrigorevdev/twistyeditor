@@ -6,6 +6,8 @@ const DEGREES_TO_RADIANS = Math.PI / 180;
 const DEFAULT_BACKGROUND_COLOR = "#1976d2";
 const DEFAULT_FOREGROUND_COLOR = "#d9d9d9";
 
+const PLANE_HEIGHT = 0.5;
+
 class Shape {
   constructor() {
     this.prisms = [];
@@ -63,9 +65,9 @@ class Shape {
       }
 
       if (i === 0) {
-        // Align to ground
+        // Align to plane
         const inverseOrientation = quat.invert(quat.create(), orientation);
-        const translation = vec3.fromValues(0, -this.aabb.min[1], 0);
+        const translation = vec3.fromValues(0, PLANE_HEIGHT - this.aabb.min[1], 0);
         vec3.transformQuat(translation, translation, inverseOrientation);
         this.translate(translation);
       } else {
