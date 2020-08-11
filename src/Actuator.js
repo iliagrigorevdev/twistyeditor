@@ -8,6 +8,8 @@ const ACTUATOR_DEPTH = 0.3;
 class Actuator extends Placeable {
   constructor() {
     super();
+    this.baseFace = undefined;
+    this.targetFace = undefined;
     this.basePrismId = 0;
     this.targetPrismId = 0;
   }
@@ -23,6 +25,8 @@ class Actuator extends Placeable {
   toArchive() {
     return {
       id: this.id,
+      baseFace: this.baseFace,
+      targetFace: this.targetFace,
       basePrismId: this.basePrismId,
       targetPrismId: this.targetPrismId,
       position: this.position,
@@ -32,6 +36,8 @@ class Actuator extends Placeable {
 
   fromArchive(archive) {
     this.id = archive.id;
+    this.baseFace = archive.baseFace;
+    this.targetFace = archive.targetFace;
     this.basePrismId = archive.basePrismId;
     this.targetPrismId = archive.targetPrismId;
     vec3.copy(this.position, archive.position);
@@ -41,6 +47,8 @@ class Actuator extends Placeable {
   clone() {
     const actuator = new Actuator();
     actuator.copy(this);
+    actuator.baseFace = this.baseFace;
+    actuator.targetFace = this.targetFace;
     actuator.basePrismId = this.basePrismId;
     actuator.targetPrismId = this.targetPrismId;
     return actuator;

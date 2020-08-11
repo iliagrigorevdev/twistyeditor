@@ -64,8 +64,12 @@ class Simulation {
   }
 
   init(Ammo) {
-    this.shapeBtTransform = new Ammo.btTransform();
-    this.shapeTransform = createTransform();
+    this.shapeParts = [];
+    this.prismIds = [];
+    this.prismWorldTransforms = [];
+    this.prismLocalTransforms = [];
+    this.partBtTransform = new Ammo.btTransform();
+    this.partTransform = createTransform();
 
     this.collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
     this.dispatcher = new Ammo.btCollisionDispatcher(this.collisionConfiguration);
@@ -108,20 +112,28 @@ class Simulation {
   }
 
   addShapeBody(Ammo, shape) {
-    if (shape.prisms.length === 0) {
+    const parts = shape.discoverParts();
+    for (let i = 0; i < parts.length; i++) {
+      console.log("Part " + (i + 1) + "/" + parts.length + ":");
+      this.addShapePartBody(Ammo, parts[i]);
+    }
+  }
+
+  addShapePartBody(Ammo, part) {
+    if (part.length === 0) {
       return;
     }
 
     const transforms = [];
-    const shapeOrigin = vec3.create();
-    for (const prism of shape.prisms) {
+    const partOrigin = vec3.create();
+    for (const prism of part) {
       const transform = multiplyTransforms(createTransform(),
           createTransform(prism.worldPosition, prism.worldOrientation),
           this.prismMassOffsetInversed);
-      vec3.add(shapeOrigin, shapeOrigin, transform.position);
+      vec3.add(partOrigin, partOrigin, transform.position);
       transforms.push(transform);
     }
-    vec3.scale(shapeOrigin, shapeOrigin, 1 / shape.prisms.length);
+    vec3.scale(partOrigin, partOrigin, 1 / part.length);
 
     const tensor = mat3.fromValues(0, 0, 0, 0, 0, 0, 0, 0, 0);
     const mat1 = mat3.create();
@@ -137,9 +149,9 @@ class Simulation {
       mat3.add(tensor, tensor, j);
 
       const prismOrigin = transform.position;
-      const px = prismOrigin[0] - shapeOrigin[0];
-      const py = prismOrigin[1] - shapeOrigin[1];
-      const pz = prismOrigin[2] - shapeOrigin[2];
+      const px = prismOrigin[0] - partOrigin[0];
+      const py = prismOrigin[1] - partOrigin[1];
+      const pz = prismOrigin[2] - partOrigin[2];
       const squaredDistance = px * px + py * py + pz * pz;
       mat3.set(j,
         squaredDistance - px * px, -px * py, -px * pz,
@@ -151,36 +163,39 @@ class Simulation {
     }
     const principalRotation = quat.fromMat3(quat.create(),
         diagonalizeMatrix(tensor, 1e-5, 20));
-    const shapeTransform = createTransform(shapeOrigin, principalRotation);
+    const partTransform = createTransform(partOrigin, principalRotation);
     const inertia = vec3.fromValues(tensor[0], tensor[4], tensor[8]);
 
-    const childTransform = inverseTransform(createTransform(), shapeTransform);
+    const childTransform = inverseTransform(createTransform(), partTransform);
     const collisionShape = new Ammo.btCompoundShape();
     for (const transform of transforms) {
       const prismTransform = multiplyTransforms(createTransform(), childTransform, transform);
       collisionShape.addChildShape(convertTransform(Ammo, prismTransform), this.prismCollisionShape);
     }
 
-    const mass = shape.prisms.length * PRISM_MASS;
+    const mass = part.length * PRISM_MASS;
     const rigidBody = this.addRigidBody(Ammo, collisionShape, mass,
-        inertia, shapeTransform, FRICTION_PRISM, RESTITUTION_PRISM,
+        inertia, partTransform, FRICTION_PRISM, RESTITUTION_PRISM,
         GROUP_PRISM, MASK_PRISM);
 
-    this.shapeBody = rigidBody;
-    this.prismWorldTransforms = [];
-    this.prismLocalTransforms = [];
-    for (const prism of shape.prisms) {
+    for (const prism of part) {
       const worldTransform = createTransform(vec3.clone(prism.worldPosition),
           quat.clone(prism.worldOrientation));
       const localTransform = multiplyTransforms(createTransform(),
           childTransform, worldTransform);
+      this.prismIds.push(prism.id);
       this.prismWorldTransforms.push(worldTransform);
       this.prismLocalTransforms.push(localTransform);
     }
 
+    this.shapeParts.push({
+      partBody: rigidBody,
+      prismCount: part.length
+    });
+
     console.log("Mass: " + mass);
-    console.log("Origin: {" + shapeOrigin[0].toFixed(2) + ", " + shapeOrigin[1].toFixed(2)
-        + ", " + shapeOrigin[2].toFixed(2) + "}");
+    console.log("Origin: {" + partOrigin[0].toFixed(2) + ", " + partOrigin[1].toFixed(2)
+        + ", " + partOrigin[2].toFixed(2) + "}");
     console.log("Inertia: {" + inertia[0].toFixed(2) + ", " + inertia[1].toFixed(2)
         + ", " + inertia[2].toFixed(2) + "}");
     const principalAxis = vec3.create();
@@ -191,20 +206,24 @@ class Simulation {
   }
 
   updatePrismTransforms() {
-    if (!this.shapeBody) {
+    if (!this.shapeParts) {
       return;
     }
 
-    this.shapeBody.getMotionState().getWorldTransform(this.shapeBtTransform);
-    const shapePosition = this.shapeBtTransform.getOrigin();
-    const shapeOrientation = this.shapeBtTransform.getRotation();
-    vec3.set(this.shapeTransform.position, shapePosition.x(), shapePosition.y(), shapePosition.z());
-    quat.set(this.shapeTransform.orientation, shapeOrientation.x(), shapeOrientation.y(),
-        shapeOrientation.z(), shapeOrientation.w());
+    let prismOffset = 0;
+    for (const shapePart of this.shapeParts) {
+      shapePart.partBody.getMotionState().getWorldTransform(this.partBtTransform);
+      const partPosition = this.partBtTransform.getOrigin();
+      const partOrientation = this.partBtTransform.getRotation();
+      vec3.set(this.partTransform.position, partPosition.x(), partPosition.y(), partPosition.z());
+      quat.set(this.partTransform.orientation, partOrientation.x(), partOrientation.y(),
+          partOrientation.z(), partOrientation.w());
 
-    for (let i = 0; i < this.prismLocalTransforms.length; i++) {
-      multiplyTransforms(this.prismWorldTransforms[i], this.shapeTransform,
-          this.prismLocalTransforms[i]);
+      for (let i = 0; i < shapePart.prismCount; i++) {
+        multiplyTransforms(this.prismWorldTransforms[prismOffset + i], this.partTransform,
+            this.prismLocalTransforms[prismOffset + i]);
+      }
+      prismOffset += shapePart.prismCount;
     }
   }
 

@@ -4,13 +4,13 @@ class ShapeView {
   constructor(shape, showActuators, viewport) {
     this.shape = shape;
 
-    this.placeableViews = [];
+    this.placeableViews = new Map();
     for (const prism of this.shape.prisms) {
-      this.placeableViews.push(this.createPrismView(prism, viewport));
+      this.placeableViews.set(prism.id, this.createPrismView(prism, viewport));
     }
     if (showActuators) {
       for (const actuator of this.shape.actuators) {
-        this.placeableViews.push(this.createActuatorView(actuator, viewport));
+        this.placeableViews.set(actuator.id, this.createActuatorView(actuator, viewport));
       }
     }
 
@@ -34,12 +34,7 @@ class ShapeView {
   }
 
   findPlaceableView(id) {
-    for (const placeableView of this.placeableViews) {
-      if (placeableView.placeable.id === id) {
-        return placeableView;
-      }
-    }
-    return null;
+    return this.placeableViews.get(id);
   }
 
   addToScene(viewport) {
@@ -47,10 +42,9 @@ class ShapeView {
   }
 
   syncTransform(viewport) {
-    for (const placeableView of this.placeableViews) {
-      viewport.setRenderableTransform(placeableView.renderable, placeableView.placeable.worldPosition,
-          placeableView.placeable.worldOrientation);
-    }
+    this.placeableViews.forEach(placeableView =>
+        viewport.setRenderableTransform(placeableView.renderable, placeableView.placeable.worldPosition,
+            placeableView.placeable.worldOrientation));
   }
 }
 

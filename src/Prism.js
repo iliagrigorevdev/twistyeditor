@@ -3,10 +3,12 @@ import { intersectTriangles, collideConvexHulls } from './Collision';
 import { createTransform, rotatedTransform, multiplyTransforms } from './Transform';
 import Placeable from './Placeable';
 
-const ActuatorFace = Object.freeze({
-  NONE: 0,
-  LEFT: 1,
-  RIGHT: 2
+const JunctionFace = Object.freeze({
+  LEFT: 0,
+  RIGHT: 1,
+  FRONT: 2,
+  BACK: 3,
+  BOTTOM: 4
 });
 
 const PRISM_HEIGHT = 1.0;
@@ -72,73 +74,83 @@ const PRISM_RIGHT_TRANSFORM = createTransform(vec3.fromValues(PRISM_DISTANCE, 0,
     quat.fromEuler(quat.create(), 180, 0, 0));
 const PRISM_JUNCTIONS = [
   {
+    face: JunctionFace.LEFT,
     swapColors: true,
     pivot: PRISM_LEFT_SLOPE_PIVOT_POINT,
     normal: PRISM_LEFT_SLOPE_NORMAL,
     tangent: PRISM_RIGHT_SLOPE_NORMAL,
     transforms: [
-      PRISM_LEFT_TRANSFORM, // left 0
+      PRISM_LEFT_TRANSFORM,
       rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
-          PRISM_LEFT_SLOPE_NORMAL, 0.5 * Math.PI), // left 1
+          PRISM_LEFT_SLOPE_NORMAL, 0.5 * Math.PI),
       rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
-          PRISM_LEFT_SLOPE_NORMAL, Math.PI), // left 2
+          PRISM_LEFT_SLOPE_NORMAL, Math.PI),
       rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
-          PRISM_LEFT_SLOPE_NORMAL, -0.5 * Math.PI) // left 3
+          PRISM_LEFT_SLOPE_NORMAL, -0.5 * Math.PI)
     ],
-    actuatorFace: ActuatorFace.LEFT
+    allowActuator: true
   },
   {
+    face: JunctionFace.RIGHT,
     swapColors: true,
     pivot: PRISM_RIGHT_SLOPE_PIVOT_POINT,
     normal: PRISM_RIGHT_SLOPE_NORMAL,
     tangent: PRISM_LEFT_SLOPE_NORMAL,
     transforms: [
-      PRISM_RIGHT_TRANSFORM, // right 0
+      PRISM_RIGHT_TRANSFORM,
       rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
-          PRISM_RIGHT_SLOPE_NORMAL, -0.5 * Math.PI), // right 1
+          PRISM_RIGHT_SLOPE_NORMAL, -0.5 * Math.PI),
       rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
-          PRISM_RIGHT_SLOPE_NORMAL, Math.PI), // right 2
+          PRISM_RIGHT_SLOPE_NORMAL, Math.PI),
       rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
-          PRISM_RIGHT_SLOPE_NORMAL, 0.5 * Math.PI) // right 3
+          PRISM_RIGHT_SLOPE_NORMAL, 0.5 * Math.PI)
     ],
-    actuatorFace: ActuatorFace.RIGHT
+    allowActuator: true
   },
   {
+    face: JunctionFace.FRONT,
     swapColors: false,
     pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, PRISM_HALF_SIDE),
     normal: vec3.fromValues(0, 0, 1),
     tangent: vec3.fromValues(0, 1, 0),
     transforms: [
-      createTransform(vec3.fromValues(0, 0, PRISM_SIDE)) // front
+      createTransform(vec3.fromValues(0, 0, PRISM_SIDE))
     ],
-    actuatorFace: ActuatorFace.NONE
+    allowActuator: false
   },
   {
+    face: JunctionFace.BACK,
     swapColors: false,
     pivot: vec3.fromValues(0, PRISM_SIDE_PIVOT_Y, -PRISM_HALF_SIDE),
     normal: vec3.fromValues(0, 0, -1),
     tangent: vec3.fromValues(0, 1, 0),
     transforms: [
-      createTransform(vec3.fromValues(0, 0, -PRISM_SIDE)) // back
+      createTransform(vec3.fromValues(0, 0, -PRISM_SIDE))
     ],
-    actuatorFace: ActuatorFace.NONE
+    allowActuator: false
   },
   {
+    face: JunctionFace.BOTTOM,
     swapColors: false,
     pivot: vec3.fromValues(0, -PRISM_HALF_HEIGHT, 0),
     normal: vec3.fromValues(0, -1, 0),
     tangent: vec3.fromValues(0, 0, -1),
     transforms: [
       createTransform(vec3.fromValues(0, -PRISM_HEIGHT, 0),
-          quat.fromEuler(quat.create(), 180, 0, 0)) // bottom
+          quat.fromEuler(quat.create(), 180, 0, 0))
     ],
-    actuatorFace: ActuatorFace.NONE
+    allowActuator: false
   }
 ];
 
 const COINCIDING_VERTICES_SQUARED_DISTANCE_MAX = 1e-3;
 function coincideVertices(v1, v2) {
   return vec3.squaredDistance(v1, v2) < COINCIDING_VERTICES_SQUARED_DISTANCE_MAX;
+}
+function coincideTriangleVertices(vertices1, vertices2, i11, i12, i13, i21, i22, i23) {
+  return coincideVertices(vertices1[i11], vertices2[i21])
+      && coincideVertices(vertices1[i12], vertices2[i22])
+      && coincideVertices(vertices1[i13], vertices2[i23]);
 }
 function coincideRectangleVertices(vertices1, vertices2, i11, i12, i13, i14, i21, i22, i23, i24) {
   return coincideVertices(vertices1[i11], vertices2[i21])
@@ -206,26 +218,72 @@ class Prism extends Placeable {
       const normal = vec3.transformQuat(vec3.create(), junction.normal, this.orientation);
       const tangent = vec3.transformQuat(vec3.create(), junction.tangent, this.orientation);
       junctions.push({
+        face: junction.face,
         pivot: pivot,
         normal: normal,
         tangent: tangent,
         prisms: junctionPrisms,
-        actuatorFace: junction.actuatorFace
+        allowActuator: junction.allowActuator
       });
     }
     return junctions;
   }
 
-  coincidesActuatorFace(prism, face) {
+  coincideFace(prism, face) {
     switch (face) {
-      case ActuatorFace.LEFT:
-        return coincideSquareVertices(this.vertices, prism.vertices, 0, 1, 3, 2, 4, 5, 3, 2) // left-right
-            || coincideSquareVertices(this.vertices, prism.vertices, 0, 1, 3, 2, 1, 0, 2, 3); // left-left
-      case ActuatorFace.RIGHT:
-        return coincideSquareVertices(this.vertices, prism.vertices, 2, 3, 5, 4, 2, 3, 1, 0) // right-left
-            || coincideSquareVertices(this.vertices, prism.vertices, 2, 3, 5, 4, 3, 2, 4, 5); // right-right
+      case JunctionFace.LEFT:
+        if (coincideSquareVertices(this.vertices, prism.vertices, 0, 1, 3, 2, 4, 5, 3, 2)) {
+          return JunctionFace.RIGHT;
+        }
+        if (coincideSquareVertices(this.vertices, prism.vertices, 0, 1, 3, 2, 1, 0, 2, 3)) {
+          return JunctionFace.LEFT;
+        }
+        break;
+      case JunctionFace.RIGHT:
+        if (coincideSquareVertices(this.vertices, prism.vertices, 2, 3, 5, 4, 2, 3, 1, 0)) {
+          return JunctionFace.LEFT;
+        }
+        if (coincideSquareVertices(this.vertices, prism.vertices, 2, 3, 5, 4, 3, 2, 4, 5)) {
+          return JunctionFace.RIGHT;
+        }
+        break;
+      case JunctionFace.FRONT:
+        if (coincideTriangleVertices(this.vertices, prism.vertices, 1, 3, 5, 0, 2, 4)) {
+          return JunctionFace.BACK;
+        }
+        if (coincideTriangleVertices(this.vertices, prism.vertices, 1, 3, 5, 5, 3, 1)) {
+          return JunctionFace.FRONT;
+        }
+        break;
+      case JunctionFace.BACK:
+        if (coincideTriangleVertices(this.vertices, prism.vertices, 0, 2, 4, 1, 3, 5)) {
+          return JunctionFace.FRONT;
+        }
+        if (coincideTriangleVertices(this.vertices, prism.vertices, 0, 2, 4, 4, 2, 0)) {
+          return JunctionFace.BACK;
+        }
+        break;
+      case JunctionFace.BOTTOM:
+        if (coincideRectangleVertices(this.vertices, prism.vertices, 0, 1, 5, 4, 4, 5, 1, 0)
+            || coincideRectangleVertices(this.vertices, prism.vertices, 0, 1, 5, 4, 1, 0, 4, 5)) {
+          return JunctionFace.BOTTOM;
+        }
+        break;
       default:
-        return false;
+        break;
+    }
+  }
+
+  coincide(prism) {
+    for (const faceName in JunctionFace) {
+      const face = JunctionFace[faceName];
+      const coincidingFace = this.coincideFace(prism, face);
+      if (coincidingFace !== undefined) {
+        return {
+          baseFace: face,
+          targetFace: coincidingFace
+        }
+      }
     }
   }
 
@@ -261,4 +319,4 @@ class Prism extends Placeable {
 
 export default Prism;
 export { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE };
-export { ActuatorFace };
+export { JunctionFace };

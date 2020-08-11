@@ -1,5 +1,5 @@
 import { mat3, quat, vec3 } from 'gl-matrix';
-import Prism, { ActuatorFace } from './Prism';
+import Prism from './Prism';
 import Actuator from './Actuator';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
@@ -146,9 +146,13 @@ class Shape {
       junction.prisms = junction.prisms.filter(junctionPrism => this.prisms.every(shapePrism =>
           (shapePrism === prism) || !shapePrism.collides(junctionPrism)));
 
-      if ((junction.prisms.length === 0) && (junction.actuatorFace !== ActuatorFace.NONE)) {
+      if ((junction.prisms.length === 0) && junction.allowActuator) {
         for (const shapePrism of this.prisms) {
-          if ((shapePrism !== prism) && prism.coincidesActuatorFace(shapePrism, junction.actuatorFace)) {
+          if (shapePrism === prism) {
+            continue;
+          }
+          const coincidingFace = prism.coincideFace(shapePrism, junction.face);
+          if (coincidingFace !== undefined) {
             if (this.actuators.some(actuator =>
                 ((actuator.basePrismId === prism.id) && (actuator.targetPrismId === shapePrism.id))
                 || ((actuator.basePrismId === shapePrism.id) && (actuator.targetPrismId === prism.id)))) {
@@ -161,6 +165,8 @@ class Shape {
                 junction.normal[0], junction.normal[1], junction.normal[2],
                 junction.tangent[0], junction.tangent[1], junction.tangent[2],
                 binormal[0], binormal[1], binormal[2]));
+            actuator.baseFace = junction.face;
+            actuator.targetFace = coincidingFace;
             actuator.basePrismId = prism.id;
             actuator.targetPrismId = shapePrism.id;
             actuator.applyTransform(orientation);
@@ -175,6 +181,38 @@ class Shape {
       vec3.transformQuat(junction.tangent, junction.tangent, orientation);
     });
     return junctions.filter(junction => (junction.prisms.length > 0) || junction.actuator);
+  }
+
+  discoverParts() {
+    let parts = [];
+    for (const prism of this.prisms) {
+      const suitableParts = [];
+      for (const part of parts) {
+        for (const partPrism of part) {
+          const coincidence = prism.coincide(partPrism);
+          if ((coincidence !== undefined) && this.actuators.every(actuator =>
+              ((actuator.basePrismId !== prism.id) || (actuator.baseFace !== coincidence.baseFace))
+              && ((actuator.targetPrismId !== prism.id) || (actuator.targetFace !== coincidence.baseFace)))) {
+            suitableParts.push(part);
+            break;
+          }
+        }
+      }
+      let suitablePart;
+      if (suitableParts.length === 1) {
+        suitablePart = suitableParts[0];
+      } else if (suitableParts.length > 1) {
+        // Merge suitable parts
+        suitablePart = [].concat.apply([], suitableParts);
+        parts = parts.filter(part => !suitableParts.includes(part));
+        parts.push(suitablePart);
+      } else {
+        suitablePart = [];
+        parts.push(suitablePart);
+      }
+      suitablePart.push(prism);
+    }
+    return parts;
   }
 
   toArchive() {

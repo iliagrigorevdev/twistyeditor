@@ -376,10 +376,11 @@ class Viewport extends Component {
 
     if (this.props.mode === AppMode.SIMULATION) {
       this.simulation.step(deltaTime);
-      const transforms = this.simulation.prismWorldTransforms;
-      if (transforms && (transforms.length === this.shapeView.placeableViews.length)) {
-        for (let i = 0; i < this.shapeView.placeableViews.length; i++) {
-          const placeableView = this.shapeView.placeableViews[i];
+      const prismIds = this.simulation.prismIds;
+      if (prismIds) {
+        const transforms = this.simulation.prismWorldTransforms;
+        for (let i = 0; i < prismIds.length; i++) {
+          const placeableView = this.shapeView.findPlaceableView(prismIds[i]);
           const transform = transforms[i];
           this.setRenderableTransform(placeableView.renderable, transform.position,
               transform.orientation);
