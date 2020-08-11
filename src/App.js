@@ -63,7 +63,7 @@ class App extends Component {
 
   static archiveToShape(text) {
     const archive = JSON.parse(text);
-    if (archive.version !== 1) {
+    if (archive.version > ARCHIVE_VERSION) {
       alert("Unsupported version: " + archive.version);
       return;
     }
