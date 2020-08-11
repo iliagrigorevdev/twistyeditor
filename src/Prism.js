@@ -87,8 +87,7 @@ const PRISM_JUNCTIONS = [
           PRISM_LEFT_SLOPE_NORMAL, Math.PI),
       rotatedTransform(PRISM_LEFT_TRANSFORM, PRISM_LEFT_SLOPE_PIVOT_POINT,
           PRISM_LEFT_SLOPE_NORMAL, -0.5 * Math.PI)
-    ],
-    allowActuator: true
+    ]
   },
   {
     face: JunctionFace.RIGHT,
@@ -104,8 +103,7 @@ const PRISM_JUNCTIONS = [
           PRISM_RIGHT_SLOPE_NORMAL, Math.PI),
       rotatedTransform(PRISM_RIGHT_TRANSFORM, PRISM_RIGHT_SLOPE_PIVOT_POINT,
           PRISM_RIGHT_SLOPE_NORMAL, 0.5 * Math.PI)
-    ],
-    allowActuator: true
+    ]
   },
   {
     face: JunctionFace.FRONT,
@@ -115,8 +113,7 @@ const PRISM_JUNCTIONS = [
     tangent: vec3.fromValues(0, 1, 0),
     transforms: [
       createTransform(vec3.fromValues(0, 0, PRISM_SIDE))
-    ],
-    allowActuator: false
+    ]
   },
   {
     face: JunctionFace.BACK,
@@ -126,8 +123,7 @@ const PRISM_JUNCTIONS = [
     tangent: vec3.fromValues(0, 1, 0),
     transforms: [
       createTransform(vec3.fromValues(0, 0, -PRISM_SIDE))
-    ],
-    allowActuator: false
+    ]
   },
   {
     face: JunctionFace.BOTTOM,
@@ -138,8 +134,7 @@ const PRISM_JUNCTIONS = [
     transforms: [
       createTransform(vec3.fromValues(0, -PRISM_HEIGHT, 0),
           quat.fromEuler(quat.create(), 180, 0, 0))
-    ],
-    allowActuator: false
+    ]
   }
 ];
 
@@ -222,8 +217,7 @@ class Prism extends Placeable {
         pivot: pivot,
         normal: normal,
         tangent: tangent,
-        prisms: junctionPrisms,
-        allowActuator: junction.allowActuator
+        prisms: junctionPrisms
       });
     }
     return junctions;

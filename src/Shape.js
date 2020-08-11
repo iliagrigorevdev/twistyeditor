@@ -146,7 +146,7 @@ class Shape {
       junction.prisms = junction.prisms.filter(junctionPrism => this.prisms.every(shapePrism =>
           (shapePrism === prism) || !shapePrism.collides(junctionPrism)));
 
-      if ((junction.prisms.length === 0) && junction.allowActuator) {
+      if (junction.prisms.length === 0) {
         for (const shapePrism of this.prisms) {
           if (shapePrism === prism) {
             continue;
