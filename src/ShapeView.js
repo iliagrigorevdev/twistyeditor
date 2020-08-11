@@ -1,16 +1,16 @@
 import PlaceableView from './PlaceableView';
 
 class ShapeView {
-  constructor(shape, showActuators, viewport) {
+  constructor(shape, showSections, viewport) {
     this.shape = shape;
 
     this.placeableViews = new Map();
     for (const prism of this.shape.prisms) {
       this.placeableViews.set(prism.id, this.createPrismView(prism, viewport));
     }
-    if (showActuators) {
-      for (const actuator of this.shape.actuators) {
-        this.placeableViews.set(actuator.id, this.createActuatorView(actuator, viewport));
+    if (showSections) {
+      for (const section of this.shape.sections) {
+        this.placeableViews.set(section.id, this.createSectionView(section, viewport));
       }
     }
 
@@ -23,9 +23,9 @@ class ShapeView {
     return new PlaceableView(prism, renderable);
   }
 
-  createActuatorView(actuator, viewport) {
-    const renderable = viewport.createActuatorRenderable();
-    return new PlaceableView(actuator, renderable);
+  createSectionView(section, viewport) {
+    const renderable = viewport.createSectionRenderable();
+    return new PlaceableView(section, renderable);
   }
 
   destroy(viewport) {

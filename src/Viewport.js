@@ -47,7 +47,7 @@ const HIGHLIGHT_ANIMATION_TIME = 2;
 
 const KNOB_RADIUS = 0.4;
 
-const ACTUATOR_COLOR = "#4caf50";
+const SECTION_COLOR = "#4caf50";
 const INDICATION_COLOR = "#90caf960";
 const CREATION_COLOR = "#fff59d60";
 
@@ -59,7 +59,7 @@ const highcolMaterialUrl = "res/highcol.filamat";
 const knobMeshUrl = "res/knob.filamesh";
 const groundMaterialUrl = "res/ground.filamat";
 const groundTextureUrl = "res/ground.png";
-const actuatorMeshUrl = "res/actuator.filamesh";
+const sectionMeshUrl = "res/section.filamesh";
 
 const getPrismTextureUrl = ((maskIndex) => "res/prism" + maskIndex + ".png");
 const colorToFloat3 = ((color) => {
@@ -81,7 +81,7 @@ class Viewport extends Component {
   componentDidMount() {
     let assets = [iblUrl, prismMeshUrl, prismMaterialUrl,
         ghostMaterialUrl, highcolMaterialUrl, knobMeshUrl,
-        groundMaterialUrl, groundTextureUrl, actuatorMeshUrl];
+        groundMaterialUrl, groundTextureUrl, sectionMeshUrl];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
@@ -120,8 +120,8 @@ class Viewport extends Component {
     if (this.shapeView) {
       this.shapeView.destroy(this);
     }
-    const showActuators = (this.props.mode === AppMode.EDIT);
-    this.shapeView = new ShapeView(this.props.shape, showActuators, this);
+    const showSections = (this.props.mode === AppMode.EDIT);
+    this.shapeView = new ShapeView(this.props.shape, showSections, this);
     this.shapeView.addToScene(this);
     this.activePlaceableView = null;
     const activePlaceable = (this.props.mode === AppMode.EDIT
@@ -170,8 +170,8 @@ class Viewport extends Component {
     this.highcolMaterial = engine.createMaterial(highcolMaterialUrl);
     this.knobMesh = engine.loadFilamesh(knobMeshUrl);
     this.knobRenderables = [];
-    this.actuatorMesh = engine.loadFilamesh(actuatorMeshUrl);
-    this.actuatorRenderables = [];
+    this.sectionMesh = engine.loadFilamesh(sectionMeshUrl);
+    this.sectionRenderables = [];
 
     this.prismTextures = [];
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
@@ -302,10 +302,10 @@ class Viewport extends Component {
     return this.createRenderable(this.createGhostMaterial(), this.knobMesh);
   }
 
-  createActuatorRenderable(ghost = false) {
+  createSectionRenderable(ghost = false) {
     return this.createRenderable(
-        (ghost ? this.createGhostMaterial() : this.createHighcolMaterial(ACTUATOR_COLOR)),
-        this.actuatorMesh);
+        (ghost ? this.createGhostMaterial() : this.createHighcolMaterial(SECTION_COLOR)),
+        this.sectionMesh);
   }
 
   getBoundingBox(renderable) {
@@ -431,8 +431,8 @@ class Viewport extends Component {
       if (junctionIntersection && (!placeableIntersection
           || (junctionIntersection.hitDistance < placeableIntersection.hitDistance))) {
         this.pickedJunction = junctionIntersection.hitJunction;
-        if (this.pickedJunction.actuator) {
-          this.activatePrismActuator(this.availableJunctions, this.pickedJunction);
+        if (this.pickedJunction.section) {
+          this.activatePrismSection(this.availableJunctions, this.pickedJunction);
         } else {
           this.activatePrismKnob(this.availableJunctions, this.pickedJunction);
         }
@@ -453,8 +453,8 @@ class Viewport extends Component {
     }
 
     if (this.props.mode === AppMode.EDIT) {
-      if (this.pickedJunction && this.pickedJunction.actuator) {
-        this.addActuator(this.pickedJunction.actuator);
+      if (this.pickedJunction && this.pickedJunction.section) {
+        this.addSection(this.pickedJunction.section);
       } else if (this.activeJunctionPrism) {
         this.addPrism(this.activeJunctionPrism);
       } else if (!this.dragging && !this.pickedJunction) {
@@ -463,7 +463,7 @@ class Viewport extends Component {
       this.hideGhostPrism();
       if (this.availableJunctions) {
         this.showPrismKnobs(this.availableJunctions);
-        this.showPrismActuators(this.availableJunctions);
+        this.showPrismSections(this.availableJunctions);
       }
     }
 
@@ -477,7 +477,7 @@ class Viewport extends Component {
     const dx = e.clientX - this.pointerX;
     const dy = e.clientY - this.pointerY;
     if (this.dragging) {
-      if (this.pickedJunction && !this.pickedJunction.actuator) {
+      if (this.pickedJunction && !this.pickedJunction.section) {
         const ray = this.getCastingRay(e.clientX, e.clientY);
         const nearestJunctionPrism = this.pickNearestJunctionPrism(ray, this.pickedJunction);
         if (nearestJunctionPrism !== this.activeJunctionPrism) {
@@ -560,8 +560,8 @@ class Viewport extends Component {
     for (let i = 0; i < this.availableJunctions.length; i++) {
       const junction = this.availableJunctions[i];
       let junctionHitDistance;
-      if (junction.actuator) {
-        junctionHitDistance = junction.actuator.intersect(ray);
+      if (junction.section) {
+        junctionHitDistance = junction.section.intersect(ray);
       } else {
         junctionHitDistance = intersectSphere(ray, junction.pivot, KNOB_RADIUS);
       }
@@ -610,11 +610,11 @@ class Viewport extends Component {
     if ((placeable instanceof Prism) && this.activePlaceableView) {
       this.availableJunctions = this.shapeView.shape.getAvailableJunctions(placeable);
       this.showPrismKnobs(this.availableJunctions);
-      this.showPrismActuators(this.availableJunctions);
+      this.showPrismSections(this.availableJunctions);
     } else {
       this.availableJunctions = null;
       this.hidePrismKnobs();
-      this.hidePrismActuators();
+      this.hidePrismSections();
     }
     if (animate) {
       vec3.copy(this.lastPosition, this.targetPosition);
@@ -642,12 +642,12 @@ class Viewport extends Component {
     this.props.onShapeChange(shape, prism.id);
   }
 
-  addActuator(actuator) {
+  addSection(section) {
     const shape = this.shapeView.shape.clone();
-    actuator.id = ++shape.lastPlaceableId;
-    shape.actuators.push(actuator);
+    section.id = ++shape.lastPlaceableId;
+    shape.sections.push(section);
     shape.applyTransform();
-    this.props.onShapeChange(shape, actuator.id);
+    this.props.onShapeChange(shape, section.id);
   }
 
   updateHighlightColor(placeable) {
@@ -655,7 +655,7 @@ class Viewport extends Component {
     if (placeable instanceof Prism) {
       placeableColor = placeable.backgroundColor;
     } else {
-      placeableColor = ACTUATOR_COLOR;
+      placeableColor = SECTION_COLOR;
     }
     const primaryReadability = tinycolor.readability(placeableColor, HIGHLIGHT_PRIMARY_COLOR);
     const alternateReadability = tinycolor.readability(placeableColor, HIGHLIGHT_ALTERNATE_COLOR);
@@ -717,31 +717,31 @@ class Viewport extends Component {
     this.knobRenderables.forEach(knobRenderable => this.scene.remove(knobRenderable));
   }
 
-  showPrismActuators(junctions) {
+  showPrismSections(junctions) {
     let index = 0;
     for (const junction of junctions) {
-      if (!junction.actuator) {
+      if (!junction.section) {
         continue;
       }
-      if (this.actuatorRenderables.length <= index) {
-        this.actuatorRenderables.push(this.createActuatorRenderable(true));
+      if (this.sectionRenderables.length <= index) {
+        this.sectionRenderables.push(this.createSectionRenderable(true));
       }
-      const actuatorRenderable = this.actuatorRenderables[index];
-      this.setGhostColor(actuatorRenderable, INDICATION_COLOR);
-      this.setRenderableTransform(actuatorRenderable, junction.actuator.worldPosition,
-          junction.actuator.worldOrientation);
-      this.scene.addEntity(actuatorRenderable);
+      const sectionRenderable = this.sectionRenderables[index];
+      this.setGhostColor(sectionRenderable, INDICATION_COLOR);
+      this.setRenderableTransform(sectionRenderable, junction.section.worldPosition,
+          junction.section.worldOrientation);
+      this.scene.addEntity(sectionRenderable);
       index++;
     }
-    for (let i = index; i < this.actuatorRenderables.length; i++) {
-      this.scene.remove(this.actuatorRenderables[i])
+    for (let i = index; i < this.sectionRenderables.length; i++) {
+      this.scene.remove(this.sectionRenderables[i])
     }
   }
 
-  activatePrismActuator(junctions, activeJunction) {
+  activatePrismSection(junctions, activeJunction) {
     let index = -1;
     for (const junction of junctions) {
-      if (!junction.actuator) {
+      if (!junction.section) {
         continue;
       }
       index++;
@@ -749,14 +749,14 @@ class Viewport extends Component {
         break;
       }
     }
-    const actuatorRenderable = this.actuatorRenderables[index];
-    this.setGhostColor(actuatorRenderable, CREATION_COLOR);
-    this.hidePrismActuators();
-    this.scene.addEntity(actuatorRenderable);
+    const sectionRenderable = this.sectionRenderables[index];
+    this.setGhostColor(sectionRenderable, CREATION_COLOR);
+    this.hidePrismSections();
+    this.scene.addEntity(sectionRenderable);
   }
 
-  hidePrismActuators() {
-    this.actuatorRenderables.forEach(actuatorRenderable => this.scene.remove(actuatorRenderable));
+  hidePrismSections() {
+    this.sectionRenderables.forEach(sectionRenderable => this.scene.remove(sectionRenderable));
   }
 
   render() {

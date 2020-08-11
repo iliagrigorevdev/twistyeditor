@@ -4,6 +4,7 @@ import { COLOR_MASK_COUNT } from './Viewport';
 import ColorPicker from './ColorPicker';
 import { AppMode } from './App';
 import Prism from './Prism';
+import Section from './Section';
 
 class Toolbar extends Component {
   modifyShape(prevShape, shapeModifier) {
@@ -57,14 +58,14 @@ class Toolbar extends Component {
   handleDeletePrism(prevShape, prevPrism) {
     this.modifyShape(prevShape, (shape) => {
       shape.prisms = shape.prisms.filter(prism => prism.id !== prevPrism.id);
-      shape.actuators = shape.actuators.filter(actuator => (actuator.basePrismId !== prevPrism.id)
-          && (actuator.targetPrismId !== prevPrism.id));
+      shape.sections = shape.sections.filter(section => (section.basePrismId !== prevPrism.id)
+          && (section.targetPrismId !== prevPrism.id));
     });
   }
 
-  handleDeleteActuator(prevShape, prevActuator) {
+  handleDeleteSection(prevShape, prevSection) {
     this.modifyShape(prevShape, (shape) => {
-      shape.actuators = shape.actuators.filter(actuator => actuator.id !== prevActuator.id);
+      shape.sections = shape.sections.filter(section => section.id !== prevSection.id);
     });
   }
 
@@ -144,13 +145,13 @@ class Toolbar extends Component {
     );
   }
 
-  renderActuatorParams(shape, actuator) {
+  renderSectionParams(shape, section) {
     return (
       <div className="Group">
-        <h3>Actuator</h3>
+        <h3>Section</h3>
         <p>
-          <button id="deleteActuator" name="deleteActuator"
-            onClick={() => this.handleDeleteActuator(shape, actuator)}>Delete</button>
+          <button id="deleteSection" name="deleteSection"
+            onClick={() => this.handleDeleteSection(shape, section)}>Delete</button>
         </p>
       </div>
     );
@@ -161,8 +162,8 @@ class Toolbar extends Component {
     if (activePlaceable) {
       if (activePlaceable instanceof Prism) {
         return this.renderPrismParams(this.props.shape, activePlaceable);
-      } else {
-        return this.renderActuatorParams(this.props.shape, activePlaceable);
+      } else if (activePlaceable instanceof Section) {
+        return this.renderSectionParams(this.props.shape, activePlaceable);
       }
     } else {
       return this.renderShapeParams(this.props.shape);

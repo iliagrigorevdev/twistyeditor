@@ -2,10 +2,10 @@ import Placeable from './Placeable';
 import { createCylinder, intersectCylinder } from './Collision';
 import { vec3, quat } from 'gl-matrix';
 
-const ACTUATOR_RADIUS = 1;
-const ACTUATOR_DEPTH = 0.3;
+const SECTION_RADIUS = 1;
+const SECTION_DEPTH = 0.3;
 
-class Actuator extends Placeable {
+class Section extends Placeable {
   constructor() {
     super();
     this.baseFace = undefined;
@@ -18,7 +18,7 @@ class Actuator extends Placeable {
     const normal = vec3.fromValues(1, 0, 0);
     vec3.transformQuat(normal, normal, this.worldOrientation);
     const cylinder = createCylinder(this.worldPosition, normal,
-        ACTUATOR_RADIUS, ACTUATOR_DEPTH, true);
+        SECTION_RADIUS, SECTION_DEPTH, true);
     return intersectCylinder(ray, cylinder);
   }
 
@@ -45,14 +45,14 @@ class Actuator extends Placeable {
   }
 
   clone() {
-    const actuator = new Actuator();
-    actuator.copy(this);
-    actuator.baseFace = this.baseFace;
-    actuator.targetFace = this.targetFace;
-    actuator.basePrismId = this.basePrismId;
-    actuator.targetPrismId = this.targetPrismId;
-    return actuator;
+    const section = new Section();
+    section.copy(this);
+    section.baseFace = this.baseFace;
+    section.targetFace = this.targetFace;
+    section.basePrismId = this.basePrismId;
+    section.targetPrismId = this.targetPrismId;
+    return section;
   }
 }
 
-export default Actuator;
+export default Section;
