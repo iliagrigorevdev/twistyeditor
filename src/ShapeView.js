@@ -18,13 +18,12 @@ class ShapeView {
   }
 
   createPrismView(prism, viewport) {
-    const renderable = viewport.createPrismRenderable(prism.colorMask,
-        prism.backgroundColor, prism.foregroundColor);
+    const renderable = viewport.createPrismRenderable(prism);
     return new PlaceableView(prism, renderable);
   }
 
   createSectionView(section, viewport) {
-    const renderable = viewport.createSectionRenderable();
+    const renderable = viewport.createSectionRenderable(section);
     return new PlaceableView(section, renderable);
   }
 

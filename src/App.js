@@ -5,7 +5,7 @@ import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
 
-const ARCHIVE_VERSION = 2;
+const ARCHIVE_VERSION = 3;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 

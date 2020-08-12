@@ -2,16 +2,30 @@ import Placeable from './Placeable';
 import { createCylinder, intersectCylinder } from './Collision';
 import { vec3, quat } from 'gl-matrix';
 
+const SectionType = Object.freeze({
+  SEPARATOR: 0,
+  ACTUATOR: 1
+});
+
 const SECTION_RADIUS = 1;
 const SECTION_DEPTH = 0.3;
+
+const SECTION_PROPERTIES = new Map([
+  [SectionType.ACTUATOR, [
+    { name: "lowerAngle", min: -180, max: 0, default: -180 },
+    { name: "upperAngle", min: 0, max: 180, default: 180 }
+  ]]
+]);
 
 class Section extends Placeable {
   constructor() {
     super();
+    this.type = SectionType.SEPARATOR;
     this.baseFace = undefined;
     this.targetFace = undefined;
     this.basePrismId = 0;
     this.targetPrismId = 0;
+    this.properties = new Map();
   }
 
   intersect(ray) {
@@ -22,20 +36,86 @@ class Section extends Placeable {
     return intersectCylinder(ray, cylinder);
   }
 
+  getProperties() {
+    const mergedProperties = [];
+    const sectionProperties = SECTION_PROPERTIES.get(this.type);
+    if (sectionProperties) {
+      for (const sectionProperty of sectionProperties) {
+        let value;
+        if (this.properties.has(sectionProperty.name)) {
+          value = this.properties.get(sectionProperty.name);
+        } else {
+          value = sectionProperty.default;
+        }
+        const mergedProperty = Object.assign({}, sectionProperty);
+        mergedProperty.value = value;
+        mergedProperties.push(mergedProperty);
+      }
+    }
+    return mergedProperties;
+  }
+
+  getPropertyLabel(name) {
+    return name
+      .split(/(?=[A-Z])/)
+      .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(' ');
+  }
+
+  getProperty(name) {
+    const sectionProperties = SECTION_PROPERTIES.get(this.type);
+    if (sectionProperties) {
+      return sectionProperties.find(property => property.name === name);
+    }
+  }
+
+  getPropertyValue(name) {
+    if (this.properties.has(name)) {
+      return this.properties.get(name);
+    }
+    const property = this.getProperty(name);
+    if (property) {
+      return property.default;
+    }
+  }
+
+  setPropertyValue(name, value) {
+    this.properties.set(name, this.validatePropertyValue(name, value));
+  }
+
+  validatePropertyValue(name, value) {
+    const property = this.getProperty(name);
+    if (property) {
+      if (isNaN(value)) {
+        return property.default;
+      } else {
+        return Math.max(property.min, Math.min(property.max, value));
+      }
+    } else {
+      return value;
+    }
+  }
+
   toArchive() {
     return {
       id: this.id,
+      type: this.type,
       baseFace: this.baseFace,
       targetFace: this.targetFace,
       basePrismId: this.basePrismId,
       targetPrismId: this.targetPrismId,
+      properties: Array.from(this.properties.entries()),
       position: this.position,
       orientation: this.orientation
     };
   }
 
-  fromArchive(archive) {
+  fromArchive(archive, version) {
     this.id = archive.id;
+    if (version >= 3) {
+      this.type = archive.type;
+      this.properties = new Map(archive.properties);
+    }
     this.baseFace = archive.baseFace;
     this.targetFace = archive.targetFace;
     this.basePrismId = archive.basePrismId;
@@ -47,12 +127,15 @@ class Section extends Placeable {
   clone() {
     const section = new Section();
     section.copy(this);
+    section.type = this.type;
     section.baseFace = this.baseFace;
     section.targetFace = this.targetFace;
     section.basePrismId = this.basePrismId;
     section.targetPrismId = this.targetPrismId;
+    section.properties = new Map(this.properties);
     return section;
   }
 }
 
 export default Section;
+export { SectionType };

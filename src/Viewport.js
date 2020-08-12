@@ -7,6 +7,7 @@ import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
 import Simulation from './Simulation';
 import Prism from './Prism';
+import Section, { SectionType } from './Section';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -47,7 +48,10 @@ const HIGHLIGHT_ANIMATION_TIME = 2;
 
 const KNOB_RADIUS = 0.4;
 
-const SECTION_COLOR = "#4caf50";
+const SECTION_COLORS = new Map([
+  [SectionType.SEPARATOR, "#4caf50"],
+  [SectionType.ACTUATOR, "#ff9800"]
+]);
 const INDICATION_COLOR = "#90caf960";
 const CREATION_COLOR = "#fff59d60";
 
@@ -283,28 +287,31 @@ class Viewport extends Component {
     return material;
   }
 
-  createPrismRenderable(colorMask, backgroundColor, foregroundColor) {
-    const validColorMask = (colorMask >= 0) && (colorMask < COLOR_MASK_COUNT)
-        ? colorMask : 0;
+  createPrismRenderable(prism) {
+    const validColorMask = (prism.colorMask >= 0) && (prism.colorMask < COLOR_MASK_COUNT)
+        ? prism.colorMask : 0;
     const material = this.prismMaterial.createInstance();
     material.setTextureParameter("colorMask",
         this.prismTextures[validColorMask], this.prismTextureSampler);
     material.setColor3Parameter("backgroundColor",
-        window.Filament.RgbType.sRGB, colorToFloat3(backgroundColor));
+        window.Filament.RgbType.sRGB, colorToFloat3(prism.backgroundColor));
     material.setColor3Parameter("foregroundColor",
-        window.Filament.RgbType.sRGB, colorToFloat3(foregroundColor));
+        window.Filament.RgbType.sRGB, colorToFloat3(prism.foregroundColor));
     material.setColor4Parameter("highlightColor",
         window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
     return this.createRenderable(material, this.prismMesh);
   }
 
-  createKnobRenderable() {
+  createGhostKnobRenderable() {
     return this.createRenderable(this.createGhostMaterial(), this.knobMesh);
   }
 
-  createSectionRenderable(ghost = false) {
-    return this.createRenderable(
-        (ghost ? this.createGhostMaterial() : this.createHighcolMaterial(SECTION_COLOR)),
+  createGhostSectionRenderable() {
+    return this.createRenderable(this.createGhostMaterial(), this.sectionMesh);
+  }
+
+  createSectionRenderable(section) {
+    return this.createRenderable(this.createHighcolMaterial(SECTION_COLORS.get(section.type)),
         this.sectionMesh);
   }
 
@@ -654,8 +661,11 @@ class Viewport extends Component {
     let placeableColor;
     if (placeable instanceof Prism) {
       placeableColor = placeable.backgroundColor;
-    } else {
-      placeableColor = SECTION_COLOR;
+    } else if (placeable instanceof Section) {
+      placeableColor = SECTION_COLORS.get(placeable.type);
+    }
+    if (!placeableColor) {
+      return;
     }
     const primaryReadability = tinycolor.readability(placeableColor, HIGHLIGHT_PRIMARY_COLOR);
     const alternateReadability = tinycolor.readability(placeableColor, HIGHLIGHT_ALTERNATE_COLOR);
@@ -691,7 +701,7 @@ class Viewport extends Component {
 
   showPrismKnobs(junctions) {
     while (this.knobRenderables.length < junctions.length) {
-      this.knobRenderables.push(this.createKnobRenderable());
+      this.knobRenderables.push(this.createGhostKnobRenderable());
     }
     for (let i = 0; i < junctions.length; i++) {
       const junction = junctions[i];
@@ -724,7 +734,7 @@ class Viewport extends Component {
         continue;
       }
       if (this.sectionRenderables.length <= index) {
-        this.sectionRenderables.push(this.createSectionRenderable(true));
+        this.sectionRenderables.push(this.createGhostSectionRenderable());
       }
       const sectionRenderable = this.sectionRenderables[index];
       this.setGhostColor(sectionRenderable, INDICATION_COLOR);

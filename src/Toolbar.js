@@ -4,7 +4,7 @@ import { COLOR_MASK_COUNT } from './Viewport';
 import ColorPicker from './ColorPicker';
 import { AppMode } from './App';
 import Prism from './Prism';
-import Section from './Section';
+import Section, { SectionType } from './Section';
 
 class Toolbar extends Component {
   modifyShape(prevShape, shapeModifier) {
@@ -14,10 +14,10 @@ class Toolbar extends Component {
     this.props.onShapeChange(shape);
   }
 
-  modifyPrism(prevShape, prevPrism, prismModifier) {
+  modifyPlaceable(prevShape, prevPlaceable, placeableModifier) {
     this.modifyShape(prevShape, (shape) => {
-      const prism = shape.findPlaceable(prevPrism.id);
-      prismModifier(prism);
+      const placeable = shape.findPlaceable(prevPlaceable.id);
+      placeableModifier(placeable);
     });
   }
 
@@ -34,22 +34,22 @@ class Toolbar extends Component {
   }
 
   handleColorMaskChange(prevShape, prevPrism, colorMask) {
-    this.modifyPrism(prevShape, prevPrism,
+    this.modifyPlaceable(prevShape, prevPrism,
         (prism) => prism.colorMask = parseInt(colorMask) || 0);
   }
 
   handleBackgroundColorChange(prevShape, prevPrism, color) {
-    this.modifyPrism(prevShape, prevPrism,
+    this.modifyPlaceable(prevShape, prevPrism,
         (prism) => prism.backgroundColor = color);
   }
 
   handleForegroundColorChange(prevShape, prevPrism, color) {
-    this.modifyPrism(prevShape, prevPrism,
+    this.modifyPlaceable(prevShape, prevPrism,
         (prism) => prism.foregroundColor = color);
   }
 
   handleSwapColors(prevShape, prevPrism) {
-    this.modifyPrism(prevShape, prevPrism, (prism) => {
+    this.modifyPlaceable(prevShape, prevPrism, (prism) => {
       prism.foregroundColor = prevPrism.backgroundColor;
       prism.backgroundColor = prevPrism.foregroundColor;
     });
@@ -60,6 +60,18 @@ class Toolbar extends Component {
       shape.prisms = shape.prisms.filter(prism => prism.id !== prevPrism.id);
       shape.sections = shape.sections.filter(section => (section.basePrismId !== prevPrism.id)
           && (section.targetPrismId !== prevPrism.id));
+    });
+  }
+
+  handleSectionTypeChange(prevShape, prevSection, type) {
+    this.modifyPlaceable(prevShape, prevSection, (section) => {
+      section.type = parseInt(type);
+    });
+  }
+
+  handleSectionPropertyChange(prevShape, prevSection, name, value) {
+    this.modifyPlaceable(prevShape, prevSection, (section) => {
+      section.setPropertyValue(name, parseFloat(value));
     });
   }
 
@@ -149,6 +161,27 @@ class Toolbar extends Component {
     return (
       <div className="Group">
         <h3>Section</h3>
+        <p>
+          <label htmlFor="sectionType">Type : </label>
+          <select id="sectionType" name="sectionType" value={section.type}
+              onChange={e => this.handleSectionTypeChange(shape, section, e.target.value)}>
+            {Object.keys(SectionType).map(typeName => {
+              const type = SectionType[typeName];
+              return <option value={type} key={type}>
+                {typeName.charAt(0) + typeName.substring(1).toLowerCase()}
+              </option>
+            })}
+          </select>
+        </p>
+        {section.getProperties().map(property => {
+          const key = "section_" + property.name;
+          return <p key={key}>
+            <label htmlFor={key}>{section.getPropertyLabel(property.name)} : </label>
+            <input id={key} name={key}
+              type="number" min={property.min} max={property.max} value={property.value}
+              onChange={e => this.handleSectionPropertyChange(shape, section, property.name, e.target.value)} />
+          </p>
+        })}
         <p>
           <button id="deleteSection" name="deleteSection"
             onClick={() => this.handleDeleteSection(shape, section)}>Delete</button>

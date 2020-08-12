@@ -2,7 +2,9 @@ import Ammo from 'ammo.js';
 import { vec3, quat, mat3 } from 'gl-matrix';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
 import { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE } from './Prism';
+import { SectionType } from './Section';
 
+const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
 
 const MAX_SUB_STEPS = 10;
@@ -42,8 +44,8 @@ const PRISM_INERTIA_X = 2 / 9 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Y = 1 / 3 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Z = 2 / 9 * PRISM_INERTIA_FACTOR;
 
-const FRICTION_GROUND = 0.5;
-const FRICTION_PRISM = 0.5;
+const FRICTION_GROUND = 0.9;
+const FRICTION_PRISM = 0.3;
 const RESTITUTION_GROUND = 0.5;
 const RESTITUTION_PRISM = 0.5;
 const GROUP_GROUND = 0x01;
@@ -116,6 +118,11 @@ class Simulation {
     for (let i = 0; i < parts.length; i++) {
       console.log("Part " + (i + 1) + "/" + parts.length + ":");
       this.addShapePartBody(Ammo, parts[i]);
+    }
+    for (const section of shape.sections) {
+      if (section.type === SectionType.ACTUATOR) {
+        this.addActuator(Ammo, shape, parts, section);
+      }
     }
   }
 
@@ -205,6 +212,53 @@ class Simulation {
         + "} angle=" + (principalAngle * RADIANS_TO_DEGREES).toFixed(0));
   }
 
+  addActuator(Ammo, shape, parts, section) {
+    const basePrism = shape.findPlaceable(section.basePrismId);
+    const targetPrism = shape.findPlaceable(section.targetPrismId);
+    const basePartIndex = parts.findIndex(part => part.some(prism => prism === basePrism));
+    const targetPartIndex = parts.findIndex(part => part.some(prism => prism === targetPrism));
+    if (basePartIndex === -1) {
+      console.log("Base part not found");
+      return;
+    }
+    if (targetPartIndex === -1) {
+      console.log("Target part not found");
+      return;
+    }
+    if (basePartIndex === targetPartIndex) {
+      console.log("Actuator must connect different parts");
+      return;
+    }
+
+    const basePartBody = this.shapeParts[basePartIndex].partBody;
+    const targetPartBody = this.shapeParts[targetPartIndex].partBody;
+    const sectionTransform = createTransform(section.worldPosition, section.worldOrientation);
+    const frameInA = multiplyTransforms(createTransform(),
+        inverseTransform(createTransform(), this.getPartTransform(basePartBody)), sectionTransform);
+    const frameInB = multiplyTransforms(createTransform(),
+        inverseTransform(createTransform(), this.getPartTransform(targetPartBody)), sectionTransform);
+
+    const constraint = new Ammo.btGeneric6DofConstraint(basePartBody, targetPartBody,
+        convertTransform(Ammo, frameInA), convertTransform(Ammo, frameInB), true);
+    constraint.setLinearLowerLimit(new Ammo.btVector3(0, 0, 0));
+    constraint.setLinearUpperLimit(new Ammo.btVector3(0, 0, 0));
+    constraint.setAngularLowerLimit(new Ammo.btVector3(
+        section.getPropertyValue("lowerAngle") * DEGREES_TO_RADIANS, 0, 0));
+    constraint.setAngularUpperLimit(new Ammo.btVector3(
+        section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS, 0, 0));
+    this.dynamicsWorld.addConstraint(constraint);
+  }
+
+  getPartTransform(partBody) {
+    partBody.getMotionState().getWorldTransform(this.partBtTransform);
+    const partPosition = this.partBtTransform.getOrigin();
+    const partOrientation = this.partBtTransform.getRotation();
+    vec3.set(this.partTransform.position, partPosition.x(), partPosition.y(), partPosition.z());
+    quat.set(this.partTransform.orientation, partOrientation.x(), partOrientation.y(),
+        partOrientation.z(), partOrientation.w());
+    return this.partTransform;
+  }
+
   updatePrismTransforms() {
     if (!this.shapeParts) {
       return;
@@ -212,15 +266,9 @@ class Simulation {
 
     let prismOffset = 0;
     for (const shapePart of this.shapeParts) {
-      shapePart.partBody.getMotionState().getWorldTransform(this.partBtTransform);
-      const partPosition = this.partBtTransform.getOrigin();
-      const partOrientation = this.partBtTransform.getRotation();
-      vec3.set(this.partTransform.position, partPosition.x(), partPosition.y(), partPosition.z());
-      quat.set(this.partTransform.orientation, partOrientation.x(), partOrientation.y(),
-          partOrientation.z(), partOrientation.w());
-
+      const partTransform = this.getPartTransform(shapePart.partBody);
       for (let i = 0; i < shapePart.prismCount; i++) {
-        multiplyTransforms(this.prismWorldTransforms[prismOffset + i], this.partTransform,
+        multiplyTransforms(this.prismWorldTransforms[prismOffset + i], partTransform,
             this.prismLocalTransforms[prismOffset + i]);
       }
       prismOffset += shapePart.prismCount;

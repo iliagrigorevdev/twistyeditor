@@ -237,7 +237,7 @@ class Shape {
     } else {
       this.sections = archive.sections.map(sectionArchive => {
         const section = new Section();
-        section.fromArchive(sectionArchive);
+        section.fromArchive(sectionArchive, version);
         return section;
       });
       this.lastPlaceableId = archive.lastPlaceableId;
