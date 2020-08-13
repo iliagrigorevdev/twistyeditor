@@ -55,8 +55,6 @@ const MASK_PRISM = GROUP_GROUND | GROUP_PRISM;
 
 class Simulation {
   constructor(shape) {
-    this.shape = shape;
-
     Ammo().then((Ammo) => {
       this.init(Ammo);
 
@@ -114,14 +112,22 @@ class Simulation {
   }
 
   addShapeBody(Ammo, shape) {
-    const parts = shape.discoverParts();
+    let finalShape = shape.clone();
+    finalShape.applyInitialAngles();
+    if (finalShape.hasPrismCollisions()) {
+      console.log("Cannot apply initial angles due to intersections between prisms");
+      finalShape = shape;
+    }
+
+    const parts = finalShape.discoverParts();
     for (let i = 0; i < parts.length; i++) {
       console.log("Part " + (i + 1) + "/" + parts.length + ":");
       this.addShapePartBody(Ammo, parts[i]);
     }
-    for (const section of shape.sections) {
+
+    for (const section of finalShape.sections) {
       if (section.type === SectionType.ACTUATOR) {
-        this.addActuator(Ammo, shape, parts, section);
+        this.addActuator(Ammo, finalShape, parts, section);
       }
     }
   }

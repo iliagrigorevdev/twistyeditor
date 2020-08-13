@@ -1,6 +1,6 @@
 import { mat3, quat, vec3 } from 'gl-matrix';
 import Prism from './Prism';
-import Section from './Section';
+import Section, { SectionType } from './Section';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const DEFAULT_BACKGROUND_COLOR = "#1976d2";
@@ -138,6 +138,19 @@ class Shape {
     };
   }
 
+  hasPrismCollisions() {
+    for (let i = 0; i < this.prisms.length; i++) {
+      const prism = this.prisms[i];
+      for (let j = i + 1; j < this.prisms.length; j++) {
+        const otherPrism = this.prisms[j];
+        if (prism.collides(otherPrism)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   getAvailableJunctions(prism) {
     const orientation = this.getOrientation();
     let junctions = prism.getJunctions();
@@ -213,6 +226,103 @@ class Shape {
       suitablePart.push(prism);
     }
     return parts;
+  }
+
+  findValidSectionRefs(section, parts) {
+    const basePrism = this.findPlaceable(section.basePrismId);
+    const targetPrism = this.findPlaceable(section.targetPrismId);
+    const basePart = parts.find(part => part.some(prism => prism === basePrism));
+    const targetPart = parts.find(part => part.some(prism => prism === targetPrism));
+    if (!basePart || !targetPart) {
+      console.log("Section parts not found");
+    }
+    if (basePart === targetPart) {
+      console.log("Section must connect different parts");
+    }
+    return {
+      basePart: basePart,
+      targetPart: targetPart
+    };
+  }
+
+  findPartSections(part) {
+    return this.sections.filter(section => part.some(prism =>
+        (prism.id === section.basePrismId) || prism.id === section.targetPrismId));
+  }
+
+  findChildParts(rootPart, parentPart, parentSection, parts, childParts = []) {
+    if (childParts.length === 0) {
+      childParts.push(parentPart);
+    }
+    for (const section of this.sections) {
+      if ((section.type === SectionType.SEPARATOR) || (section === parentSection)) {
+        continue;
+      }
+      const sectionRefs = this.findValidSectionRefs(section, parts);
+      if (!sectionRefs) {
+        return;
+      }
+      const childPart = (sectionRefs.basePart === parentPart ? sectionRefs.targetPart
+          : (sectionRefs.targetPart === parentPart ? sectionRefs.basePart : null));
+      if (!childPart) {
+        continue;
+      }
+      if ((childPart === rootPart) || childParts.find(part => part === childPart)) {
+        console.log("Child parts must not be looped");
+        return;
+      }
+      childParts.push(childPart);
+      if (!this.findChildParts(rootPart, childPart, section, parts, childParts)) {
+        return;
+      }
+    }
+    return childParts;
+  }
+
+  applyInitialAngles() {
+    let parts;
+    const positionInversed = vec3.create();
+    const axis = vec3.create();
+    const rotation = quat.create();
+    for (const section of this.sections) {
+      if (section.type !== SectionType.ACTUATOR) {
+        continue;
+      }
+      const initialAngle = section.getPropertyValue("initialAngle");
+      if (initialAngle === 0) {
+        continue;
+      }
+      if (!parts) {
+        parts = this.discoverParts();
+      }
+      const sectionRefs = this.findValidSectionRefs(section, parts);
+      if (!sectionRefs) {
+        return;
+      }
+      const childParts = this.findChildParts(sectionRefs.basePart,
+          sectionRefs.targetPart, section, parts);
+      if (!childParts) {
+        console.log("Failed to apply initial angle");
+        continue;
+      }
+      vec3.negate(positionInversed, section.position);
+      vec3.transformQuat(axis, vec3.set(axis, 1, 0, 0), section.orientation);
+      quat.setAxisAngle(rotation, axis, initialAngle * DEGREES_TO_RADIANS);
+      for (const childPart of childParts) {
+        const partSections = this.findPartSections(childPart);
+        [...childPart, ...partSections].forEach(placeable => {
+          if (placeable === section) {
+            return;
+          }
+          placeable.translate(positionInversed);
+          placeable.rotate(rotation);
+          placeable.translate(section.position);
+        });
+      }
+    }
+    if (parts) {
+      this.applyTransform();
+    }
   }
 
   toArchive() {
