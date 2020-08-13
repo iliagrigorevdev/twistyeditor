@@ -307,6 +307,12 @@ class Prism extends Placeable {
     prism.colorMask = this.colorMask;
     prism.backgroundColor = this.backgroundColor;
     prism.foregroundColor = this.foregroundColor;
+    for (let i = 0; i < this.vertices.length; i++) {
+      vec3.copy(prism.vertices[i], this.vertices[i]);
+    }
+    for (let i = 0; i < this.polygonNormals.length; i++) {
+      vec3.copy(prism.polygonNormals[i], this.polygonNormals[i]);
+    }
     return prism;
   }
 }
