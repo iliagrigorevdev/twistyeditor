@@ -9,6 +9,7 @@ const RADIANS_TO_DEGREES = 180 / Math.PI;
 
 const MAX_SUB_STEPS = 10;
 const FIXED_TIME_STEP = 1 / 60;
+const SIMULATION_START_DELAY = 0.5;
 
 const GRAVITY = 9.81;
 
@@ -70,6 +71,7 @@ class Simulation {
     this.prismLocalTransforms = [];
     this.partBtTransform = new Ammo.btTransform();
     this.partTransform = createTransform();
+    this.simulationTime = 0;
 
     this.collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
     this.dispatcher = new Ammo.btCollisionDispatcher(this.collisionConfiguration);
@@ -283,6 +285,11 @@ class Simulation {
 
   step(deltaTime) {
     if (!this.dynamicsWorld) {
+      return;
+    }
+
+    this.simulationTime += deltaTime;
+    if (this.simulationTime < SIMULATION_START_DELAY) {
       return;
     }
 
