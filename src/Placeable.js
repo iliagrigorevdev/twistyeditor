@@ -21,6 +21,7 @@ class Placeable {
   rotate(rotation) {
     vec3.transformQuat(this.position, this.position, rotation);
     quat.multiply(this.orientation, rotation, this.orientation);
+    quat.normalize(this.orientation, this.orientation);
   }
 
   copy(placeable) {
