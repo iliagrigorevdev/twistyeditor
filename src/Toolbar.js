@@ -33,6 +33,10 @@ class Toolbar extends Component {
     this.modifyShape(prevShape, (shape) => shape.yaw = parseFloat(yaw) || 0);
   }
 
+  handleShowPoseChange(prevShape, showPose) {
+    this.modifyShape(prevShape, (shape) => shape.showPose = showPose);
+  }
+
   handleColorMaskChange(prevShape, prevPrism, colorMask) {
     this.modifyPlaceable(prevShape, prevPrism,
         (prism) => prism.colorMask = parseInt(colorMask) || 0);
@@ -102,6 +106,11 @@ class Toolbar extends Component {
           <input type="number" id="yaw" name="yaw" min="-180" max="180"
             step="15" value={shape.yaw}
             onChange={e => this.handleYawChange(shape, e.target.value)} />
+        </p>
+        <p>
+          <input type="checkbox" id="showPose" name="showPose" checked={shape.showPose}
+            onChange={e => this.handleShowPoseChange(shape, e.target.checked)} />
+          <label htmlFor="showPose">Show pose</label>
         </p>
         <h3>File</h3>
         <p>

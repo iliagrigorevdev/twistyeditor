@@ -105,7 +105,7 @@ class Viewport extends Component {
   handleModeChange() {
     this.refreshShapeView();
     if (this.props.mode === AppMode.SIMULATION) {
-      this.simulation = new Simulation(this.props.shape);
+      this.simulation = new Simulation(this.shape);
     } else if (this.simulation) {
       this.simulation = null;
     }
@@ -124,20 +124,28 @@ class Viewport extends Component {
     if (this.shapeView) {
       this.shapeView.destroy(this);
     }
+    this.originalShape = this.props.shape;
+    if (this.originalShape.showPose) {
+      this.shape = this.originalShape.clone();
+      this.shape.applyInitialAngles();
+      if (this.shape.hasPrismIntersections()) {
+        console.log("Shape has intersections between prisms");
+      }
+    } else {
+      this.shape = this.originalShape;
+    }
     const showSections = (this.props.mode === AppMode.EDIT);
-    this.shapeView = new ShapeView(this.props.shape, showSections, this);
+    this.shapeView = new ShapeView(this.shape, showSections, this);
     this.shapeView.addToScene(this);
     this.activePlaceableView = null;
     const activePlaceable = (this.props.mode === AppMode.EDIT
-        ? this.props.shape.findPlaceable(this.props.activePlaceableId) : null);
+        ? this.shape.findPlaceable(this.props.activePlaceableId) : null);
     this.selectPlaceable(activePlaceable, true, false);
   }
 
   init() {
     this.elevation = DEFAULT_ELEVATION;
     this.heading = DEFAULT_HEADING;
-    this.activePlaceableView = null;
-    this.availableJunctions = null;
     this.focalLengthMin = CAMERA_FOCAL_LENGTH_MIN;
     this.focalLengthMax = CAMERA_FOCAL_LENGTH_MAX;
     this.cameraZoom = 1;
@@ -149,6 +157,13 @@ class Viewport extends Component {
     this.highlightColor = [0, 0, 0, 0];
     this.animationTimer = 0;
     this.highlightTimer = 0;
+
+    this.shape = null;
+    this.originalShape = null;
+    this.shapeView = null;
+    this.activePlaceableView = null;
+    this.availableJunctions = null;
+    this.originalAvailableJunctions = null;
 
     this.pressing = false;
     this.dragging = false;
@@ -430,7 +445,7 @@ class Viewport extends Component {
 
     if (this.props.mode === AppMode.EDIT) {
       const ray = this.getCastingRay(e.clientX, e.clientY);
-      const placeableIntersection = this.shapeView.shape.intersect(ray);
+      const placeableIntersection = this.shape.intersect(ray);
       let junctionIntersection;
       if (this.props.activePlaceableId) {
         junctionIntersection = this.intersectJunctions(ray);
@@ -460,11 +475,19 @@ class Viewport extends Component {
     }
 
     if (this.props.mode === AppMode.EDIT) {
-      if (this.pickedJunction && this.pickedJunction.section) {
-        this.addSection(this.pickedJunction.section);
-      } else if (this.activeJunctionPrism) {
-        this.addPrism(this.activeJunctionPrism);
-      } else if (!this.dragging && !this.pickedJunction) {
+      if (this.pickedJunction) {
+        if (this.pickedJunction.section || this.activeJunctionPrism) {
+          const junctionIndex = this.availableJunctions.indexOf(this.pickedJunction);
+          const originalPickedJunction = this.originalAvailableJunctions[junctionIndex];
+          if (originalPickedJunction.section) {
+            this.addSection(originalPickedJunction.section);
+          } else {
+            const activeJunctionPrismIndex = this.pickedJunction.prisms.findIndex(prism => prism === this.activeJunctionPrism);
+            const originalActiveJunctionPrism = originalPickedJunction.prisms[activeJunctionPrismIndex];
+            this.addPrism(originalActiveJunctionPrism);
+          }
+        }
+      } else if (!this.dragging) {
         this.selectPlaceable(this.pickedPlaceable, true, true);
       }
       this.hideGhostPrism();
@@ -615,11 +638,14 @@ class Viewport extends Component {
       this.updateHighlightColor(placeable);
     }
     if ((placeable instanceof Prism) && this.activePlaceableView) {
-      this.availableJunctions = this.shapeView.shape.getAvailableJunctions(placeable);
+      const originalPlaceable = this.originalShape.findPlaceable(placeable.id);
+      this.availableJunctions = this.shape.getAvailableJunctions(placeable);
+      this.originalAvailableJunctions = this.originalShape.getAvailableJunctions(originalPlaceable);
       this.showPrismKnobs(this.availableJunctions);
       this.showPrismSections(this.availableJunctions);
     } else {
       this.availableJunctions = null;
+      this.originalAvailableJunctions = null;
       this.hidePrismKnobs();
       this.hidePrismSections();
     }
@@ -630,8 +656,8 @@ class Viewport extends Component {
         vec3.copy(this.targetPosition, placeable.worldPosition);
         this.targetZoom = 1;
       } else {
-        vec3.copy(this.targetPosition, this.shapeView.shape.aabb.center);
-        this.targetZoom = this.computeAutoZoom(this.shapeView.shape);
+        vec3.copy(this.targetPosition, this.shape.aabb.center);
+        this.targetZoom = this.computeAutoZoom(this.shape);
       }
       this.animationTimer = 0;
       this.highlightTimer = 0;
@@ -642,7 +668,7 @@ class Viewport extends Component {
   }
 
   addPrism(prism) {
-    const shape = this.shapeView.shape.clone();
+    const shape = this.originalShape.clone();
     prism.id = ++shape.lastPlaceableId;
     shape.prisms.push(prism);
     shape.applyTransform();
@@ -650,7 +676,7 @@ class Viewport extends Component {
   }
 
   addSection(section) {
-    const shape = this.shapeView.shape.clone();
+    const shape = this.originalShape.clone();
     section.id = ++shape.lastPlaceableId;
     shape.sections.push(section);
     shape.applyTransform();

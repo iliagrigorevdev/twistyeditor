@@ -16,6 +16,7 @@ class Shape {
     this.roll = 0;
     this.pitch = 0;
     this.yaw = 0;
+    this.showPose = true;
     this.aabb = {
       min: vec3.create(),
       max: vec3.create(),
@@ -138,7 +139,7 @@ class Shape {
     };
   }
 
-  hasPrismCollisions() {
+  hasPrismIntersections() {
     for (let i = 0; i < this.prisms.length; i++) {
       const prism = this.prisms[i];
       for (let j = i + 1; j < this.prisms.length; j++) {
@@ -307,14 +308,14 @@ class Shape {
       const childSections = this.sections.filter(section => childPrisms.some(prism =>
           (prism.id === section.basePrismId) || prism.id === section.targetPrismId));
       [...childPrisms, ...childSections].forEach(placeable => {
-          if (placeable === section) {
-            return;
-          }
-          placeable.translate(positionInversed);
-          placeable.rotate(rotation);
-          placeable.translate(section.position);
-        });
-      }
+        if (placeable === section) {
+          return;
+        }
+        placeable.translate(positionInversed);
+        placeable.rotate(rotation);
+        placeable.translate(section.position);
+      });
+    }
     if (parts) {
       this.applyTransform();
     }
@@ -327,7 +328,8 @@ class Shape {
       lastPlaceableId: this.lastPlaceableId,
       roll: this.roll,
       pitch: this.pitch,
-      yaw: this.yaw
+      yaw: this.yaw,
+      showPose: this.showPose
     };
   }
 
@@ -337,19 +339,22 @@ class Shape {
       prism.fromArchive(prismArchive);
       return prism;
     });
-    if (version < 2) {
-      this.lastPlaceableId = archive.lastPrismId;
-    } else {
+    if (version >= 2) {
       this.sections = archive.sections.map(sectionArchive => {
         const section = new Section();
         section.fromArchive(sectionArchive, version);
         return section;
       });
       this.lastPlaceableId = archive.lastPlaceableId;
+    } else {
+      this.lastPlaceableId = archive.lastPrismId;
     }
     this.roll = archive.roll;
     this.pitch = archive.pitch;
     this.yaw = archive.yaw;
+    if (version >= 3) {
+      this.showPose = archive.showPose;
+    }
   }
 
   clone() {
@@ -364,6 +369,7 @@ class Shape {
     shape.roll = this.roll;
     shape.pitch = this.pitch;
     shape.yaw = this.yaw;
+    shape.showPose = this.showPose;
     vec3.copy(shape.aabb.min, this.aabb.min);
     vec3.copy(shape.aabb.max, this.aabb.max);
     vec3.copy(shape.aabb.center, this.aabb.center);
