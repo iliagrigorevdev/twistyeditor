@@ -245,11 +245,6 @@ class Shape {
     };
   }
 
-  findPartSections(part) {
-    return this.sections.filter(section => part.some(prism =>
-        (prism.id === section.basePrismId) || prism.id === section.targetPrismId));
-  }
-
   findChildParts(rootPart, parentPart, parentSection, parts, childParts = []) {
     if (childParts.length === 0) {
       childParts.push(parentPart);
@@ -308,9 +303,10 @@ class Shape {
       vec3.negate(positionInversed, section.position);
       vec3.transformQuat(axis, vec3.set(axis, 1, 0, 0), section.orientation);
       quat.setAxisAngle(rotation, axis, initialAngle * DEGREES_TO_RADIANS);
-      for (const childPart of childParts) {
-        const partSections = this.findPartSections(childPart);
-        [...childPart, ...partSections].forEach(placeable => {
+      const childPrisms = childParts.flat();
+      const childSections = this.sections.filter(section => childPrisms.some(prism =>
+          (prism.id === section.basePrismId) || prism.id === section.targetPrismId));
+      [...childPrisms, ...childSections].forEach(placeable => {
           if (placeable === section) {
             return;
           }
@@ -319,7 +315,6 @@ class Shape {
           placeable.translate(section.position);
         });
       }
-    }
     if (parts) {
       this.applyTransform();
     }
