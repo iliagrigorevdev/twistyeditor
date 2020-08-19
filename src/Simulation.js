@@ -8,7 +8,7 @@ const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
 
 const MAX_SUB_STEPS = 10;
-const FIXED_TIME_STEP = 1 / 60;
+const FIXED_TIME_STEP = 0.01;
 
 const GRAVITY = 9.81;
 
