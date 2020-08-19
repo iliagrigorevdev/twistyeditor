@@ -21,7 +21,7 @@ const SECTION_PROPERTIES = new Map([
 class Section extends Placeable {
   constructor() {
     super();
-    this.type = SectionType.SEPARATOR;
+    this.type = SectionType.ACTUATOR;
     this.baseFace = undefined;
     this.targetFace = undefined;
     this.basePrismId = 0;
@@ -116,6 +116,8 @@ class Section extends Placeable {
     if (version >= 3) {
       this.type = archive.type;
       this.properties = new Map(archive.properties);
+    } else {
+      this.type = SectionType.SEPARATOR;
     }
     this.baseFace = archive.baseFace;
     this.targetFace = archive.targetFace;
