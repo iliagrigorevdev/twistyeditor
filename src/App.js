@@ -79,6 +79,9 @@ class App extends Component {
       historyEntries: this.state.historyEntries,
       historyIndex: this.state.historyIndex
     };
+    if (this.state.mode !== AppMode.EDIT) {
+      nextState.mode = AppMode.EDIT;
+    }
     if (reset || (this.state.activePlaceableId
         && !shape.findPlaceable(this.state.activePlaceableId))) {
       nextState.activePlaceableId = 0;
@@ -103,6 +106,9 @@ class App extends Component {
       activePlaceableId: historyEntry.activePlaceableId,
       historyIndex: index
     };
+    if (this.state.mode !== AppMode.EDIT) {
+      nextState.mode = AppMode.EDIT;
+    }
     this.setState(nextState);
   }
 
