@@ -64,6 +64,8 @@ const MOTOR_AXIS_ROTATION = quat.setAxisAngle(quat.create(),
 
 class Simulation {
   constructor(shape) {
+    this.initialized = false;
+
     Ammo().then((Ammo) => {
       this.init(Ammo);
 
@@ -73,12 +75,14 @@ class Simulation {
   }
 
   init(Ammo) {
+    this.shapeBasePart = null;
     this.shapeParts = [];
     this.shapeActuators = [];
     this.velocityScales = [];
     this.prismIds = [];
     this.prismWorldTransforms = [];
     this.prismLocalTransforms = [];
+    this.shapePosition = vec3.create();
     this.partBtTransform = new Ammo.btTransform();
     this.partTransform = createTransform();
 
@@ -100,6 +104,8 @@ class Simulation {
 
     const prismMassOffset = createTransform(vec3.fromValues(0, PRISM_CG_DY, 0));
     this.prismMassOffsetInversed = inverseTransform(createTransform(), prismMassOffset);
+
+    this.initialized = true;
   }
 
   addRigidBody(Ammo, collisionShape, mass, inertia, transform,
@@ -124,9 +130,14 @@ class Simulation {
 
   addShapeBody(Ammo, shape) {
     const parts = shape.discoverParts();
+    const basePart = shape.determineBasePart(parts);
     for (let i = 0; i < parts.length; i++) {
       console.log("Part " + (i + 1) + "/" + parts.length + ":");
-      this.addShapePartBody(Ammo, parts[i]);
+      const part = parts[i];
+      const shapePart = this.addShapePartBody(Ammo, part);
+      if (part === basePart) {
+        this.shapeBasePart = shapePart;
+    }
     }
 
     for (const section of shape.sections) {
@@ -205,11 +216,6 @@ class Simulation {
       this.prismLocalTransforms.push(localTransform);
     }
 
-    this.shapeParts.push({
-      partBody: rigidBody,
-      prismCount: part.length
-    });
-
     console.log("Mass: " + mass);
     console.log("Origin: {" + partOrigin[0].toFixed(2) + ", " + partOrigin[1].toFixed(2)
         + ", " + partOrigin[2].toFixed(2) + "}");
@@ -220,6 +226,13 @@ class Simulation {
     console.log("Principal: axis={" + principalAxis[0].toFixed(2) + ", "
         + principalAxis[1].toFixed(2) + ", " + principalAxis[2].toFixed(2)
         + "} angle=" + (principalAngle * RADIANS_TO_DEGREES).toFixed(0));
+
+    const shapePart = {
+      partBody: rigidBody,
+      prismCount: part.length
+    };
+    this.shapeParts.push(shapePart);
+    return shapePart;
   }
 
   addActuator(Ammo, shape, parts, section) {
@@ -279,6 +292,9 @@ class Simulation {
     let prismOffset = 0;
     for (const shapePart of this.shapeParts) {
       const partTransform = this.getPartTransform(shapePart.partBody);
+      if (shapePart === this.shapeBasePart) {
+        vec3.copy(this.shapePosition, partTransform.position);
+      }
       for (let i = 0; i < shapePart.prismCount; i++) {
         multiplyTransforms(this.prismWorldTransforms[prismOffset + i], partTransform,
             this.prismLocalTransforms[prismOffset + i]);

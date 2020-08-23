@@ -18,6 +18,7 @@ const POINTER_DRAG_THRESHOLD_SQUARED = POINTER_DRAG_THRESHOLD * POINTER_DRAG_THR
 const POINTER_DRAG_FACTOR = 0.01;
 const ELEVATION_LIMIT = 0.48 * Math.PI;
 const CAMERA_ANIMATION_TIME = 0.3;
+const CAMERA_ANIMATION_FOLLOW_TIME = 0.25 * CAMERA_ANIMATION_TIME;
 const DEFAULT_ELEVATION = -Math.PI / 10;
 const DEFAULT_HEADING = -Math.PI / 40;
 
@@ -369,12 +370,40 @@ class Viewport extends Component {
         window.Filament.Camera$Fov.VERTICAL);
   }
 
+  updateFollowPosition(position) {
+    vec3.copy(this.lastPosition, this.focalPoint);
+    vec3.copy(this.targetPosition, position);
+    this.animationTimer = CAMERA_ANIMATION_FOLLOW_TIME;
+  }
+
+  updateSimulationView(simulation) {
+    if (!simulation.initialized) {
+      return;
+    }
+
+    this.updateFollowPosition(simulation.shapePosition);
+
+    const prismIds = simulation.prismIds;
+    const transforms = simulation.prismWorldTransforms;
+    for (let i = 0; i < prismIds.length; i++) {
+      const placeableView = this.shapeView.findPlaceableView(prismIds[i]);
+      const transform = transforms[i];
+      this.setRenderableTransform(placeableView.renderable, transform.position,
+          transform.orientation);
+    }
+  }
+
   renderFrame(timestamp) {
     if (this.lastTime === undefined) {
       this.lastTime = timestamp;
     }
     const deltaTime = 1e-3 * (timestamp - this.lastTime);
     this.lastTime = timestamp;
+
+    if (this.props.mode === AppMode.SIMULATION) {
+      this.simulation.step(deltaTime);
+      this.updateSimulationView(this.simulation);
+    }
 
     if (this.animationTimer < CAMERA_ANIMATION_TIME) {
       this.animationTimer += deltaTime;
@@ -394,20 +423,6 @@ class Viewport extends Component {
       const k = t * t * (3 - 2 * t);
       const highlightIntensity = HIGHLIGHT_START_BLEND + k * HIGHLIGHT_RANGE_BLEND;
       this.setHighlightIntensity(this.activePlaceableView, highlightIntensity);
-    }
-
-    if (this.props.mode === AppMode.SIMULATION) {
-      this.simulation.step(deltaTime);
-      const prismIds = this.simulation.prismIds;
-      if (prismIds) {
-        const transforms = this.simulation.prismWorldTransforms;
-        for (let i = 0; i < prismIds.length; i++) {
-          const placeableView = this.shapeView.findPlaceableView(prismIds[i]);
-          const transform = transforms[i];
-          this.setRenderableTransform(placeableView.renderable, transform.position,
-              transform.orientation);
-        }
-      }
     }
 
     this.renderer.render(this.swapChain, this.view);

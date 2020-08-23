@@ -229,6 +229,28 @@ class Shape {
     return parts;
   }
 
+  determineBasePart(parts) {
+    let basePart = null;
+    let maxChainLength = 0;
+    const remainingParts = new Set(parts);
+    while (remainingParts.size > 0) {
+      const part = remainingParts.values().next().value;
+      const chainParts = this.findChildParts(null, part, null, parts, false);
+      if (!chainParts) {
+        return;
+      }
+      if (!basePart || (chainParts.length > maxChainLength)
+          || ((chainParts.length === maxChainLength) && (part.length > basePart.length))) {
+        basePart = part;
+        maxChainLength = chainParts.length;
+      }
+      for (const chainPart of chainParts) {
+        remainingParts.delete(chainPart);
+      }
+    }
+    return basePart;
+  }
+
   findValidSectionRefs(section, parts) {
     const basePrism = this.findPlaceable(section.basePrismId);
     const targetPrism = this.findPlaceable(section.targetPrismId);
@@ -246,7 +268,7 @@ class Shape {
     };
   }
 
-  findChildParts(rootPart, parentPart, parentSection, parts, childParts = []) {
+  findChildParts(rootPart, parentPart, parentSection, parts, bidirectional, childParts = []) {
     if (childParts.length === 0) {
       childParts.push(parentPart);
     }
@@ -258,8 +280,10 @@ class Shape {
       if (!sectionRefs) {
         return;
       }
-      const childPart = (sectionRefs.basePart === parentPart ? sectionRefs.targetPart
-          : (sectionRefs.targetPart === parentPart ? sectionRefs.basePart : null));
+      let childPart = (sectionRefs.basePart === parentPart ? sectionRefs.targetPart : null);
+      if (!childPart && bidirectional) {
+        childPart = (sectionRefs.targetPart === parentPart ? sectionRefs.basePart : null);
+      }
       if (!childPart) {
         continue;
       }
@@ -268,7 +292,7 @@ class Shape {
         return;
       }
       childParts.push(childPart);
-      if (!this.findChildParts(rootPart, childPart, section, parts, childParts)) {
+      if (!this.findChildParts(rootPart, childPart, section, parts, bidirectional, childParts)) {
         return;
       }
     }
@@ -296,7 +320,7 @@ class Shape {
         return;
       }
       const childParts = this.findChildParts(sectionRefs.basePart,
-          sectionRefs.targetPart, section, parts);
+          sectionRefs.targetPart, section, parts, true);
       if (!childParts) {
         console.log("Failed to apply initial angle");
         continue;
