@@ -55,6 +55,7 @@ const MASK_PRISM = GROUP_GROUND | GROUP_PRISM;
 
 const MAX_MOTOR_TORQUE = 1000;
 const MAX_MOTOR_IMPULSE = MAX_MOTOR_TORQUE * FIXED_TIME_STEP;
+const MAX_MOTOR_VELOCITY = 10;
 const MOTOR_SOFTNESS = 0.9;
 const MOTOR_BIAS_FACTOR = 0.3;
 const MOTOR_RELAXATION_FACTOR = 1;
@@ -256,10 +257,7 @@ class Simulation {
         MOTOR_BIAS_FACTOR, MOTOR_RELAXATION_FACTOR);
     this.dynamicsWorld.addConstraint(constraint);
 
-    this.shapeActuators.push({
-      constraint: constraint,
-      maxVelocity: section.getPropertyValue("maxVelocity")
-    });
+    this.shapeActuators.push(constraint);
     this.velocityScales.push(0);
   }
 
@@ -298,8 +296,8 @@ class Simulation {
     this.dynamicsWorld.stepSimulation(deltaTime, MAX_SUB_STEPS, FIXED_TIME_STEP);
       const actuator = this.shapeActuators[i];
       const velocityScale = Math.max(-1, Math.min(1, this.velocityScales[i]));
-      const velocity = actuator.maxVelocity * velocityScale;
-      actuator.constraint.enableAngularMotor(true, velocity, MAX_MOTOR_IMPULSE);
+      const velocity = velocityScale * MAX_MOTOR_VELOCITY;
+      actuator.enableAngularMotor(true, velocity, MAX_MOTOR_IMPULSE);
     }
 
     this.dynamicsWorld.stepSimulation(deltaTime, maxSubSteps, FIXED_TIME_STEP);
