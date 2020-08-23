@@ -36,7 +36,8 @@ function focalLengthToFovY(fl) {
   return 2 * Math.atan(0.5 * CAMERA_SENSOR_HEIGHT / fl) * RADIANS_TO_DEGREES;
 }
 
-const ENVIRONMENT_COLOR = "#e6e6e6ff";
+const FOG_COLOR = "#e6e6e6ff";
+const FOG_DISTANCE = 30;
 const GROUND_HALF_SIZE = 1000;
 const GROUND_GRID_SIZE = 4;
 
@@ -212,7 +213,8 @@ class Viewport extends Component {
     this.view = engine.createView();
     this.view.setCamera(this.camera);
     this.view.setScene(this.scene);
-    this.renderer.setClearOptions({ clearColor: colorToFloat4(ENVIRONMENT_COLOR), clear: true });
+    this.view.setFogOptions({ color: colorToFloat3(FOG_COLOR), distance: FOG_DISTANCE, enabled: true });
+    this.renderer.setClearOptions({ clearColor: colorToFloat4(FOG_COLOR), clear: true });
 
     this.resize();
     this.renderFrame = this.renderFrame.bind(this);
