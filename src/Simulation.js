@@ -137,7 +137,7 @@ class Simulation {
       const shapePart = this.addShapePartBody(Ammo, part);
       if (part === basePart) {
         this.shapeBasePart = shapePart;
-    }
+      }
     }
 
     for (const section of shape.sections) {

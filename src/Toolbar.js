@@ -79,6 +79,12 @@ class Toolbar extends Component {
     });
   }
 
+  handleSwapSection(prevShape, prevSection) {
+    this.modifyPlaceable(prevShape, prevSection, (section) => {
+      section.swap();
+    });
+  }
+
   handleDeleteSection(prevShape, prevSection) {
     this.modifyShape(prevShape, (shape) => {
       shape.sections = shape.sections.filter(section => section.id !== prevSection.id);
@@ -191,6 +197,10 @@ class Toolbar extends Component {
               onChange={e => this.handleSectionPropertyChange(shape, section, property.name, e.target.value)} />
           </p>
         })}
+        <p>
+          <button id="swapSection" name="swapSection"
+            onClick={() => this.handleSwapSection(shape, section)}>Swap</button>
+        </p>
         <p>
           <button id="deleteSection" name="deleteSection"
             onClick={() => this.handleDeleteSection(shape, section)}>Delete</button>

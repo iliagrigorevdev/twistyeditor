@@ -9,6 +9,8 @@ const SectionType = Object.freeze({
 
 const SECTION_RADIUS = 1;
 const SECTION_DEPTH = 0.3;
+const SWAP_ROTATION = quat.setAxisAngle(quat.create(),
+    vec3.fromValues(0, 1, 0), Math.PI);
 
 const SECTION_PROPERTIES = new Map([
   [SectionType.ACTUATOR, [
@@ -27,6 +29,13 @@ class Section extends Placeable {
     this.basePrismId = 0;
     this.targetPrismId = 0;
     this.properties = new Map();
+  }
+
+  swap() {
+    [this.baseFace, this.targetFace] = [this.targetFace, this.baseFace];
+    [this.basePrismId, this.targetPrismId] = [this.targetPrismId, this.basePrismId];
+    quat.multiply(this.orientation, this.orientation, SWAP_ROTATION);
+    quat.normalize(this.orientation, this.orientation);
   }
 
   intersect(ray) {
