@@ -44,14 +44,22 @@ const PRISM_INERTIA_X = 2 / 9 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Y = 1 / 3 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Z = 2 / 9 * PRISM_INERTIA_FACTOR;
 
-const FRICTION_GROUND = 0.9;
-const FRICTION_PRISM = 0.3;
+const FRICTION_GROUND = 2.5;
+const FRICTION_PRISM = 0.1;
 const RESTITUTION_GROUND = 0.5;
 const RESTITUTION_PRISM = 0.5;
 const GROUP_GROUND = 0x01;
 const GROUP_PRISM = 0x02;
 const MASK_GROUND = GROUP_PRISM;
 const MASK_PRISM = GROUP_GROUND | GROUP_PRISM;
+
+const MAX_MOTOR_TORQUE = 1000;
+const MAX_MOTOR_IMPULSE = MAX_MOTOR_TORQUE * FIXED_TIME_STEP;
+const MOTOR_SOFTNESS = 0.9;
+const MOTOR_BIAS_FACTOR = 0.3;
+const MOTOR_RELAXATION_FACTOR = 1;
+const MOTOR_AXIS_ROTATION = quat.setAxisAngle(quat.create(),
+    vec3.fromValues(0, 1, 0), -Math.PI / 2);
 
 class Simulation {
   constructor(shape) {
@@ -65,6 +73,8 @@ class Simulation {
 
   init(Ammo) {
     this.shapeParts = [];
+    this.shapeActuators = [];
+    this.velocityScales = [];
     this.prismIds = [];
     this.prismWorldTransforms = [];
     this.prismLocalTransforms = [];
@@ -231,21 +241,26 @@ class Simulation {
 
     const basePartBody = this.shapeParts[basePartIndex].partBody;
     const targetPartBody = this.shapeParts[targetPartIndex].partBody;
-    const sectionTransform = createTransform(section.worldPosition, section.worldOrientation);
+    const sectionOrientation = quat.mul(quat.create(), section.worldOrientation, MOTOR_AXIS_ROTATION);
+    const sectionTransform = createTransform(section.worldPosition, sectionOrientation);
     const frameInA = multiplyTransforms(createTransform(),
         inverseTransform(createTransform(), this.getPartTransform(basePartBody)), sectionTransform);
     const frameInB = multiplyTransforms(createTransform(),
         inverseTransform(createTransform(), this.getPartTransform(targetPartBody)), sectionTransform);
 
-    const constraint = new Ammo.btGeneric6DofConstraint(basePartBody, targetPartBody,
+    const constraint = new Ammo.btHingeConstraint(basePartBody, targetPartBody,
         convertTransform(Ammo, frameInA), convertTransform(Ammo, frameInB), true);
-    constraint.setLinearLowerLimit(new Ammo.btVector3(0, 0, 0));
-    constraint.setLinearUpperLimit(new Ammo.btVector3(0, 0, 0));
-    constraint.setAngularLowerLimit(new Ammo.btVector3(
-        section.getPropertyValue("lowerAngle") * DEGREES_TO_RADIANS, 0, 0));
-    constraint.setAngularUpperLimit(new Ammo.btVector3(
-        section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS, 0, 0));
+    const lowerAngle = section.getPropertyValue("lowerAngle") * DEGREES_TO_RADIANS;
+    const upperAngle = section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS;
+    constraint.setLimit(lowerAngle, upperAngle, MOTOR_SOFTNESS,
+        MOTOR_BIAS_FACTOR, MOTOR_RELAXATION_FACTOR);
     this.dynamicsWorld.addConstraint(constraint);
+
+    this.shapeActuators.push({
+      constraint: constraint,
+      maxVelocity: section.getPropertyValue("maxVelocity")
+    });
+    this.velocityScales.push(0);
   }
 
   getPartTransform(partBody) {
@@ -279,7 +294,15 @@ class Simulation {
       return;
     }
 
+    for (let i = 0; i < this.shapeActuators.length; i++) {
     this.dynamicsWorld.stepSimulation(deltaTime, MAX_SUB_STEPS, FIXED_TIME_STEP);
+      const actuator = this.shapeActuators[i];
+      const velocityScale = Math.max(-1, Math.min(1, this.velocityScales[i]));
+      const velocity = actuator.maxVelocity * velocityScale;
+      actuator.constraint.enableAngularMotor(true, velocity, MAX_MOTOR_IMPULSE);
+    }
+
+    this.dynamicsWorld.stepSimulation(deltaTime, maxSubSteps, FIXED_TIME_STEP);
 
     this.updatePrismTransforms();
   }
