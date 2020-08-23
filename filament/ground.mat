@@ -1,7 +1,7 @@
 material {
   name : ground,
   requires : [ uv0 ],
-  shadingModel : unlit,
+  shadingModel : lit,
   parameters : [
     { type : sampler2d, name : baseColor }
   ],
@@ -11,5 +11,7 @@ fragment {
   void material(inout MaterialInputs material) {
     prepareMaterial(material);
     material.baseColor = texture(materialParams_baseColor, getUV0());
+    material.roughness = 1.0;
+    material.metallic = 0.0;
   }
 }

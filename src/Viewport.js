@@ -180,8 +180,20 @@ class Viewport extends Component {
     this.camera = engine.createCamera(window.Filament.EntityManager.get().create());
     this.scene = engine.createScene();
 
+    const sunlight = window.Filament.EntityManager.get().create();
+    window.Filament.LightManager.Builder(window.Filament.LightManager$Type.SUN)
+      .color([0.98, 0.92, 0.89])
+      .intensity(70000.0)
+      .direction([0.6, -1.0, -0.8])
+      .sunAngularRadius(1.9)
+      .sunHaloSize(10.0)
+      .sunHaloFalloff(80.0)
+      .castShadows(true)
+      .build(engine, sunlight);
+    this.scene.addEntity(sunlight);
+
     const indirectLight = engine.createIblFromKtx(iblUrl);
-    indirectLight.setIntensity(50000);
+    indirectLight.setIntensity(40000);
     this.scene.setIndirectLight(indirectLight);
 
     this.prismMaterial = engine.createMaterial(prismMaterialUrl);
@@ -265,11 +277,13 @@ class Viewport extends Component {
       .boundingBox({ center: [0, 0, 0], halfExtent: [halfSize, 0, halfSize] })
       .material(0, materialInstance)
       .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES, vb, ib)
+      .castShadows(false)
+      .receiveShadows(true)
       .build(this.engine, entity);
     return entity;
   }
 
-  createRenderable(material, mesh) {
+  createRenderable(material, mesh, castShadows = false, receiveShadows = false) {
     const renderable = window.Filament.EntityManager.get()
       .create();
     window.Filament.RenderableManager.Builder(1)
@@ -277,6 +291,8 @@ class Viewport extends Component {
       .material(0, material)
       .geometry(0, window.Filament.RenderableManager$PrimitiveType.TRIANGLES,
           mesh.vertexBuffer, mesh.indexBuffer)
+      .castShadows(castShadows)
+      .receiveShadows(receiveShadows)
       .build(this.engine, renderable);
     return renderable;
   }
@@ -317,7 +333,7 @@ class Viewport extends Component {
         window.Filament.RgbType.sRGB, colorToFloat3(prism.foregroundColor));
     material.setColor4Parameter("highlightColor",
         window.Filament.RgbaType.sRGB, [0, 0, 0, 0]);
-    return this.createRenderable(material, this.prismMesh);
+    return this.createRenderable(material, this.prismMesh, true, true);
   }
 
   createGhostKnobRenderable() {
