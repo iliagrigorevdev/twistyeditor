@@ -28,6 +28,7 @@ class Learning {
     this.lastState = null;
     this.trainSteps = 0;
     this.episodeSteps = 0;
+    this.episodeTime = 0;
     this.playFrames = 0;
     this.goalX = 0;
     this.goalZ = 0;
@@ -213,6 +214,9 @@ class Learning {
         if (this.trainSteps === LEARNING_STARTS) {
           console.log("Learning starts");
         }
+        if (this.episodeSteps === 0) {
+          this.episodeTime = Date.now();
+        }
 
         const batch = this.replayBuffer.sample(BATCH_SIZE);
 
@@ -261,7 +265,8 @@ class Learning {
       }
 
       if (done) {
-        console.log("Episode finished: reward=" + this.totalReward);
+        console.log("Episode finished: reward=" + Math.floor(this.totalReward)
+            + ", time=" + Math.floor(1e-3 * (Date.now() - this.episodeTime)));
         this.reset();
         break;
       } else if (nextGoalDistance <= GOAL_ACHIEVED_DISTANCE) {
