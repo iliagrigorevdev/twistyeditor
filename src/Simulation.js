@@ -44,10 +44,10 @@ const PRISM_INERTIA_X = 2 / 9 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Y = 1 / 3 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Z = 2 / 9 * PRISM_INERTIA_FACTOR;
 
-const FRICTION_GROUND = 2.5;
-const FRICTION_PRISM = 0.1;
-const RESTITUTION_GROUND = 0.5;
-const RESTITUTION_PRISM = 0.5;
+const FRICTION_GROUND = 3.0;
+const FRICTION_PRISM = 0.2;
+const RESTITUTION_GROUND = 0.1;
+const RESTITUTION_PRISM = 0.3;
 const GROUP_GROUND = 0x01;
 const GROUP_PRISM = 0x02;
 const MASK_GROUND = GROUP_PRISM;
@@ -62,6 +62,8 @@ const MOTOR_RELAXATION_FACTOR = 1;
 const MOTOR_AXIS_ROTATION = quat.setAxisAngle(quat.create(),
     vec3.fromValues(0, 1, 0), -Math.PI / 2);
 
+const PART_STATE_LENGTH = 3 + 4 + 3 + 3;
+
 class Simulation {
   constructor(shape) {
     this.initialized = false;
@@ -71,6 +73,8 @@ class Simulation {
 
       this.addGroundBody(Ammo);
       this.addShapeBody(Ammo, shape);
+
+      this.initialized = true;
     });
   }
 
@@ -83,8 +87,9 @@ class Simulation {
     this.prismWorldTransforms = [];
     this.prismLocalTransforms = [];
     this.shapePosition = vec3.create();
-    this.partBtTransform = new Ammo.btTransform();
-    this.partTransform = createTransform();
+    this.bodyBtTransform = new Ammo.btTransform();
+    this.bodyTransform = createTransform();
+    this.zeroBtVector = new Ammo.btVector3(0, 0, 0);
 
     this.collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
     this.dispatcher = new Ammo.btCollisionDispatcher(this.collisionConfiguration);
@@ -104,8 +109,21 @@ class Simulation {
 
     const prismMassOffset = createTransform(vec3.fromValues(0, PRISM_CG_DY, 0));
     this.prismMassOffsetInversed = inverseTransform(createTransform(), prismMassOffset);
+  }
 
-    this.initialized = true;
+  reset() {
+    if (!this.initialized) {
+      return;
+    }
+
+    for (const shapePart of this.shapeParts) {
+      shapePart.partBody.setWorldTransform(shapePart.initialTransform);
+      shapePart.partBody.getMotionState().setWorldTransform(shapePart.initialTransform);
+      shapePart.partBody.setLinearVelocity(this.zeroBtVector);
+      shapePart.partBody.setAngularVelocity(this.zeroBtVector);
+    }
+    this.updateShapePosition();
+    this.updatePrismTransforms();
   }
 
   addRigidBody(Ammo, collisionShape, mass, inertia, transform,
@@ -229,7 +247,8 @@ class Simulation {
 
     const shapePart = {
       partBody: rigidBody,
-      prismCount: part.length
+      prismCount: part.length,
+      initialTransform: convertTransform(Ammo, partTransform)
     };
     this.shapeParts.push(shapePart);
     return shapePart;
@@ -258,9 +277,9 @@ class Simulation {
     const sectionOrientation = quat.mul(quat.create(), section.worldOrientation, MOTOR_AXIS_ROTATION);
     const sectionTransform = createTransform(section.worldPosition, sectionOrientation);
     const frameInA = multiplyTransforms(createTransform(),
-        inverseTransform(createTransform(), this.getPartTransform(basePartBody)), sectionTransform);
+        inverseTransform(createTransform(), this.getBodyTransform(basePartBody)), sectionTransform);
     const frameInB = multiplyTransforms(createTransform(),
-        inverseTransform(createTransform(), this.getPartTransform(targetPartBody)), sectionTransform);
+        inverseTransform(createTransform(), this.getBodyTransform(targetPartBody)), sectionTransform);
 
     const constraint = new Ammo.btHingeConstraint(basePartBody, targetPartBody,
         convertTransform(Ammo, frameInA), convertTransform(Ammo, frameInB), true);
@@ -274,27 +293,66 @@ class Simulation {
     this.velocityScales.push(0);
   }
 
-  getPartTransform(partBody) {
-    partBody.getMotionState().getWorldTransform(this.partBtTransform);
-    const partPosition = this.partBtTransform.getOrigin();
-    const partOrientation = this.partBtTransform.getRotation();
-    vec3.set(this.partTransform.position, partPosition.x(), partPosition.y(), partPosition.z());
-    quat.set(this.partTransform.orientation, partOrientation.x(), partOrientation.y(),
-        partOrientation.z(), partOrientation.w());
-    return this.partTransform;
+  getState() {
+    if (!this.initialized) {
+      return;
+    }
+
+    const state = new Array(this.shapeParts.length * PART_STATE_LENGTH);
+    let offset = 0;
+    for (const shapePart of this.shapeParts) {
+      shapePart.partBody.getMotionState().getWorldTransform(this.bodyBtTransform);
+      const position = this.bodyBtTransform.getOrigin();
+      state[offset++] = position.x();
+      state[offset++] = position.y();
+      state[offset++] = position.z();
+      const orientation = this.bodyBtTransform.getRotation();
+      state[offset++] = orientation.x();
+      state[offset++] = orientation.y();
+      state[offset++] = orientation.z();
+      state[offset++] = orientation.w();
+      const linearVelocity = shapePart.partBody.getLinearVelocity();
+      state[offset++] = linearVelocity.x();
+      state[offset++] = linearVelocity.y();
+      state[offset++] = linearVelocity.z();
+      const angularVelocity = shapePart.partBody.getAngularVelocity();
+      state[offset++] = angularVelocity.x();
+      state[offset++] = angularVelocity.y();
+      state[offset++] = angularVelocity.z();
+    }
+    return state;
+  }
+
+  getBodyTransform(body) {
+    body.getMotionState().getWorldTransform(this.bodyBtTransform);
+    const bodyPosition = this.bodyBtTransform.getOrigin();
+    const bodyOrientation = this.bodyBtTransform.getRotation();
+    vec3.set(this.bodyTransform.position, bodyPosition.x(), bodyPosition.y(), bodyPosition.z());
+    quat.set(this.bodyTransform.orientation, bodyOrientation.x(), bodyOrientation.y(),
+        bodyOrientation.z(), bodyOrientation.w());
+    return this.bodyTransform;
+  }
+
+  updateShapePosition() {
+    if (!this.shapeBasePart) {
+      return;
+    }
+
+    this.shapeBasePart.partBody.getMotionState().getWorldTransform(this.bodyBtTransform);
+    const bodyPosition = this.bodyBtTransform.getOrigin();
+    this.shapePosition[0] = bodyPosition.x();
+    this.shapePosition[1] = bodyPosition.y();
+    this.shapePosition[2] = bodyPosition.z();
   }
 
   updatePrismTransforms() {
-    if (!this.shapeParts) {
+    if (!this.initialized) {
       return;
     }
 
     let prismOffset = 0;
     for (const shapePart of this.shapeParts) {
-      const partTransform = this.getPartTransform(shapePart.partBody);
-      if (shapePart === this.shapeBasePart) {
-        vec3.copy(this.shapePosition, partTransform.position);
-      }
+      const partTransform = this.getBodyTransform(shapePart.partBody);
       for (let i = 0; i < shapePart.prismCount; i++) {
         multiplyTransforms(this.prismWorldTransforms[prismOffset + i], partTransform,
             this.prismLocalTransforms[prismOffset + i]);
@@ -303,13 +361,12 @@ class Simulation {
     }
   }
 
-  step(deltaTime) {
-    if (!this.dynamicsWorld) {
+  step(deltaTime, syncPrismTransforms = true, maxSubSteps = MAX_SUB_STEPS) {
+    if (!this.initialized) {
       return;
     }
 
     for (let i = 0; i < this.shapeActuators.length; i++) {
-    this.dynamicsWorld.stepSimulation(deltaTime, MAX_SUB_STEPS, FIXED_TIME_STEP);
       const actuator = this.shapeActuators[i];
       const velocityScale = Math.max(-1, Math.min(1, this.velocityScales[i]));
       const velocity = velocityScale * MAX_MOTOR_VELOCITY;
@@ -318,7 +375,14 @@ class Simulation {
 
     this.dynamicsWorld.stepSimulation(deltaTime, maxSubSteps, FIXED_TIME_STEP);
 
-    this.updatePrismTransforms();
+    this.updateShapePosition();
+    if (syncPrismTransforms) {
+      this.updatePrismTransforms();
+    }
+  }
+
+  stepOnce(deltaTime = FIXED_TIME_STEP, syncPrismTransforms = true) {
+    this.step(deltaTime, syncPrismTransforms, 0);
   }
 }
 

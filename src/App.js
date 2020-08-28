@@ -11,7 +11,8 @@ const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
   EDIT: 0,
-  SIMULATION: 1
+  LEARN: 1,
+  PLAY: 2
 });
 
 class App extends Component {
@@ -172,12 +173,8 @@ class App extends Component {
     element.click();
   }
 
-  handleSimulationStart() {
-    this.setState({ mode: AppMode.SIMULATION });
-  }
-
-  handleSimulationStop() {
-    this.setState({ mode: AppMode.EDIT });
+  handleAppModeChange(mode) {
+    this.setState({ mode: mode });
   }
 
   render() {
@@ -196,8 +193,9 @@ class App extends Component {
           onShapeShowcase={() => this.handleShapeShowcase()}
           onShapeImport={() => this.handleShapeImport()}
           onShapeExport={shape => this.handleShapeExport(shape)}
-          onSimulationStart={() => this.handleSimulationStart()}
-          onSimulationStop={() => this.handleSimulationStop()} />
+          onSimulationLearn={() => this.handleAppModeChange(AppMode.LEARN)}
+          onSimulationPlay={() => this.handleAppModeChange(AppMode.PLAY)}
+          onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)} />
       </div>
     );
   }

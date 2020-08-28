@@ -5,9 +5,9 @@ import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
-import Simulation from './Simulation';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
+import Learning from './Learning';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -57,6 +57,8 @@ const SECTION_COLORS = new Map([
 const INDICATION_COLOR = "#90caf960";
 const CREATION_COLOR = "#fff59d60";
 
+const FRAME_TRAIN_STEPS = 1;
+
 const iblUrl = "res/environment_ibl.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
@@ -97,25 +99,22 @@ class Viewport extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.mode !== this.props.mode) {
-      this.handleModeChange();
-    } else if (prevProps.shape !== this.props.shape) {
-      this.handleShapeChange();
-    }
-  }
-
-  handleModeChange() {
-    this.refreshShapeView();
-    if (this.props.mode === AppMode.SIMULATION) {
-      this.simulation = new Simulation(this.shape);
-    } else if (this.simulation) {
-      this.simulation = null;
-    }
-  }
-
-  handleShapeChange() {
-    if (this.props.mode === AppMode.EDIT) {
+    const modeChanged = (prevProps.mode !== this.props.mode);
+    const shapeChanged = (prevProps.shape !== this.props.shape);
+    if (modeChanged || shapeChanged) {
       this.refreshShapeView();
+    }
+    if (shapeChanged) {
+      this.learning = null;
+    }
+    if (modeChanged) {
+      if ((this.props.mode === AppMode.LEARN) || (this.props.mode === AppMode.PLAY)) {
+        if (!this.learning) {
+          this.learning = new Learning(this.shape);
+        } else {
+          this.learning.reset();
+        }
+      }
     }
   }
 
@@ -166,6 +165,8 @@ class Viewport extends Component {
     this.activePlaceableView = null;
     this.availableJunctions = null;
     this.originalAvailableJunctions = null;
+
+    this.learning = null;
 
     this.pressing = false;
     this.dragging = false;
@@ -218,7 +219,7 @@ class Viewport extends Component {
     const ground = this.createGround(GROUND_HALF_SIZE, GROUND_GRID_SIZE);
     this.scene.addEntity(ground);
 
-    this.handleShapeChange();
+    this.refreshShapeView();
 
     this.swapChain = engine.createSwapChain();
     this.renderer = engine.createRenderer();
@@ -418,9 +419,12 @@ class Viewport extends Component {
     const deltaTime = 1e-3 * (timestamp - this.lastTime);
     this.lastTime = timestamp;
 
-    if (this.props.mode === AppMode.SIMULATION) {
-      this.simulation.step(deltaTime);
-      this.updateSimulationView(this.simulation);
+    if (this.props.mode === AppMode.LEARN) {
+      this.learning.train(FRAME_TRAIN_STEPS);
+      this.updateSimulationView(this.learning.simulation);
+    } else if (this.props.mode === AppMode.PLAY) {
+      this.learning.play(deltaTime);
+      this.updateSimulationView(this.learning.simulation);
     }
 
     if (this.animationTimer < CAMERA_ANIMATION_TIME) {
