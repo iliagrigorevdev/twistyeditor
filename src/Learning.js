@@ -157,6 +157,10 @@ class Learning {
     return Math.sqrt(goalDistX * goalDistX + goalDistZ * goalDistZ);
   }
 
+  getEpisodeElapsedTimeInSecs() {
+    return Math.floor(1e-3 * (Date.now() - this.episodeTime));
+  }
+
   updateWeights(targetNetwork, onlineNetwork) {
     // Workaround for weight order inconsistency
     targetNetwork.trainable = true;
@@ -203,10 +207,9 @@ class Learning {
       this.trainSteps++;
 
       const nextGoalDistance = this.getGoalDistance();
-      const done = (this.episodeSteps >= MAX_EPISODE_STEPS);
       const reward = (goalDistance - nextGoalDistance) * GOAL_DISTANCE_REWARD_WEIGHT;
       const nextState = this.getState();
-      this.replayBuffer.append([state, action, reward, done, nextState]);
+      this.replayBuffer.append([state, action, reward, nextState]);
       this.lastState = nextState;
       this.totalReward += reward;
 
@@ -226,12 +229,11 @@ class Learning {
           const qs = this.onlineCriticNetwork.predict([stateTensor, actionTensor]).max(-1);
 
           const rewardTensor = tf.tensor1d(batch.map(sample => sample[2]));
-          const nextStateTensor = tf.tensor2d(batch.map(sample => sample[4]));
+          const nextStateTensor = tf.tensor2d(batch.map(sample => sample[3]));
           const nextActionTensor = this.targetActorNetwork.predict(nextStateTensor);
           const nextMaxQTensor = this.targetCriticNetwork.predict(
               [nextStateTensor, nextActionTensor]).max(-1);
-          const doneMask = tf.tensor1d(batch.map(sample => sample[3] ? 0 : 1));
-          const targetQs = rewardTensor.add(nextMaxQTensor.mul(doneMask).mul(GAMMA));
+          const targetQs = rewardTensor.add(nextMaxQTensor.mul(GAMMA));
 
           return tf.losses.meanSquaredError(targetQs, qs);
         }));
@@ -260,21 +262,19 @@ class Learning {
         this.episodeSteps++;
       }
 
-      if ((i === numSteps - 1) || done) {
-        this.simulation.updatePrismTransforms();
-      }
-
-      if (done) {
+      if (this.episodeSteps >= MAX_EPISODE_STEPS) {
         console.log("Episode finished: reward=" + Math.floor(this.totalReward)
-            + ", time=" + Math.floor(1e-3 * (Date.now() - this.episodeTime)));
+            + ", time=" + this.getEpisodeElapsedTimeInSecs());
         this.reset();
         break;
       } else if (nextGoalDistance <= GOAL_ACHIEVED_DISTANCE) {
-        console.log("Goal achieved");
+        console.log("Goal achieved: time=" + this.getEpisodeElapsedTimeInSecs());
         this.resetGoal();
         this.lastState = this.getState();
       }
     }
+
+    this.simulation.updatePrismTransforms();
   }
 
   play(deltaTime) {
