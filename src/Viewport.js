@@ -392,6 +392,7 @@ class Viewport extends Component {
   updateFollowPosition(position) {
     vec3.copy(this.lastPosition, this.focalPoint);
     vec3.copy(this.targetPosition, position);
+    this.lastZoom = this.cameraZoom;
     this.animationTimer = CAMERA_ANIMATION_FOLLOW_TIME;
   }
 
