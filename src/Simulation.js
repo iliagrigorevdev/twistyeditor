@@ -59,10 +59,9 @@ const MOTOR_SOFTNESS = 0.9;
 const MOTOR_BIAS_FACTOR = 0.3;
 const MOTOR_RELAXATION_FACTOR = 1;
 const MOTOR_DELTA_TIME = 0.5;
+const MOTOR_AXIS = vec3.fromValues(0, 0, 1);
 const MOTOR_AXIS_ROTATION = quat.setAxisAngle(quat.create(),
     vec3.fromValues(0, 1, 0), -Math.PI / 2);
-
-const PART_STATE_LENGTH = 3 + 4 + 3 + 3;
 
 class Simulation {
   constructor(shape) {
@@ -79,8 +78,8 @@ class Simulation {
   }
 
   init(Ammo) {
-    this.shapeBasePart = null;
     this.shapeParts = [];
+    this.shapeBaseParts = [];
     this.shapeActuators = [];
     this.motorAngles = [];
     this.prismIds = [];
@@ -89,6 +88,7 @@ class Simulation {
     this.shapePosition = vec3.create();
     this.bodyBtTransform = new Ammo.btTransform();
     this.bodyTransform = createTransform();
+    this.actuatorAxis = vec3.create();
     this.zeroBtVector = new Ammo.btVector3(0, 0, 0);
 
     this.collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
@@ -148,21 +148,26 @@ class Simulation {
 
   addShapeBody(Ammo, shape) {
     const parts = shape.discoverParts();
-    const basePart = shape.determineBasePart(parts);
+    if (parts.length === 0) {
+      return;
+    }
+
+    const shapeParts = [];
     for (let i = 0; i < parts.length; i++) {
       console.log("Part " + (i + 1) + "/" + parts.length + ":");
-      const part = parts[i];
-      const shapePart = this.addShapePartBody(Ammo, part);
-      if (part === basePart) {
-        this.shapeBasePart = shapePart;
-      }
+      const shapePart = this.addShapePartBody(Ammo, parts[i]);
+      shapeParts.push(shapePart);
     }
 
     for (const section of shape.sections) {
       if (section.type === SectionType.ACTUATOR) {
-        this.addActuator(Ammo, shape, parts, section);
+        this.addActuator(Ammo, shapeParts, shape, parts, section);
       }
     }
+
+    const partTrees = shape.discoverPartTrees(parts);
+    this.shapeBaseParts.push(...partTrees.map(partTree =>
+        shapeParts[parts.findIndex(p => p === partTree[0])]));
   }
 
   addShapePartBody(Ammo, part) {
@@ -254,7 +259,7 @@ class Simulation {
     return shapePart;
   }
 
-  addActuator(Ammo, shape, parts, section) {
+  addActuator(Ammo, shapeParts, shape, parts, section) {
     const basePrism = shape.findPlaceable(section.basePrismId);
     const targetPrism = shape.findPlaceable(section.targetPrismId);
     const basePartIndex = parts.findIndex(part => part.some(prism => prism === basePrism));
@@ -272,8 +277,8 @@ class Simulation {
       return;
     }
 
-    const basePartBody = this.shapeParts[basePartIndex].partBody;
-    const targetPartBody = this.shapeParts[targetPartIndex].partBody;
+    const basePartBody = shapeParts[basePartIndex].partBody;
+    const targetPartBody = shapeParts[targetPartIndex].partBody;
     const sectionOrientation = quat.mul(quat.create(), section.worldOrientation, MOTOR_AXIS_ROTATION);
     const sectionTransform = createTransform(section.worldPosition, sectionOrientation);
     const frameInA = multiplyTransforms(createTransform(),
@@ -292,6 +297,9 @@ class Simulation {
     this.dynamicsWorld.addConstraint(constraint);
 
     this.shapeActuators.push({
+      basePartBody: basePartBody,
+      targetPartBody: targetPartBody,
+      baseAxis: vec3.transformQuat(vec3.create(), MOTOR_AXIS, frameInA.orientation),
       constraint: constraint,
       lowerAngle: lowerAngle,
       upperAngle: upperAngle
@@ -299,56 +307,74 @@ class Simulation {
     this.motorAngles.push(0);
   }
 
+  addBaseState(shapePart, state) {
+    shapePart.partBody.getMotionState().getWorldTransform(this.bodyBtTransform);
+    const position = this.bodyBtTransform.getOrigin();
+    state.push(position.x());
+    state.push(position.y());
+    state.push(position.z());
+    const orientation = this.bodyBtTransform.getRotation();
+    state.push(orientation.x());
+    state.push(orientation.y());
+    state.push(orientation.z());
+    state.push(orientation.w());
+    const linearVelocity = shapePart.partBody.getLinearVelocity();
+    state.push(linearVelocity.x());
+    state.push(linearVelocity.y());
+    state.push(linearVelocity.z());
+    const angularVelocity = shapePart.partBody.getAngularVelocity();
+    state.push(angularVelocity.x());
+    state.push(angularVelocity.y());
+    state.push(angularVelocity.z());
+  }
+
+  addChildState(actuator, state) {
+    actuator.basePartBody.getMotionState().getWorldTransform(this.bodyBtTransform);
+    const bodyBtOrientation = this.bodyBtTransform.getRotation();
+    quat.set(this.bodyTransform.orientation, bodyBtOrientation.x(), bodyBtOrientation.y(),
+        bodyBtOrientation.z(), bodyBtOrientation.w());
+    const angularVelocity = actuator.targetPartBody.getAngularVelocity();
+    vec3.transformQuat(this.actuatorAxis, actuator.baseAxis, this.bodyTransform.orientation);
+    state.push(actuator.constraint.getHingeAngle());
+    state.push(angularVelocity.x() * this.actuatorAxis[0] + angularVelocity.y() * this.actuatorAxis[1]
+        + angularVelocity.z() * this.actuatorAxis[2]);
+  }
+
   getState() {
     if (!this.initialized) {
       return;
     }
 
-    const state = new Array(this.shapeParts.length * PART_STATE_LENGTH);
-    let offset = 0;
-    for (const shapePart of this.shapeParts) {
-      shapePart.partBody.getMotionState().getWorldTransform(this.bodyBtTransform);
-      const position = this.bodyBtTransform.getOrigin();
-      state[offset++] = position.x();
-      state[offset++] = position.y();
-      state[offset++] = position.z();
-      const orientation = this.bodyBtTransform.getRotation();
-      state[offset++] = orientation.x();
-      state[offset++] = orientation.y();
-      state[offset++] = orientation.z();
-      state[offset++] = orientation.w();
-      const linearVelocity = shapePart.partBody.getLinearVelocity();
-      state[offset++] = linearVelocity.x();
-      state[offset++] = linearVelocity.y();
-      state[offset++] = linearVelocity.z();
-      const angularVelocity = shapePart.partBody.getAngularVelocity();
-      state[offset++] = angularVelocity.x();
-      state[offset++] = angularVelocity.y();
-      state[offset++] = angularVelocity.z();
+    const state = [];
+    for (const basePart of this.shapeBaseParts) {
+      this.addBaseState(basePart, state);
+    }
+    for (const actuator of this.shapeActuators) {
+      this.addChildState(actuator, state);
     }
     return state;
   }
 
   getBodyTransform(body) {
     body.getMotionState().getWorldTransform(this.bodyBtTransform);
-    const bodyPosition = this.bodyBtTransform.getOrigin();
-    const bodyOrientation = this.bodyBtTransform.getRotation();
-    vec3.set(this.bodyTransform.position, bodyPosition.x(), bodyPosition.y(), bodyPosition.z());
-    quat.set(this.bodyTransform.orientation, bodyOrientation.x(), bodyOrientation.y(),
-        bodyOrientation.z(), bodyOrientation.w());
+    const bodyBtPosition = this.bodyBtTransform.getOrigin();
+    const bodyBtOrientation = this.bodyBtTransform.getRotation();
+    vec3.set(this.bodyTransform.position, bodyBtPosition.x(), bodyBtPosition.y(), bodyBtPosition.z());
+    quat.set(this.bodyTransform.orientation, bodyBtOrientation.x(), bodyBtOrientation.y(),
+        bodyBtOrientation.z(), bodyBtOrientation.w());
     return this.bodyTransform;
   }
 
   updateShapePosition() {
-    if (!this.shapeBasePart) {
+    if (!this.initialized || (this.shapeBaseParts.length === 0)) {
       return;
     }
 
-    this.shapeBasePart.partBody.getMotionState().getWorldTransform(this.bodyBtTransform);
-    const bodyPosition = this.bodyBtTransform.getOrigin();
-    this.shapePosition[0] = bodyPosition.x();
-    this.shapePosition[1] = bodyPosition.y();
-    this.shapePosition[2] = bodyPosition.z();
+    this.shapeBaseParts[0].partBody.getMotionState().getWorldTransform(this.bodyBtTransform);
+    const bodyBtPosition = this.bodyBtTransform.getOrigin();
+    this.shapePosition[0] = bodyBtPosition.x();
+    this.shapePosition[1] = bodyBtPosition.y();
+    this.shapePosition[2] = bodyBtPosition.z();
   }
 
   updatePrismTransforms() {

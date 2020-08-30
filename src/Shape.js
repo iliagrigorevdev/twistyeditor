@@ -229,26 +229,24 @@ class Shape {
     return parts;
   }
 
-  determineBasePart(parts) {
-    let basePart = null;
-    let maxChainLength = 0;
+  discoverPartTrees(parts) {
+    const partTrees = [];
     const remainingParts = new Set(parts);
     while (remainingParts.size > 0) {
       const part = remainingParts.values().next().value;
-      const chainParts = this.findChildParts(null, part, null, parts, false);
-      if (!chainParts) {
+      const partTree = this.findChildParts(null, part, null, parts, false);
+      if (!partTree) {
         return;
       }
-      if (!basePart || (chainParts.length > maxChainLength)
-          || ((chainParts.length === maxChainLength) && (part.length > basePart.length))) {
-        basePart = part;
-        maxChainLength = chainParts.length;
+      for (const part of partTree) {
+        remainingParts.delete(part);
       }
-      for (const chainPart of chainParts) {
-        remainingParts.delete(chainPart);
-      }
+      partTrees.push(partTree);
     }
-    return basePart;
+    partTrees.sort((a, b) => (a.length === b.length
+        ? b.reduce((acc, val) => acc + val.length) - a.reduce((acc, val) => acc + val.length)
+        : b.length - a.length));
+    return partTrees;
   }
 
   findValidSectionRefs(section, parts) {
