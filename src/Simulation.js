@@ -55,10 +55,10 @@ const MASK_PRISM = GROUP_GROUND | GROUP_PRISM;
 
 const MAX_MOTOR_TORQUE = 1000;
 const MAX_MOTOR_IMPULSE = MAX_MOTOR_TORQUE * FIXED_TIME_STEP;
-const MAX_MOTOR_VELOCITY = 10;
 const MOTOR_SOFTNESS = 0.9;
 const MOTOR_BIAS_FACTOR = 0.3;
 const MOTOR_RELAXATION_FACTOR = 1;
+const MOTOR_DELTA_TIME = 0.5;
 const MOTOR_AXIS_ROTATION = quat.setAxisAngle(quat.create(),
     vec3.fromValues(0, 1, 0), -Math.PI / 2);
 
@@ -82,7 +82,7 @@ class Simulation {
     this.shapeBasePart = null;
     this.shapeParts = [];
     this.shapeActuators = [];
-    this.velocityScales = [];
+    this.motorAngles = [];
     this.prismIds = [];
     this.prismWorldTransforms = [];
     this.prismLocalTransforms = [];
@@ -287,10 +287,16 @@ class Simulation {
     const upperAngle = section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS;
     constraint.setLimit(lowerAngle, upperAngle, MOTOR_SOFTNESS,
         MOTOR_BIAS_FACTOR, MOTOR_RELAXATION_FACTOR);
+    constraint.enableMotor(true);
+    constraint.setMaxMotorImpulse(MAX_MOTOR_IMPULSE);
     this.dynamicsWorld.addConstraint(constraint);
 
-    this.shapeActuators.push(constraint);
-    this.velocityScales.push(0);
+    this.shapeActuators.push({
+      constraint: constraint,
+      lowerAngle: lowerAngle,
+      upperAngle: upperAngle
+    });
+    this.motorAngles.push(0);
   }
 
   getState() {
@@ -368,9 +374,9 @@ class Simulation {
 
     for (let i = 0; i < this.shapeActuators.length; i++) {
       const actuator = this.shapeActuators[i];
-      const velocityScale = Math.max(-1, Math.min(1, this.velocityScales[i]));
-      const velocity = velocityScale * MAX_MOTOR_VELOCITY;
-      actuator.enableAngularMotor(true, velocity, MAX_MOTOR_IMPULSE);
+      const angle = Math.max(actuator.lowerAngle, Math.min(actuator.upperAngle,
+          this.motorAngles[i]));
+      actuator.constraint.setMotorTarget(angle, MOTOR_DELTA_TIME);
     }
 
     this.dynamicsWorld.stepSimulation(deltaTime, maxSubSteps, FIXED_TIME_STEP);

@@ -92,7 +92,7 @@ class Learning {
   }
 
   getActionSize() {
-    return this.simulation.velocityScales.length;
+    return this.simulation.motorAngles.length;
   }
 
   createActorNetwork() {
@@ -147,7 +147,7 @@ class Learning {
 
   applyAction(action) {
     for (let i = 0; i < action.length; i++) {
-      this.simulation.velocityScales[i] = action[i];
+      this.simulation.motorAngles[i] = action[i] * Math.PI;
     }
   }
 

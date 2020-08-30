@@ -15,8 +15,8 @@ const SWAP_ROTATION = quat.setAxisAngle(quat.create(),
 const SECTION_PROPERTIES = new Map([
   [SectionType.ACTUATOR, [
     { name: "initialAngle", min: -180, max: 180, default: 0 },
-    { name: "lowerAngle", min: -180, max: 1, default: 1 },
-    { name: "upperAngle", min: -1, max: 180, default: -1 }
+    { name: "lowerAngle", min: -180, max: 0, default: -180 },
+    { name: "upperAngle", min: 0, max: 180, default: 180 }
   ]]
 ]);
 
