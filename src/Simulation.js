@@ -81,7 +81,7 @@ class Simulation {
     this.shapeParts = [];
     this.shapeBaseParts = [];
     this.shapeActuators = [];
-    this.motorAngles = [];
+    this.angleScales = [];
     this.prismIds = [];
     this.prismWorldTransforms = [];
     this.prismLocalTransforms = [];
@@ -304,7 +304,7 @@ class Simulation {
       lowerAngle: lowerAngle,
       upperAngle: upperAngle
     });
-    this.motorAngles.push(0);
+    this.angleScales.push(0);
   }
 
   addBaseState(shapePart, state) {
@@ -400,8 +400,9 @@ class Simulation {
 
     for (let i = 0; i < this.shapeActuators.length; i++) {
       const actuator = this.shapeActuators[i];
-      const angle = Math.max(actuator.lowerAngle, Math.min(actuator.upperAngle,
-          this.motorAngles[i]));
+      const angleScale = Math.max(-1, Math.min(1, this.angleScales[i]));
+      const angleRange = (angleScale < 0 ? -actuator.lowerAngle : actuator.upperAngle);
+      const angle = angleScale * angleRange;
       actuator.constraint.setMotorTarget(angle, MOTOR_DELTA_TIME);
     }
 
