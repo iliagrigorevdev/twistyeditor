@@ -165,8 +165,8 @@ class Simulation {
       }
     }
 
-    const partTrees = shape.discoverPartTrees(parts);
-    this.shapeBaseParts.push(...partTrees.map(partTree =>
+    const partChains = shape.discoverPartChains(parts);
+    this.shapeBaseParts.push(...partChains.map(partTree =>
         shapeParts[parts.findIndex(p => p === partTree[0])]));
   }
 

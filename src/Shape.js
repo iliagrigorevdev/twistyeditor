@@ -229,24 +229,34 @@ class Shape {
     return parts;
   }
 
-  discoverPartTrees(parts) {
-    const partTrees = [];
+  discoverPartChains(parts) {
+    const partChains = [];
     const remainingParts = new Set(parts);
     while (remainingParts.size > 0) {
       const part = remainingParts.values().next().value;
-      const partTree = this.findChildParts(null, part, null, parts, false);
-      if (!partTree) {
+      const partChain = this.findChildParts(null, part, null, parts, false);
+      if (!partChain) {
         return;
       }
-      for (const part of partTree) {
+      for (const part of partChain) {
         remainingParts.delete(part);
       }
-      partTrees.push(partTree);
+      partChains.push(partChain);
     }
-    partTrees.sort((a, b) => (a.length === b.length
+    partChains.sort((a, b) => (a.length === b.length
         ? b.reduce((acc, val) => acc + val.length) - a.reduce((acc, val) => acc + val.length)
         : b.length - a.length));
-    return partTrees;
+    for (let i = 0; i < partChains.length; i++) {
+      const partChain = partChains[i];
+      for (let j = i + 1; j < partChains.length; j++) {
+        const otherPartChain = partChains[j];
+        if (partChain.some(part => otherPartChain.some(otherPart => otherPart === part))) {
+          partChains.splice(j, 1);
+          j--;
+        }
+      }
+    }
+    return partChains;
   }
 
   findValidSectionRefs(section, parts) {
