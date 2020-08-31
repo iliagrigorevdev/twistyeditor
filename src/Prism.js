@@ -38,6 +38,22 @@ const PRISM_VERTICES = [
   vec3.fromValues(PRISM_HALF_BASE, -PRISM_HALF_HEIGHT, -PRISM_HALF_SIDE),
   vec3.fromValues(PRISM_HALF_BASE, -PRISM_HALF_HEIGHT, PRISM_HALF_SIDE)
 ];
+const PRISM_MARGIN = 0.04;
+const PRISM_MARGIN_DIAG = PRISM_MARGIN * Math.cos(Math.PI / 4);
+const PRISM_COLLISION_VERTICES = [
+  vec3.fromValues(-PRISM_HALF_BASE + 2 * PRISM_MARGIN_DIAG + PRISM_MARGIN,
+      -PRISM_HALF_HEIGHT + PRISM_MARGIN, -PRISM_HALF_SIDE + PRISM_MARGIN),
+  vec3.fromValues(-PRISM_HALF_BASE + 2 * PRISM_MARGIN_DIAG + PRISM_MARGIN,
+      -PRISM_HALF_HEIGHT + PRISM_MARGIN, PRISM_HALF_SIDE - PRISM_MARGIN),
+  vec3.fromValues(0, PRISM_HALF_HEIGHT - 2 * PRISM_MARGIN_DIAG,
+      -PRISM_HALF_SIDE + PRISM_MARGIN),
+  vec3.fromValues(0, PRISM_HALF_HEIGHT - 2 * PRISM_MARGIN_DIAG,
+      PRISM_HALF_SIDE - PRISM_MARGIN),
+  vec3.fromValues(PRISM_HALF_BASE - 2 * PRISM_MARGIN_DIAG - PRISM_MARGIN,
+      -PRISM_HALF_HEIGHT + PRISM_MARGIN, -PRISM_HALF_SIDE + PRISM_MARGIN),
+  vec3.fromValues(PRISM_HALF_BASE - 2 * PRISM_MARGIN_DIAG - PRISM_MARGIN,
+      -PRISM_HALF_HEIGHT + PRISM_MARGIN, PRISM_HALF_SIDE - PRISM_MARGIN)
+];
 const PRISM_POLYGON_INDICES = [
   [ 0, 1, 2, 3 ], // left slope
   [ 2, 3, 5, 4 ], // right slope
@@ -53,9 +69,9 @@ const PRISM_TRIANGLE_INDICES = [
   5, 3, 1 // front
 ];
 const PRISM_POLYGON_NORMALS = PRISM_POLYGON_INDICES.map(indices => {
-  const p0 = PRISM_VERTICES[indices[0]];
-  const p1 = PRISM_VERTICES[indices[1]];
-  const p2 = PRISM_VERTICES[indices[2]];
+  const p0 = PRISM_COLLISION_VERTICES[indices[0]];
+  const p1 = PRISM_COLLISION_VERTICES[indices[1]];
+  const p2 = PRISM_COLLISION_VERTICES[indices[2]];
   const normal = vec3.sub(vec3.create(), p1, p0);
   vec3.cross(normal, normal, vec3.sub(vec3.create(), p2, p0));
   return vec3.normalize(normal, normal);
@@ -167,6 +183,7 @@ class Prism extends Placeable {
     this.backgroundColor = "#000";
     this.foregroundColor = "#fff";
     this.vertices = PRISM_VERTICES.map(vertex => vec3.clone(vertex));
+    this.collisionVertices = PRISM_COLLISION_VERTICES.map(vertex => vec3.clone(vertex));
     this.polygonNormals = PRISM_POLYGON_NORMALS.map(normal => vec3.clone(normal));
   }
 
@@ -175,6 +192,11 @@ class Prism extends Placeable {
     for (let i = 0; i < this.vertices.length; i++) {
       const vertex = this.vertices[i];
       vec3.transformQuat(vertex, PRISM_VERTICES[i], this.worldOrientation);
+      vec3.add(vertex, vertex, this.worldPosition);
+    }
+    for (let i = 0; i < this.collisionVertices.length; i++) {
+      const vertex = this.collisionVertices[i];
+      vec3.transformQuat(vertex, PRISM_COLLISION_VERTICES[i], this.worldOrientation);
       vec3.add(vertex, vertex, this.worldPosition);
     }
     for (let i = 0; i < this.polygonNormals.length; i++) {
@@ -187,8 +209,8 @@ class Prism extends Placeable {
   }
 
   collides(prism) {
-    return collideConvexHulls(this.vertices, this.polygonNormals,
-        prism.vertices, prism.polygonNormals);
+    return collideConvexHulls(this.collisionVertices, this.polygonNormals,
+        prism.collisionVertices, prism.polygonNormals);
   }
 
   getJunctions() {
@@ -310,6 +332,9 @@ class Prism extends Placeable {
     for (let i = 0; i < this.vertices.length; i++) {
       vec3.copy(prism.vertices[i], this.vertices[i]);
     }
+    for (let i = 0; i < this.collisionVertices.length; i++) {
+      vec3.copy(prism.collisionVertices[i], this.collisionVertices[i]);
+    }
     for (let i = 0; i < this.polygonNormals.length; i++) {
       vec3.copy(prism.polygonNormals[i], this.polygonNormals[i]);
     }
@@ -318,5 +343,5 @@ class Prism extends Placeable {
 }
 
 export default Prism;
-export { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE };
+export { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE, PRISM_MARGIN };
 export { JunctionFace };

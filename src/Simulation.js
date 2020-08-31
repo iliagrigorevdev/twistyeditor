@@ -1,7 +1,7 @@
 import Ammo from 'ammo.js';
 import { vec3, quat, mat3 } from 'gl-matrix';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
-import { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE } from './Prism';
+import { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE, PRISM_MARGIN } from './Prism';
 import { SectionType } from './Section';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
@@ -18,7 +18,6 @@ const PRISM_HALF_SIDE = 0.5 * PRISM_SIDE;
 
 const PRISM_CG_H = 1 / 3 * PRISM_HEIGHT;
 const PRISM_CG_DY = PRISM_HALF_HEIGHT - PRISM_CG_H;
-const PRISM_MARGIN = 0.04;
 const PRISM_MARGIN_DIAG = PRISM_MARGIN * Math.cos(Math.PI / 4);
 
 const PRISM_COLLISION_VERTICES = [
