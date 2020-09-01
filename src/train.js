@@ -1,10 +1,13 @@
-import * as tf from '@tensorflow/tfjs';
-import Simulation from './Simulation';
+import * as argparse from 'argparse';
+import * as fs from 'fs';
+
 import ReplayBuffer from './ReplayBuffer';
 import OUActionNoise from './OUActionNoise';
 
-const MAX_SUB_STEPS = 10;
-const FIXED_TIME_STEP = 0.01;
+import Agent from './Agent';
+import Shape from './Shape';
+
+let tf;
 
 const GAMMA = 0.99;
 const TAU = 0.995;
@@ -16,23 +19,16 @@ const LEARNING_STARTS = 100;
 const BATCH_SIZE = 64;
 const REPLAY_BUFFER_SIZE = 1e5;
 const MAX_EPISODE_STEPS = 300;
-const SKIP_FRAMES = 10;
-const GOAL_DISTANCE = 20;
-const GOAL_ACHIEVED_DISTANCE = 1;
 const GOAL_DISTANCE_REWARD_WEIGHT = 1;
 
-class Learning {
+class DDPG extends Agent {
   constructor(shape) {
+    super(shape);
     this.replayBuffer = new ReplayBuffer(REPLAY_BUFFER_SIZE);
-    this.simulation = new Simulation(shape);
     this.lastState = null;
     this.trainSteps = 0;
     this.episodeSteps = 0;
     this.episodeTime = 0;
-    this.playFrames = 0;
-    this.goalX = 0;
-    this.goalZ = 0;
-    this.localTime = 0;
     this.totalReward = 0;
 
     this.onlineActorNetwork = null;
@@ -49,22 +45,13 @@ class Learning {
   }
 
   reset() {
+    super.reset();
     this.lastState = null;
     this.episodeSteps = 0;
-    this.playFrames = 0;
-    this.localTime = 0;
     this.totalReward = 0;
     if (this.actionNoise) {
       this.actionNoise.reset();
     }
-    this.simulation.reset();
-    this.resetGoal();
-  }
-
-  resetGoal() {
-    const angle = Math.random() * 2 * Math.PI;
-    this.goalX = GOAL_DISTANCE * Math.sin(angle);
-    this.goalZ = GOAL_DISTANCE * Math.cos(angle);
   }
 
   init() {
@@ -81,18 +68,6 @@ class Learning {
     this.actionNoise = new OUActionNoise(this.getActionSize(), 0, ACTION_NOISE_STDDEV);
     console.log("Learning initialized: stateSize=" + this.getStateSize()
         + ", actionSize=" + this.getActionSize());
-  }
-
-  getState() {
-    return [this.goalX, this.goalZ].concat(this.simulation.getState());
-  }
-
-  getStateSize() {
-    return this.lastState.length;
-  }
-
-  getActionSize() {
-    return this.simulation.angleScales.length;
   }
 
   createActorNetwork() {
@@ -130,31 +105,11 @@ class Learning {
     return tf.model({inputs: [stateInput, actionInput], outputs: output});
   }
 
-  predictAction(state, addNoise) {
-    let action;
-    tf.tidy(() => {
-      const stateTensor = tf.tensor2d([state]);
-      action = this.onlineActorNetwork.predict(stateTensor).arraySync()[0];
-    });
-    if (addNoise) {
-      const noise = this.actionNoise.next();
-      for (let i = 0; i < action.length; i++) {
-        action[i] = Math.max(-1, Math.min(1, action[i] + noise[i]));
-      }
-    }
-    return action;
-  }
-
-  applyAction(action) {
+  addNoise(action) {
+    const noise = this.actionNoise.next();
     for (let i = 0; i < action.length; i++) {
-      this.simulation.angleScales[i] = action[i];
+      action[i] = Math.max(-1, Math.min(1, action[i] + noise[i]));
     }
-  }
-
-  getGoalDistance() {
-    const goalDistX = this.goalX - this.simulation.shapePosition[0];
-    const goalDistZ = this.goalZ - this.simulation.shapePosition[2];
-    return Math.sqrt(goalDistX * goalDistX + goalDistZ * goalDistZ);
   }
 
   getEpisodeElapsedTimeInSecs() {
@@ -199,10 +154,11 @@ class Learning {
       const state = this.lastState;
       const goalDistance = this.getGoalDistance();
 
-      const action = this.predictAction(state, true);
+      const action = this.predictAction(this.onlineActorNetwork, state, true);
+      this.addNoise(action);
       this.applyAction(action);
-      for (let i = 0; i < SKIP_FRAMES; i++) {
-        this.simulation.stepOnce(FIXED_TIME_STEP, false);
+      for (let i = 0; i < this.skipFrames; i++) {
+        this.step();
       }
       this.trainSteps++;
 
@@ -266,48 +222,58 @@ class Learning {
         console.log("Episode finished: reward=" + Math.floor(this.totalReward)
             + ", time=" + this.getEpisodeElapsedTimeInSecs());
         this.reset();
-        break;
-      } else if (nextGoalDistance <= GOAL_ACHIEVED_DISTANCE) {
+        this.lastState = this.getState();
+      } else if (this.isGoalAchieved(nextGoalDistance)) {
         console.log("Goal achieved: time=" + this.getEpisodeElapsedTimeInSecs());
         this.resetGoal();
         this.lastState = this.getState();
       }
     }
 
-    this.simulation.updatePrismTransforms();
-  }
-
-  play(deltaTime) {
-    if (!this.simulation.initialized) {
-      return;
-    }
-
-    this.localTime += deltaTime;
-    if (this.localTime < FIXED_TIME_STEP) {
-      return;
-    }
-
-    const hasBrain = (this.onlineActorNetwork && (this.getActionSize() > 0));
-
-    const maxSubSteps = Math.min(Math.floor(this.localTime / FIXED_TIME_STEP), MAX_SUB_STEPS);
-    this.localTime -= maxSubSteps * FIXED_TIME_STEP;
-    for (let i = 0; i < maxSubSteps; i++) {
-      if (hasBrain && ((this.playFrames % SKIP_FRAMES) === 0)) {
-        const state = this.getState();
-        const action = this.predictAction(state, false);
-        this.applyAction(action);
-      }
-      this.simulation.stepOnce(FIXED_TIME_STEP, false);
-      this.playFrames++;
-    }
-
-    this.simulation.updatePrismTransforms();
-
-    if (hasBrain && (this.getGoalDistance() <= GOAL_ACHIEVED_DISTANCE)) {
-      this.resetGoal();
-      this.playFrames = 0;
-    }
+    this.update();
   }
 }
 
-export default Learning;
+export function parseArguments() {
+  const parser = new argparse.ArgumentParser({
+    description: "Training script for a DDPG that plays the snake game"
+  });
+  parser.add_argument("--gpu", {
+    action: "store_true",
+    help: "Whether to use GPU for training (requires CUDA, drivers, and libraries)."
+  });
+  parser.add_argument("--shapePath", {
+    type: "str",
+    default: "./shapes/cat.twy",
+    help: "Path to the file from which the shape will be loaded."
+  });
+  parser.add_argument("--saveDir", {
+    type: "str",
+    default: "./models",
+    help: "Path to the directory for writing the online DDPG after training."
+  });
+  return parser.parse_args();
+}
+
+async function main() {
+  const args = parseArguments();
+  if (args.gpu) {
+    tf = require("@tensorflow/tfjs-node-gpu");
+  } else {
+    tf = require("@tensorflow/tfjs-node");
+  }
+
+  tf.enableProdMode();
+
+  const shapeArchive = fs.readFileSync(args.shapePath);
+  const shape = Shape.load(shapeArchive);
+  const ddpg = new DDPG(shape);
+  ddpg.simulation.initializing.then(() => {
+    ddpg.train(10000);
+    // TODO save model to saveDir
+  });
+}
+
+if (require.main === module) {
+  main();
+}

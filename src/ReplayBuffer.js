@@ -1,5 +1,3 @@
-import * as tf from '@tensorflow/tfjs';
-
 class ReplayBuffer {
   constructor(maxLength) {
     this.maxLength = maxLength;
@@ -21,13 +19,25 @@ class ReplayBuffer {
   }
 
   sample(batchSize) {
-    tf.util.shuffle(this.indices);
+    shuffle(this.indices);
     const amount = Math.min(batchSize, this.size());
     const entries = [];
     for (let i = 0; i < amount; i++) {
       entries.push(this.buffer[this.indices[i]]);
     }
     return entries;
+  }
+}
+
+function shuffle(array) {
+  let currentIndex = array.length;
+  while (currentIndex !== 0) {
+    const randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    const temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
   }
 }
 

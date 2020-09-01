@@ -5,14 +5,12 @@ import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
 
-const ARCHIVE_VERSION = 3;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
   EDIT: 0,
-  LEARN: 1,
-  PLAY: 2
+  SIMULATE: 1
 });
 
 class App extends Component {
@@ -53,25 +51,6 @@ class App extends Component {
     if (shape) {
       this.handleShapeChange(shape, true);
     }
-  }
-
-  static shapeToArchive(shape) {
-    return JSON.stringify({
-      version: ARCHIVE_VERSION,
-      shape: shape.toArchive()
-    });
-  }
-
-  static archiveToShape(text) {
-    const archive = JSON.parse(text);
-    if (archive.version > ARCHIVE_VERSION) {
-      alert("Unsupported version: " + archive.version);
-      return;
-    }
-    const shape = new Shape();
-    shape.fromArchive(archive.shape, archive.version);
-    shape.applyTransform();
-    return shape;
   }
 
   handleShapeChange(shape, reset = false, activePlaceableId = undefined) {
@@ -149,7 +128,7 @@ class App extends Component {
       const file = element.files[0];
       const reader = new FileReader();
       reader.onload = ((e) => {
-        const shape = App.archiveToShape(e.target.result);
+        const shape = Shape.load(e.target.result);
         if (shape) {
           this.handleShapeChange(shape, true);
         }
@@ -165,7 +144,7 @@ class App extends Component {
       return;
     }
     const element = document.createElement("a");
-    const content = App.shapeToArchive(shape);
+    const content = Shape.save(shape);
     const file = new Blob([content], {type: "text/plain;charset=utf-8"});
     element.href = URL.createObjectURL(file);
     element.download = name + ARCHIVE_EXTENSION;
@@ -193,8 +172,7 @@ class App extends Component {
           onShapeShowcase={() => this.handleShapeShowcase()}
           onShapeImport={() => this.handleShapeImport()}
           onShapeExport={shape => this.handleShapeExport(shape)}
-          onSimulationLearn={() => this.handleAppModeChange(AppMode.LEARN)}
-          onSimulationPlay={() => this.handleAppModeChange(AppMode.PLAY)}
+          onSimulationStart={() => this.handleAppModeChange(AppMode.SIMULATE)}
           onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)} />
       </div>
     );

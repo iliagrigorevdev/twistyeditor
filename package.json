@@ -18,7 +18,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "train": "babel-node --presets @babel/preset-env src/train.js"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -34,5 +35,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.5",
+    "@babel/node": "^7.10.5",
+    "@babel/preset-env": "^7.11.5",
+    "@tensorflow/tfjs-node": "^2.3.0",
+    "@tensorflow/tfjs-node-gpu": "^2.3.0",
+    "argparse": "^2.0.1"
   }
 }
