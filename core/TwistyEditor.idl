@@ -1,4 +1,0 @@
-
-interface Simulation {
-  void Simulation();
-};
