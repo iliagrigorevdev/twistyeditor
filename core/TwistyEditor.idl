@@ -1,0 +1,4 @@
+
+interface Simulation {
+  void Simulation();
+};
