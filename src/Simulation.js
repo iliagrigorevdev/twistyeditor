@@ -1,47 +1,12 @@
 import Ammo from 'ammo.js';
-import { vec3, quat, mat3 } from 'gl-matrix';
+import { vec3, quat } from 'gl-matrix';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
-import { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE, PRISM_MARGIN } from './Prism';
-import { SectionType } from './Section';
-
-const DEGREES_TO_RADIANS = Math.PI / 180;
-const RADIANS_TO_DEGREES = 180 / Math.PI;
+import RigidInfo from './RigidInfo';
 
 const MAX_SUB_STEPS = 10;
 const FIXED_TIME_STEP = 0.01;
 
 const GRAVITY = 9.81;
-
-const PRISM_HALF_HEIGHT = 0.5 * PRISM_HEIGHT;
-const PRISM_HALF_BASE = 0.5 * PRISM_BASE;
-const PRISM_HALF_SIDE = 0.5 * PRISM_SIDE;
-
-const PRISM_CG_H = 1 / 3 * PRISM_HEIGHT;
-const PRISM_CG_DY = PRISM_HALF_HEIGHT - PRISM_CG_H;
-const PRISM_MARGIN_DIAG = PRISM_MARGIN * Math.cos(Math.PI / 4);
-
-const PRISM_COLLISION_VERTICES = [
-  vec3.fromValues(-PRISM_HALF_BASE + 2 * PRISM_MARGIN_DIAG + PRISM_MARGIN,
-      -PRISM_HALF_HEIGHT + PRISM_CG_DY + PRISM_MARGIN, -PRISM_HALF_SIDE + PRISM_MARGIN),
-  vec3.fromValues(-PRISM_HALF_BASE + 2 * PRISM_MARGIN_DIAG + PRISM_MARGIN,
-      -PRISM_HALF_HEIGHT + PRISM_CG_DY + PRISM_MARGIN, PRISM_HALF_SIDE - PRISM_MARGIN),
-  vec3.fromValues(0, PRISM_HALF_HEIGHT + PRISM_CG_DY - 2 * PRISM_MARGIN_DIAG,
-      -PRISM_HALF_SIDE + PRISM_MARGIN),
-  vec3.fromValues(0, PRISM_HALF_HEIGHT + PRISM_CG_DY - 2 * PRISM_MARGIN_DIAG,
-      PRISM_HALF_SIDE - PRISM_MARGIN),
-  vec3.fromValues(PRISM_HALF_BASE - 2 * PRISM_MARGIN_DIAG - PRISM_MARGIN,
-      -PRISM_HALF_HEIGHT + PRISM_CG_DY + PRISM_MARGIN, -PRISM_HALF_SIDE + PRISM_MARGIN),
-  vec3.fromValues(PRISM_HALF_BASE - 2 * PRISM_MARGIN_DIAG - PRISM_MARGIN,
-      -PRISM_HALF_HEIGHT + PRISM_CG_DY + PRISM_MARGIN, PRISM_HALF_SIDE - PRISM_MARGIN)
-];
-
-const PRISM_VOLUME = 0.5 * PRISM_BASE * PRISM_HEIGHT * PRISM_SIDE;
-const PRISM_DENSITY = 1 / Math.sqrt(2);
-const PRISM_MASS = PRISM_VOLUME * PRISM_DENSITY;
-const PRISM_INERTIA_FACTOR = PRISM_MASS * PRISM_HEIGHT * PRISM_HEIGHT;
-const PRISM_INERTIA_X = 2 / 9 * PRISM_INERTIA_FACTOR;
-const PRISM_INERTIA_Y = 1 / 3 * PRISM_INERTIA_FACTOR;
-const PRISM_INERTIA_Z = 2 / 9 * PRISM_INERTIA_FACTOR;
 
 const FRICTION_GROUND = 3.0;
 const FRICTION_PRISM = 0.2;
@@ -66,17 +31,16 @@ class Simulation {
   constructor(shape) {
     this.initialized = false;
 
+    const rigidInfo = new RigidInfo(shape);
     Ammo().then((Ammo) => {
-      this.init(Ammo);
-
+      this.init(Ammo, rigidInfo);
       this.addGroundBody(Ammo);
-      this.addShapeBody(Ammo, shape);
-
+      this.addShapeBody(Ammo, rigidInfo);
       this.initialized = true;
     });
   }
 
-  init(Ammo) {
+  init(Ammo, rigidInfo) {
     this.shapeParts = [];
     this.shapeBaseParts = [];
     this.shapeActuators = [];
@@ -100,14 +64,11 @@ class Simulation {
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -GRAVITY, 0));
 
     this.prismCollisionShape = new Ammo.btConvexHullShape();
-    this.prismCollisionShape.setMargin(PRISM_MARGIN);
-    for (const vertex of PRISM_COLLISION_VERTICES) {
+    this.prismCollisionShape.setMargin(rigidInfo.prismCollisionMargin);
+    for (const vertex of rigidInfo.prismCollisionVertices) {
       this.prismCollisionShape.addPoint(convertVector(Ammo, vertex), false);
     }
     this.prismCollisionShape.recalcLocalAabb();
-
-    const prismMassOffset = createTransform(vec3.fromValues(0, PRISM_CG_DY, 0));
-    this.prismMassOffsetInversed = inverseTransform(createTransform(), prismMassOffset);
   }
 
   reset() {
@@ -145,90 +106,39 @@ class Simulation {
         FRICTION_GROUND, RESTITUTION_GROUND, GROUP_GROUND, MASK_GROUND);
   }
 
-  addShapeBody(Ammo, shape) {
-    const parts = shape.discoverParts();
-    if (parts.length === 0) {
-      return;
-    }
+  findShapePart(shapeParts, links, link) {
+    const linkIndex = links.findIndex(l => l === link);
+    return shapeParts[linkIndex];
+  }
 
+  addShapeBody(Ammo, rigidInfo) {
     const shapeParts = [];
-    for (let i = 0; i < parts.length; i++) {
-      console.log("Part " + (i + 1) + "/" + parts.length + ":");
-      const shapePart = this.addShapePartBody(Ammo, parts[i]);
+    for (const link of rigidInfo.links) {
+      const shapePart = this.addShapePartBody(Ammo, link);
       shapeParts.push(shapePart);
     }
 
-    for (const section of shape.sections) {
-      if (section.type === SectionType.ACTUATOR) {
-        this.addActuator(Ammo, shapeParts, shape, parts, section);
-      }
+    for (const joint of rigidInfo.joints) {
+      this.addActuator(Ammo, shapeParts, rigidInfo.links, joint);
     }
 
-    const partChains = shape.discoverPartChains(parts);
-    this.shapeBaseParts.push(...partChains.map(partTree =>
-        shapeParts[parts.findIndex(p => p === partTree[0])]));
+    this.shapeBaseParts.push(...rigidInfo.baseLinks.map(baseLink =>
+        this.findShapePart(shapeParts, rigidInfo.links, baseLink)));
   }
 
-  addShapePartBody(Ammo, part) {
-    if (part.length === 0) {
-      return;
-    }
-
-    const transforms = [];
-    const partOrigin = vec3.create();
-    for (const prism of part) {
-      const transform = multiplyTransforms(createTransform(),
-          createTransform(prism.worldPosition, prism.worldOrientation),
-          this.prismMassOffsetInversed);
-      vec3.add(partOrigin, partOrigin, transform.position);
-      transforms.push(transform);
-    }
-    vec3.scale(partOrigin, partOrigin, 1 / part.length);
-
-    const tensor = mat3.fromValues(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    const mat1 = mat3.create();
-    const mat2 = mat3.create();
-    for (const transform of transforms) {
-      const basis = mat3.fromQuat(mat1, transform.orientation);
-      const j = mat3.set(mat2,
-        basis[0] * PRISM_INERTIA_X, basis[3] * PRISM_INERTIA_Y, basis[6] * PRISM_INERTIA_Z,
-        basis[1] * PRISM_INERTIA_X, basis[4] * PRISM_INERTIA_Y, basis[7] * PRISM_INERTIA_Z,
-        basis[2] * PRISM_INERTIA_X, basis[5] * PRISM_INERTIA_Y, basis[8] * PRISM_INERTIA_Z
-      );
-      mat3.mul(j, basis, j);
-      mat3.add(tensor, tensor, j);
-
-      const prismOrigin = transform.position;
-      const px = prismOrigin[0] - partOrigin[0];
-      const py = prismOrigin[1] - partOrigin[1];
-      const pz = prismOrigin[2] - partOrigin[2];
-      const squaredDistance = px * px + py * py + pz * pz;
-      mat3.set(j,
-        squaredDistance - px * px, -px * py, -px * pz,
-        -py * px, squaredDistance - py * py, -py * pz,
-        -pz * px, -pz * py, squaredDistance - pz * pz
-      );
-      mat3.multiplyScalar(j, j, PRISM_MASS);
-      mat3.add(tensor, tensor, j);
-    }
-    const principalRotation = quat.fromMat3(quat.create(),
-        diagonalizeMatrix(tensor, 1e-5, 20));
-    const partTransform = createTransform(partOrigin, principalRotation);
-    const inertia = vec3.fromValues(tensor[0], tensor[4], tensor[8]);
-
-    const childTransform = inverseTransform(createTransform(), partTransform);
+  addShapePartBody(Ammo, link) {
+    const childTransform = inverseTransform(createTransform(), link.transform);
     const collisionShape = new Ammo.btCompoundShape();
-    for (const transform of transforms) {
+    for (const transform of link.prismTransforms) {
       const prismTransform = multiplyTransforms(createTransform(), childTransform, transform);
       collisionShape.addChildShape(convertTransform(Ammo, prismTransform), this.prismCollisionShape);
     }
 
-    const mass = part.length * PRISM_MASS;
-    const rigidBody = this.addRigidBody(Ammo, collisionShape, mass,
-        inertia, partTransform, FRICTION_PRISM, RESTITUTION_PRISM,
+    const rigidBody = this.addRigidBody(Ammo, collisionShape, link.mass,
+      link.inertia, link.transform, FRICTION_PRISM, RESTITUTION_PRISM,
         GROUP_PRISM, MASK_PRISM);
 
-    for (const prism of part) {
+    for (const prism of link.prisms) {
       const worldTransform = createTransform(vec3.clone(prism.worldPosition),
           quat.clone(prism.worldOrientation));
       const localTransform = multiplyTransforms(createTransform(),
@@ -238,48 +148,20 @@ class Simulation {
       this.prismLocalTransforms.push(localTransform);
     }
 
-    console.log("Mass: " + mass);
-    console.log("Origin: {" + partOrigin[0].toFixed(2) + ", " + partOrigin[1].toFixed(2)
-        + ", " + partOrigin[2].toFixed(2) + "}");
-    console.log("Inertia: {" + inertia[0].toFixed(2) + ", " + inertia[1].toFixed(2)
-        + ", " + inertia[2].toFixed(2) + "}");
-    const principalAxis = vec3.create();
-    const principalAngle = quat.getAxisAngle(principalAxis, principalRotation);
-    console.log("Principal: axis={" + principalAxis[0].toFixed(2) + ", "
-        + principalAxis[1].toFixed(2) + ", " + principalAxis[2].toFixed(2)
-        + "} angle=" + (principalAngle * RADIANS_TO_DEGREES).toFixed(0));
-
     const shapePart = {
       partBody: rigidBody,
-      prismCount: part.length,
-      initialTransform: convertTransform(Ammo, partTransform)
+      prismCount: link.prisms.length,
+      initialTransform: convertTransform(Ammo, link.transform)
     };
     this.shapeParts.push(shapePart);
     return shapePart;
   }
 
-  addActuator(Ammo, shapeParts, shape, parts, section) {
-    const basePrism = shape.findPlaceable(section.basePrismId);
-    const targetPrism = shape.findPlaceable(section.targetPrismId);
-    const basePartIndex = parts.findIndex(part => part.some(prism => prism === basePrism));
-    const targetPartIndex = parts.findIndex(part => part.some(prism => prism === targetPrism));
-    if (basePartIndex === -1) {
-      console.log("Base part not found");
-      return;
-    }
-    if (targetPartIndex === -1) {
-      console.log("Target part not found");
-      return;
-    }
-    if (basePartIndex === targetPartIndex) {
-      console.log("Actuator must connect different parts");
-      return;
-    }
-
-    const basePartBody = shapeParts[basePartIndex].partBody;
-    const targetPartBody = shapeParts[targetPartIndex].partBody;
-    const sectionOrientation = quat.mul(quat.create(), section.worldOrientation, MOTOR_AXIS_ROTATION);
-    const sectionTransform = createTransform(section.worldPosition, sectionOrientation);
+  addActuator(Ammo, shapeParts, links, joint) {
+    const basePartBody = this.findShapePart(shapeParts, links, joint.baseLink).partBody;
+    const targetPartBody = this.findShapePart(shapeParts, links, joint.targetLink).partBody;
+    const sectionTransform = multiplyTransforms(createTransform(),
+        joint.transform, createTransform(vec3.create(), MOTOR_AXIS_ROTATION));
     const frameInA = multiplyTransforms(createTransform(),
         inverseTransform(createTransform(), this.getBodyTransform(basePartBody)), sectionTransform);
     const frameInB = multiplyTransforms(createTransform(),
@@ -287,9 +169,7 @@ class Simulation {
 
     const constraint = new Ammo.btHingeConstraint(basePartBody, targetPartBody,
         convertTransform(Ammo, frameInA), convertTransform(Ammo, frameInB), true);
-    const lowerAngle = section.getPropertyValue("lowerAngle") * DEGREES_TO_RADIANS;
-    const upperAngle = section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS;
-    constraint.setLimit(lowerAngle, upperAngle, MOTOR_SOFTNESS,
+    constraint.setLimit(joint.lowerAngle, joint.upperAngle, MOTOR_SOFTNESS,
         MOTOR_BIAS_FACTOR, MOTOR_RELAXATION_FACTOR);
     constraint.enableMotor(true);
     constraint.setMaxMotorImpulse(MAX_MOTOR_IMPULSE);
@@ -300,8 +180,8 @@ class Simulation {
       targetPartBody: targetPartBody,
       baseAxis: vec3.transformQuat(vec3.create(), MOTOR_AXIS, frameInA.orientation),
       constraint: constraint,
-      lowerAngle: lowerAngle,
-      upperAngle: upperAngle
+      lowerAngle: joint.lowerAngle,
+      upperAngle: joint.upperAngle
     });
     this.angleScales.push(0);
   }
@@ -429,62 +309,6 @@ function convertQuaternion(Ammo, quaternion) {
 function convertTransform(Ammo, transform) {
   return new Ammo.btTransform(convertQuaternion(Ammo, transform.orientation),
       convertVector(Ammo, transform.position));
-}
-
-function diagonalizeMatrix(mat, threshold, maxSteps) {
-  const rot = mat3.create();
-  for (let step = maxSteps; step > 0; step--) {
-    let p = 0;
-    let q = 1;
-    let r = 2;
-    let max = Math.abs(mat[3]);
-    let v = Math.abs(mat[6]);
-    if (v > max) {
-      q = 2;
-      r = 1;
-      max = v;
-    }
-    v = Math.abs(mat[7]);
-    if (v > max) {
-      p = 1;
-      q = 2;
-      r = 0;
-      max = v;
-    }
-
-    let t = threshold * (Math.abs(mat[0]) + Math.abs(mat[4]) + Math.abs(mat[8]));
-    if (max <= t) {
-      return rot;
-    }
-
-    const mpq = mat[p + q * 3];
-    const theta = (mat[q + q * 3] - mat[p + p * 3]) / (2 * mpq);
-    const theta2 = theta * theta;
-    let cos;
-    let sin;
-    t = (theta >= 0)
-        ? 1 / (theta + Math.sqrt(1 + theta2))
-        : 1 / (theta - Math.sqrt(1 + theta2));
-    cos = 1 / Math.sqrt(1 + t * t);
-    sin = cos * t;
-
-    mat[p + q * 3] = 0;
-    mat[q + p * 3] = 0;
-    mat[p + p * 3] -= t * mpq;
-    mat[q + q * 3] += t * mpq;
-    let mrp = mat[r + p * 3];
-    let mrq = mat[r + q * 3];
-    mat[r + p * 3] = mat[p + r * 3] = cos * mrp - sin * mrq;
-    mat[r + q * 3] = mat[q + r * 3] = cos * mrq + sin * mrp;
-
-    for (let i = 0; i < 3; i++) {
-      mrp = rot[i + p * 3];
-      mrq = rot[i + q * 3];
-      rot[i + p * 3] = cos * mrp - sin * mrq;
-      rot[i + q * 3] = cos * mrq + sin * mrp;
-    }
-  }
-  return rot;
 }
 
 export default Simulation;
