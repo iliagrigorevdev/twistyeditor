@@ -2,6 +2,7 @@ import { vec3, quat, mat3 } from 'gl-matrix';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
 import { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE, PRISM_MARGIN } from './Prism';
 import { SectionType } from './Section';
+import { diagonalizeMatrix } from './VecMath';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -39,11 +40,11 @@ const PRISM_INERTIA_X = 2 / 9 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Y = 1 / 3 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Z = 2 / 9 * PRISM_INERTIA_FACTOR;
 
+const JOINT_EFFORT_MAX = 100;
+const JOINT_VELOCITY_MAX = 10;
+
 class RigidInfo {
   constructor(shape) {
-    this.prismCollisionMargin = PRISM_MARGIN;
-    this.prismCollisionVertices = PRISM_COLLISION_VERTICES;
-
     this.links = [];
     this.baseLinks = [];
     this.joints = [];
@@ -51,7 +52,8 @@ class RigidInfo {
     const parts = shape.discoverParts();
     for (let i = 0; i < parts.length; i++) {
       console.log("Link " + (i + 1) + "/" + parts.length + ":");
-      const link = this.createLink(parts[i]);
+      const name = "link" + (this.links.length + 1);
+      const link = this.createLink(name, parts[i]);
       if (link) {
         this.links.push(link);
       }
@@ -59,7 +61,8 @@ class RigidInfo {
 
     for (const section of shape.sections) {
       if (section.type === SectionType.ACTUATOR) {
-        const joint = this.createJoint(shape, parts, section);
+        const name = "joint" + (this.joints.length + 1);
+        const joint = this.createJoint(shape, parts, name, section);
         if (joint) {
           this.joints.push(joint);
         }
@@ -71,7 +74,7 @@ class RigidInfo {
         this.links[parts.findIndex(p => p === partChain[0])]));
   }
 
-  createLink(part) {
+  createLink(name, part) {
     if (part.length === 0) {
       return;
     }
@@ -132,6 +135,7 @@ class RigidInfo {
         + "} angle=" + (principalAngle * RADIANS_TO_DEGREES).toFixed(0));
 
     return {
+      name: name,
       prisms: part,
       mass: mass,
       inertia: inertia,
@@ -140,7 +144,7 @@ class RigidInfo {
     };
   }
 
-  createJoint(shape, parts, section) {
+  createJoint(shape, parts, name, section) {
     const basePrism = shape.findPlaceable(section.basePrismId);
     const targetPrism = shape.findPlaceable(section.targetPrismId);
     const basePartIndex = parts.findIndex(part => part.some(prism => prism === basePrism));
@@ -174,6 +178,7 @@ class RigidInfo {
     const upperAngle = section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS;
 
     return {
+      name: name,
       baseLink: baseLink,
       targetLink: targetLink,
       transform: transform,
@@ -183,60 +188,5 @@ class RigidInfo {
   }
 }
 
-function diagonalizeMatrix(mat, threshold, maxSteps) {
-  const rot = mat3.create();
-  for (let step = maxSteps; step > 0; step--) {
-    let p = 0;
-    let q = 1;
-    let r = 2;
-    let max = Math.abs(mat[3]);
-    let v = Math.abs(mat[6]);
-    if (v > max) {
-      q = 2;
-      r = 1;
-      max = v;
-    }
-    v = Math.abs(mat[7]);
-    if (v > max) {
-      p = 1;
-      q = 2;
-      r = 0;
-      max = v;
-    }
-
-    let t = threshold * (Math.abs(mat[0]) + Math.abs(mat[4]) + Math.abs(mat[8]));
-    if (max <= t) {
-      return rot;
-    }
-
-    const mpq = mat[p + q * 3];
-    const theta = (mat[q + q * 3] - mat[p + p * 3]) / (2 * mpq);
-    const theta2 = theta * theta;
-    let cos;
-    let sin;
-    t = (theta >= 0)
-        ? 1 / (theta + Math.sqrt(1 + theta2))
-        : 1 / (theta - Math.sqrt(1 + theta2));
-    cos = 1 / Math.sqrt(1 + t * t);
-    sin = cos * t;
-
-    mat[p + q * 3] = 0;
-    mat[q + p * 3] = 0;
-    mat[p + p * 3] -= t * mpq;
-    mat[q + q * 3] += t * mpq;
-    let mrp = mat[r + p * 3];
-    let mrq = mat[r + q * 3];
-    mat[r + p * 3] = mat[p + r * 3] = cos * mrp - sin * mrq;
-    mat[r + q * 3] = mat[q + r * 3] = cos * mrq + sin * mrp;
-
-    for (let i = 0; i < 3; i++) {
-      mrp = rot[i + p * 3];
-      mrq = rot[i + q * 3];
-      rot[i + p * 3] = cos * mrp - sin * mrq;
-      rot[i + q * 3] = cos * mrq + sin * mrp;
-    }
-  }
-  return rot;
-}
-
 export default RigidInfo;
+export { PRISM_COLLISION_VERTICES, JOINT_EFFORT_MAX, JOINT_VELOCITY_MAX };

@@ -117,7 +117,7 @@ class App extends Component {
     }
   }
 
-  handleShapeImport() {
+  handleShapeLoad() {
     const element = document.createElement("input");
     element.setAttribute("type", "file");
     element.setAttribute("accept", ARCHIVE_EXTENSION);
@@ -131,6 +131,8 @@ class App extends Component {
         const shape = Shape.load(e.target.result);
         if (shape) {
           this.handleShapeChange(shape, true);
+        } else {
+          alert("Failed to load shape");
         }
       });
       reader.readAsText(file);
@@ -138,18 +140,22 @@ class App extends Component {
     element.click();
   }
 
-  handleShapeExport(shape) {
+  downloadFile(name, content) {
+    const element = document.createElement("a");
+    const file = new Blob([content], {type: "text/plain;charset=utf-8"});
+    element.href = URL.createObjectURL(file);
+    element.download = name;
+    document.body.appendChild(element);
+    element.click();
+  }
+
+  handleShapeSave(shape) {
     const name = prompt("Enter shape name: ");
     if (!name) {
       return;
     }
-    const element = document.createElement("a");
     const content = Shape.save(shape);
-    const file = new Blob([content], {type: "text/plain;charset=utf-8"});
-    element.href = URL.createObjectURL(file);
-    element.download = name + ARCHIVE_EXTENSION;
-    document.body.appendChild(element);
-    element.click();
+    this.downloadFile(name + ARCHIVE_EXTENSION, content);
   }
 
   handleAppModeChange(mode) {
@@ -170,8 +176,8 @@ class App extends Component {
           onHistoryChange={index => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
           onShapeShowcase={() => this.handleShapeShowcase()}
-          onShapeImport={() => this.handleShapeImport()}
-          onShapeExport={shape => this.handleShapeExport(shape)}
+          onShapeSave={shape => this.handleShapeSave(shape)}
+          onShapeLoad={() => this.handleShapeLoad()}
           onSimulationStart={() => this.handleAppModeChange(AppMode.SIMULATE)}
           onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)} />
       </div>

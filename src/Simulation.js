@@ -1,7 +1,8 @@
 import Ammo from 'ammo.js';
 import { vec3, quat } from 'gl-matrix';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
-import RigidInfo from './RigidInfo';
+import RigidInfo, { PRISM_COLLISION_VERTICES } from './RigidInfo';
+import { PRISM_MARGIN } from './Prism';
 
 const MAX_SUB_STEPS = 10;
 const FIXED_TIME_STEP = 0.01;
@@ -64,8 +65,8 @@ class Simulation {
     this.dynamicsWorld.setGravity(new Ammo.btVector3(0, -GRAVITY, 0));
 
     this.prismCollisionShape = new Ammo.btConvexHullShape();
-    this.prismCollisionShape.setMargin(rigidInfo.prismCollisionMargin);
-    for (const vertex of rigidInfo.prismCollisionVertices) {
+    this.prismCollisionShape.setMargin(PRISM_MARGIN);
+    for (const vertex of PRISM_COLLISION_VERTICES) {
       this.prismCollisionShape.addPoint(convertVector(Ammo, vertex), false);
     }
     this.prismCollisionShape.recalcLocalAabb();

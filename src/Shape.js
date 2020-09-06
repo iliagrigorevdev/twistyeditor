@@ -45,7 +45,7 @@ class Shape {
     return orientation;
   }
 
-  applyTransform() {
+  applyTransform(planeHeight = PLANE_HEIGHT) {
     const orientation = this.getOrientation();
     for (let i = 0; i < 2; i++) {
       vec3.zero(this.aabb.min);
@@ -70,7 +70,7 @@ class Shape {
       if (i === 0) {
         // Align to plane
         const inverseOrientation = quat.invert(quat.create(), orientation);
-        const translation = vec3.fromValues(0, PLANE_HEIGHT - this.aabb.min[1], 0);
+        const translation = vec3.fromValues(0, planeHeight - this.aabb.min[1], 0);
         vec3.transformQuat(translation, translation, inverseOrientation);
         this.translate(translation);
       } else {
@@ -420,7 +420,7 @@ class Shape {
   static load(text) {
     const archive = JSON.parse(text);
     if (archive.version > ARCHIVE_VERSION) {
-      alert("Unsupported version: " + archive.version);
+      console.log("Unsupported version: " + archive.version);
       return;
     }
     const shape = new Shape();

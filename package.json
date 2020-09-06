@@ -12,14 +12,16 @@
     "react": "^16.13.1",
     "react-color": "^2.18.1",
     "react-dom": "^16.13.1",
-    "react-scripts": "3.4.1"
+    "react-scripts": "3.4.1",
+    "xml-writer": "^1.7.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "train": "babel-node --presets @babel/preset-env src/train.js"
+    "train": "babel-node --presets @babel/preset-env src/train.js",
+    "convert": "babel-node --presets @babel/preset-env src/convert.js"
   },
   "eslintConfig": {
     "extends": "react-app"

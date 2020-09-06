@@ -344,4 +344,5 @@ class Prism extends Placeable {
 
 export default Prism;
 export { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE, PRISM_MARGIN };
+export { PRISM_TRIANGLE_INDICES };
 export { JunctionFace };
