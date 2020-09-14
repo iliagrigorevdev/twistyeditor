@@ -34,14 +34,14 @@ class Simulation {
 
     const rigidInfo = new RigidInfo(shape);
     this.initializing = Ammo().then((Ammo) => {
-      this.init(Ammo, rigidInfo);
+      this.init(Ammo);
       this.addGroundBody(Ammo);
       this.addShapeBody(Ammo, rigidInfo);
       this.initialized = true;
     });
   }
 
-  init(Ammo, rigidInfo) {
+  init(Ammo) {
     this.shapeParts = [];
     this.shapeBaseParts = [];
     this.shapeActuators = [];

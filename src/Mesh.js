@@ -1,4 +1,4 @@
-function createMeshFile(name, vertices, triangleIndices) {
+function createMeshLines(name, vertices, triangleIndices) {
   // OBJ file format
   const lines = [];
   lines.push("o " + name);
@@ -12,7 +12,11 @@ function createMeshFile(name, vertices, triangleIndices) {
         + " " + (triangleIndices[j - 1] + 1)
         + " " + (triangleIndices[j] + 1));
   }
-  return lines.join("\n");
+  return lines;
 }
 
-export { createMeshFile };
+function createMeshFile(name, vertices, triangleIndices) {
+  return createMeshLines(name, vertices, triangleIndices).join("\n");
+}
+
+export { createMeshLines, createMeshFile };

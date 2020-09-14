@@ -7,15 +7,26 @@ import { PRISM_TRIANGLE_INDICES } from './Prism';
 import { PRISM_COLLISION_VERTICES } from './RigidInfo';
 import { convertVectorToZUpFrame } from './VecMath';
 import { createMeshFile } from './Mesh';
+import NotebookExporter from './NotebookExporter';
 
 function parseArguments() {
   const parser = new argparse.ArgumentParser({
-    description: "Convert shape to URDF"
+    description: "Convert shape"
   });
-  parser.add_argument("--shape", {
+  parser.add_argument("-s", "--shape", {
     type: "str",
     help: "Path to the file from which the shape will be loaded",
     required: true
+  });
+  parser.add_argument("-u", "--writeUrdf", {
+    help: "Write URDF file?",
+    action: "store_true",
+    default: false
+  });
+  parser.add_argument("-n", "--writeNotebook", {
+    help: "Write Notebook file?",
+    action: "store_true",
+    default: false
   });
   return parser.parse_args();
 }
@@ -46,17 +57,31 @@ async function main() {
   shape.applyTransform(0); // align to ground
 
   const name = path.basename(shapePath, path.extname(shapePath));
-  const outData = new UrdfExporter(shape).export(name);
   const outDir = path.dirname(shapePath);
-  const outPath = path.join(outDir, name + ".urdf");
-  fs.writeFile(outPath, outData, (err) => {
-    if (err) {
-      throw err;
-    }
-    console.log("Shape has been converted");
-  });
 
-  maybeWriteMeshFile(outDir);
+  if (args.writeUrdf) {
+    const urdfData = new UrdfExporter(shape).export(name);
+    const urdfPath = path.join(outDir, name + ".urdf");
+    fs.writeFile(urdfPath, urdfData, (err) => {
+      if (err) {
+        throw err;
+      }
+      console.log("URDF file has been saved");
+    });
+
+    maybeWriteMeshFile(outDir);
+  }
+
+  if (args.writeNotebook) {
+    const notebookData = new NotebookExporter(shape).export(name);
+    const notebookPath = path.join(outDir, name + ".ipynb");
+    fs.writeFile(notebookPath, notebookData, (err) => {
+      if (err) {
+        throw err;
+      }
+      console.log("Notebook file has been saved");
+    });
+  }
 }
 
 if (require.main === module) {

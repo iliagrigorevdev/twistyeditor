@@ -136,6 +136,9 @@ class Toolbar extends Component {
             onClick={() => this.props.onSimulationStart()}>Start</button>
         <button id="stopSimulation" name="stopSimulation" disabled={this.props.mode !== AppMode.SIMULATE}
             onClick={() => this.props.onSimulationStop()}>Stop</button>
+        <h3>Learning</h3>
+        <button id="downloadNotebook" name="downloadNotebook"
+            onClick={() => this.props.onDownloadNotebook(shape)}>Notebook</button>
       </div>
     );
   }

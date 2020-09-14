@@ -4,6 +4,7 @@ import Viewport from './Viewport';
 import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
+import NotebookExporter from './NotebookExporter';
 
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
@@ -162,6 +163,21 @@ class App extends Component {
     this.setState({ mode: mode });
   }
 
+  handleDownloadNotebook(shape) {
+    const exporter = new NotebookExporter(shape);
+    const error = exporter.validate();
+    if (error) {
+      alert(error);
+      return;
+    }
+    const name = prompt("Enter file name: ");
+    if (!name) {
+      return;
+    }
+    const content = exporter.export(name);
+    this.downloadFile(name + ".ipynb", content);
+  }
+
   render() {
     return (
       <div className="App">
@@ -179,7 +195,8 @@ class App extends Component {
           onShapeSave={shape => this.handleShapeSave(shape)}
           onShapeLoad={() => this.handleShapeLoad()}
           onSimulationStart={() => this.handleAppModeChange(AppMode.SIMULATE)}
-          onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)} />
+          onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)}
+          onDownloadNotebook={(shape) => this.handleDownloadNotebook(shape)} />
       </div>
     );
   }
