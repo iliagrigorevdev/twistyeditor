@@ -47,7 +47,8 @@ class NotebookExporter {
       cell_type: "code",
       execution_count: null,
       metadata: {},
-      source: codeLines.join("\n")
+      source: codeLines.join("\n"),
+      outputs: []
     });
   }
 
