@@ -16,6 +16,8 @@ Click on an empty area to deselect.
 
 Change shape and prism properties using the toolbar.
 
+Click the Showcase button to display a sample shape in random order.
+
 ## Built With
 [Filament](https://github.com/google/filament) is a real-time physically based rendering engine.
 
