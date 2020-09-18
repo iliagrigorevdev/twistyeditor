@@ -1,6 +1,6 @@
 {
   "name": "twistyeditor",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "dependencies": {
     "@tensorflow/tfjs": "^2.3.0",
