@@ -57,12 +57,22 @@ function diagonalizeMatrix(mat, threshold, maxSteps) {
 }
 
 function quaternionToRollPitchYaw(q) {
-  const roll = Math.atan2(2 * (q[1] * q[2] + q[3] * q[0]),
-      q[3] * q[3] - q[0] * q[0] - q[1] * q[1] + q[2] * q[2]);
-  const pitch = Math.asin(-2 * (q[0] * q[2] - q[3] * q[1]));
-  const yaw = Math.atan2(2 * (q[0] * q[1] + q[3] * q[2]),
-      q[3] * q[3] + q[0] * q[0] - q[1] * q[1] - q[2] * q[2]);
-  return vec3.fromValues(roll, pitch, yaw);
+  const sarg = -2 * (q[0] * q[2] - q[3] * q[1]);
+  if (sarg <= -0.99999) {
+    return vec3.fromValues(0, -0.5 * Math.PI, 2 * Math.atan2(q[0], -q[1]));
+  } else if (sarg >= 0.99999) {
+    return vec3.fromValues(0, 0.5 * Math.PI, 2 * Math.atan2(-q[0], q[1]));
+  } else {
+    const sqx = q[0] * q[0];
+    const sqy = q[1] * q[1];
+    const sqz = q[2] * q[2];
+    const squ = q[3] * q[3];
+    return vec3.fromValues(
+      Math.atan2(2 * (q[1] * q[2] + q[3] * q[0]), squ - sqx - sqy + sqz),
+      Math.asin(sarg),
+      Math.atan2(2 * (q[0] * q[1] + q[3] * q[2]), squ + sqx - sqy - sqz)
+    );
+  }
 }
 
 function convertVectorToZUpFrame(vector) {
