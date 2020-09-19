@@ -49,7 +49,13 @@ class RigidInfo {
     this.baseLinks = [];
     this.joints = [];
 
-    const parts = shape.discoverParts();
+    const finalShape = shape.clone();
+    finalShape.applyInitialAngles();
+    if (finalShape.hasPrismIntersections()) {
+      console.log("Shape has intersections between prisms");
+    }
+
+    const parts = finalShape.discoverParts();
     for (let i = 0; i < parts.length; i++) {
       console.log("Link " + (i + 1) + "/" + parts.length + ":");
       const name = "link" + (this.links.length + 1);
@@ -59,17 +65,17 @@ class RigidInfo {
       }
     }
 
-    for (const section of shape.sections) {
+    for (const section of finalShape.sections) {
       if (section.type === SectionType.ACTUATOR) {
         const name = "joint" + (this.joints.length + 1);
-        const joint = this.createJoint(shape, parts, name, section);
+        const joint = this.createJoint(finalShape, parts, name, section);
         if (joint) {
           this.joints.push(joint);
         }
       }
     }
 
-    const partChains = shape.discoverPartChains(parts);
+    const partChains = finalShape.discoverPartChains(parts);
     this.baseLinks.push(...partChains.map(partChain =>
         this.links[parts.findIndex(p => p === partChain[0])]));
   }

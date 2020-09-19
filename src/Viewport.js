@@ -108,7 +108,7 @@ class Viewport extends Component {
     if (modeChanged) {
       if (this.props.mode === AppMode.SIMULATE) {
         if (!this.agent) {
-          this.agent = new Agent(this.shape);
+          this.agent = new Agent(this.originalShape);
           // TODO load actor network
         } else {
           this.agent.reset();
