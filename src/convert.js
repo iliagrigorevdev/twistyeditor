@@ -73,14 +73,20 @@ async function main() {
   }
 
   if (args.writeNotebook) {
-    const notebookData = new NotebookExporter(shape).export(name);
-    const notebookPath = path.join(outDir, name + ".ipynb");
-    fs.writeFile(notebookPath, notebookData, (err) => {
-      if (err) {
-        throw err;
-      }
-      console.log("Notebook file has been saved");
-    });
+    const notebookExporter = new NotebookExporter(shape);
+    const error = notebookExporter.validate();
+    if (!error) {
+      const notebookData = notebookExporter.export(name);
+      const notebookPath = path.join(outDir, name + ".ipynb");
+      fs.writeFile(notebookPath, notebookData, (err) => {
+        if (err) {
+          throw err;
+        }
+        console.log("Notebook file has been saved");
+      });
+    } else {
+      console.log("Notebook error: " + error);
+    }
   }
 }
 

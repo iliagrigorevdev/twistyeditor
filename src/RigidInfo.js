@@ -60,18 +60,20 @@ class RigidInfo {
       console.log("Link " + (i + 1) + "/" + parts.length + ":");
       const name = "link" + (this.links.length + 1);
       const link = this.createLink(name, parts[i]);
-      if (link) {
-        this.links.push(link);
+      if (!link) {
+        return;
       }
+      this.links.push(link);
     }
 
     for (const section of finalShape.sections) {
       if (section.type === SectionType.ACTUATOR) {
         const name = "joint" + (this.joints.length + 1);
         const joint = this.createJoint(finalShape, parts, name, section);
-        if (joint) {
-          this.joints.push(joint);
+        if (!joint) {
+          return;
         }
+        this.joints.push(joint);
       }
     }
 
