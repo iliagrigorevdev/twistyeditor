@@ -126,10 +126,10 @@ class Toolbar extends Component {
             onClick={() => this.props.onShapeShowcase()}>Showcase</button>
         </p>
         <p>
-          <button id="importShape" name="importShape"
-            onClick={() => this.props.onShapeImport()}>Import</button>
-          <button id="exportShape" name="exportShape"
-            onClick={() => this.props.onShapeExport(shape)}>Export</button>
+          <button id="saveShape" name="saveShape"
+            onClick={() => this.props.onShapeSave(shape)}>Save</button>
+          <button id="loadShape" name="loadShape"
+            onClick={() => this.props.onShapeLoad()}>Load</button>
         </p>
         <h3>Simulation</h3>
         <button id="learnSimulation" name="learnSimulation" disabled={this.props.mode !== AppMode.EDIT}
