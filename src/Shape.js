@@ -2,6 +2,8 @@ import { mat3, quat, vec3 } from 'gl-matrix';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
 
+const ARCHIVE_VERSION = 3;
+
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const DEFAULT_BACKGROUND_COLOR = "#1976d2";
 const DEFAULT_FOREGROUND_COLOR = "#d9d9d9";
@@ -405,6 +407,25 @@ class Shape {
     vec3.copy(shape.aabb.min, this.aabb.min);
     vec3.copy(shape.aabb.max, this.aabb.max);
     vec3.copy(shape.aabb.center, this.aabb.center);
+    return shape;
+  }
+
+  static save(shape) {
+    return JSON.stringify({
+      version: ARCHIVE_VERSION,
+      shape: shape.toArchive()
+    });
+  }
+
+  static load(text) {
+    const archive = JSON.parse(text);
+    if (archive.version > ARCHIVE_VERSION) {
+      alert("Unsupported version: " + archive.version);
+      return;
+    }
+    const shape = new Shape();
+    shape.fromArchive(archive.shape, archive.version);
+    shape.applyTransform();
     return shape;
   }
 }
