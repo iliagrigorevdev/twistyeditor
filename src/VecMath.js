@@ -1,4 +1,4 @@
-import { vec3, mat3 } from 'gl-matrix';
+import { mat3 } from 'gl-matrix';
 
 function diagonalizeMatrix(mat, threshold, maxSteps) {
   const rot = mat3.create();
@@ -56,13 +56,4 @@ function diagonalizeMatrix(mat, threshold, maxSteps) {
   return rot;
 }
 
-function quaternionToRollPitchYaw(q) {
-  const roll = Math.atan2(2 * (q[1] * q[2] + q[3] * q[0]),
-      q[3] * q[3] - q[0] * q[0] - q[1] * q[1] + q[2] * q[2]);
-  const pitch = Math.asin(-2 * (q[0] * q[2] - q[3] * q[1]));
-  const yaw = Math.atan2(2 * (q[0] * q[1] + q[3] * q[2]),
-      q[3] * q[3] + q[0] * q[0] - q[1] * q[1] - q[2] * q[2]);
-  return vec3.fromValues(roll, pitch, yaw);
-}
-
-export { diagonalizeMatrix, quaternionToRollPitchYaw };
+export { diagonalizeMatrix };

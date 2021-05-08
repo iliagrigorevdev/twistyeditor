@@ -1,6 +1,5 @@
 import RigidInfo from './RigidInfo';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
-import { quaternionToRollPitchYaw } from './VecMath';
 
 function vectorToString(vector, precision) {
   return vector[0].toFixed(precision) + " "
@@ -8,9 +7,16 @@ function vectorToString(vector, precision) {
       + vector[2].toFixed(precision);
 }
 
+function quaternionToString(quad, precision) {
+  return quad[0].toFixed(precision) + " "
+      + quad[1].toFixed(precision) + " "
+      + quad[2].toFixed(precision) + " "
+      + quad[3].toFixed(precision);
+}
+
 function transformToString(transform) {
   return vectorToString(transform.position, 6) + " "
-      + vectorToString(quaternionToRollPitchYaw(transform.orientation), 4);
+      + quaternionToString(transform.orientation, 4);
 }
 
 class Exporter {
