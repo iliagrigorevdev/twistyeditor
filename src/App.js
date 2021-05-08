@@ -4,8 +4,10 @@ import Viewport from './Viewport';
 import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
+import Exporter from './Exporter';
 
 const ARCHIVE_EXTENSION = ".twy";
+const EXPORT_EXTENSION = ".twe";
 const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
@@ -159,6 +161,16 @@ class App extends Component {
     this.downloadFile(name + ARCHIVE_EXTENSION, content);
   }
 
+  handleShapeExport(shape) {
+    const name = prompt("Enter shape name: ");
+    if (!name) {
+      return;
+    }
+    const exporter = new Exporter(shape);
+    const content = exporter.export(name);
+    this.downloadFile(name + EXPORT_EXTENSION, content);
+  }
+
   handleAppModeChange(mode) {
     this.setState({ mode: mode });
   }
@@ -179,6 +191,7 @@ class App extends Component {
           onShapeShowcase={() => this.handleShapeShowcase()}
           onShapeSave={shape => this.handleShapeSave(shape)}
           onShapeLoad={() => this.handleShapeLoad()}
+          onShapeExport={shape => this.handleShapeExport(shape)}
           onSimulationLearn={() => this.handleAppModeChange(AppMode.LEARN)}
           onSimulationPlay={() => this.handleAppModeChange(AppMode.PLAY)}
           onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)} />
