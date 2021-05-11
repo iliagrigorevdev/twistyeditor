@@ -21,9 +21,10 @@ function transformToString(transform) {
 
 class Exporter {
   constructor(shape) {
-    const groundedShape = shape.clone();
-    groundedShape.applyTransform(0);
-    this.rigidInfo = new RigidInfo(groundedShape);
+    const finalShape = shape.clone();
+    finalShape.applyInitialAngles();
+    finalShape.applyTransform(0);
+    this.rigidInfo = new RigidInfo(finalShape);
   }
 
   export(name) {
