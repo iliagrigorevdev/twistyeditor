@@ -152,22 +152,22 @@ class App extends Component {
   }
 
   handleShapeSave(shape) {
-    const name = prompt("Enter shape name: ");
-    if (!name) {
+    if (!shape.name) {
+      alert("Shape name must be given");
       return;
     }
     const content = Shape.save(shape);
-    this.downloadFile(name + ARCHIVE_EXTENSION, content);
+    this.downloadFile(shape.name + ARCHIVE_EXTENSION, content);
   }
 
   handleShapeExport(shape) {
-    const name = prompt("Enter shape name: ");
-    if (!name) {
+    if (!shape.name) {
+      alert("Shape name must be given");
       return;
     }
     const exporter = new Exporter(shape);
-    const content = exporter.export(name);
-    this.downloadFile(name + EXPORT_EXTENSION, content);
+    const content = exporter.export(shape.name);
+    this.downloadFile(shape.name + EXPORT_EXTENSION, content);
   }
 
   handleAppModeChange(mode) {

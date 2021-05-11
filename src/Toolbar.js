@@ -21,6 +21,10 @@ class Toolbar extends Component {
     });
   }
 
+  handleNameChange(prevShape, name) {
+    this.modifyShape(prevShape, (shape) => shape.name = name);
+  }
+
   handleRollChange(prevShape, roll) {
     this.modifyShape(prevShape, (shape) => shape.roll = parseFloat(roll) || 0);
   }
@@ -95,6 +99,11 @@ class Toolbar extends Component {
     return (
       <div className="Group">
         <h3>Shape</h3>
+        <p>
+          <label htmlFor="name">Name : </label>
+          <input type="text" id="name" name="name" value={shape.name}
+            onChange={e => this.handleNameChange(shape, e.target.value)} />
+        </p>
         <p>
           <label htmlFor="roll">Roll : </label>
           <input type="number" id="roll" name="roll" min="-180" max="180"

@@ -12,6 +12,7 @@ const PLANE_HEIGHT = 0.5;
 
 class Shape {
   constructor() {
+    this.name = "";
     this.prisms = [];
     this.sections = [];
     this.lastPlaceableId = 0;
@@ -357,6 +358,7 @@ class Shape {
 
   toArchive() {
     return {
+      name: this.name,
       prisms: this.prisms.map(prism => prism.toArchive()),
       sections: this.sections.map(section => section.toArchive()),
       lastPlaceableId: this.lastPlaceableId,
@@ -387,12 +389,14 @@ class Shape {
     this.pitch = archive.pitch;
     this.yaw = archive.yaw;
     if (version >= 3) {
+      this.name = archive.name;
       this.showPose = archive.showPose;
     }
   }
 
   clone() {
     const shape = new Shape();
+    shape.name = this.name;
     for (const prism of this.prisms) {
       shape.prisms.push(prism.clone());
     }
