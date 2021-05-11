@@ -174,13 +174,15 @@ class RigidInfo {
     const transform = createTransform(section.worldPosition, section.worldOrientation);
     const lowerAngle = section.getPropertyValue("lowerAngle") * DEGREES_TO_RADIANS;
     const upperAngle = section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS;
+    const power = section.getPropertyValue("power");
 
     return {
       baseLink: baseLink,
       targetLink: targetLink,
       transform: transform,
       lowerAngle: lowerAngle,
-      upperAngle: upperAngle
+      upperAngle: upperAngle,
+      power: power
     };
   }
 }

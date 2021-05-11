@@ -47,6 +47,7 @@ class Exporter {
           + joint.targetLink.index + " "
           + joint.lowerAngle.toFixed(4) + " "
           + joint.upperAngle.toFixed(4) + " "
+          + joint.power.toFixed(2) + " "
           + transformToString(joint.transform));
     }
 

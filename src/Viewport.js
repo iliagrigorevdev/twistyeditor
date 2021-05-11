@@ -415,8 +415,8 @@ class Viewport extends Component {
     this.lastTime = timestamp;
 
     if ((this.props.mode === AppMode.SIMULATION) && this.simulation.initialized) {
-      for (let i = 0; i < this.simulation.angleScales.length; i++) {
-        this.simulation.angleScales[i] = 2 * (Math.random() - 0.5);
+      for (let i = 0; i < this.simulation.torqueScales.length; i++) {
+        this.simulation.torqueScales[i] = 2 * (Math.random() - 0.5);
       }
       this.simulation.step(deltaTime);
       this.updateSimulationView();

@@ -16,7 +16,8 @@ const SECTION_PROPERTIES = new Map([
   [SectionType.ACTUATOR, [
     { name: "initialAngle", min: -180, max: 180, default: 0 },
     { name: "lowerAngle", min: -90, max: 0, default: -90 },
-    { name: "upperAngle", min: 0, max: 90, default: 90 }
+    { name: "upperAngle", min: 0, max: 90, default: 90 },
+    { name: "power", min: 1, max: 1000, default: 100 }
   ]]
 ]);
 

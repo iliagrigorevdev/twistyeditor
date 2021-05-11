@@ -17,16 +17,6 @@ const GROUP_PRISM = 0x02;
 const MASK_GROUND = GROUP_PRISM;
 const MASK_PRISM = GROUP_GROUND | GROUP_PRISM;
 
-const MAX_MOTOR_TORQUE = 1000;
-const MAX_MOTOR_IMPULSE = MAX_MOTOR_TORQUE * FIXED_TIME_STEP;
-const MOTOR_SOFTNESS = 0.9;
-const MOTOR_BIAS_FACTOR = 0.3;
-const MOTOR_RELAXATION_FACTOR = 1;
-const MOTOR_DELTA_TIME = 0.5;
-const MOTOR_AXIS = vec3.fromValues(0, 0, 1);
-const MOTOR_AXIS_ROTATION = quat.setAxisAngle(quat.create(),
-    vec3.fromValues(0, 1, 0), -Math.PI / 2);
-
 class Simulation {
   constructor(shape) {
     this.initialized = false;
@@ -44,14 +34,16 @@ class Simulation {
     this.shapeParts = [];
     this.shapeBaseParts = [];
     this.shapeActuators = [];
-    this.angleScales = [];
+    this.torqueScales = [];
     this.prismIds = [];
     this.prismWorldTransforms = [];
     this.prismLocalTransforms = [];
     this.shapePosition = vec3.create();
     this.bodyBtTransform = new Ammo.btTransform();
     this.bodyTransform = createTransform();
-    this.actuatorAxis = vec3.create();
+    this.actuatorTransform = createTransform();
+    this.actuatorTorque = vec3.create();
+    this.actuatorBtTorque = new Ammo.btVector3(0, 0, 0);
     this.zeroBtVector = new Ammo.btVector3(0, 0, 0);
 
     this.collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
@@ -160,30 +152,26 @@ class Simulation {
   addActuator(Ammo, shapeParts, links, joint) {
     const basePartBody = this.findShapePart(shapeParts, links, joint.baseLink).partBody;
     const targetPartBody = this.findShapePart(shapeParts, links, joint.targetLink).partBody;
-    const sectionTransform = multiplyTransforms(createTransform(),
-        joint.transform, createTransform(vec3.create(), MOTOR_AXIS_ROTATION));
     const frameInA = multiplyTransforms(createTransform(),
-        inverseTransform(createTransform(), this.getBodyTransform(basePartBody)), sectionTransform);
+        inverseTransform(createTransform(), this.getBodyTransform(basePartBody)), joint.transform);
     const frameInB = multiplyTransforms(createTransform(),
-        inverseTransform(createTransform(), this.getBodyTransform(targetPartBody)), sectionTransform);
+        inverseTransform(createTransform(), this.getBodyTransform(targetPartBody)), joint.transform);
 
-    const constraint = new Ammo.btHingeConstraint(basePartBody, targetPartBody,
+    const constraint = new Ammo.btGeneric6DofConstraint(basePartBody, targetPartBody,
         convertTransform(Ammo, frameInA), convertTransform(Ammo, frameInB), true);
-    constraint.setLimit(joint.lowerAngle, joint.upperAngle, MOTOR_SOFTNESS,
-        MOTOR_BIAS_FACTOR, MOTOR_RELAXATION_FACTOR);
-    constraint.enableMotor(true);
-    constraint.setMaxMotorImpulse(MAX_MOTOR_IMPULSE);
+    constraint.setLinearLowerLimit(new Ammo.btVector3(0, 0, 0));
+    constraint.setLinearUpperLimit(new Ammo.btVector3(0, 0, 0));
+    constraint.setAngularLowerLimit(new Ammo.btVector3(joint.lowerAngle, 0, 0));
+    constraint.setAngularUpperLimit(new Ammo.btVector3(joint.upperAngle, 0, 0));
     this.dynamicsWorld.addConstraint(constraint);
 
     this.shapeActuators.push({
       basePartBody: basePartBody,
       targetPartBody: targetPartBody,
-      baseAxis: vec3.transformQuat(vec3.create(), MOTOR_AXIS, frameInA.orientation),
-      constraint: constraint,
-      lowerAngle: joint.lowerAngle,
-      upperAngle: joint.upperAngle
+      frameOffset: convertBtTransform(constraint.getFrameOffsetA(), createTransform()),
+      power: joint.power
     });
-    this.angleScales.push(0);
+    this.torqueScales.push(0);
   }
 
   addBaseState(shapePart, state) {
@@ -207,41 +195,9 @@ class Simulation {
     state.push(angularVelocity.z());
   }
 
-  addChildState(actuator, state) {
-    actuator.basePartBody.getMotionState().getWorldTransform(this.bodyBtTransform);
-    const bodyBtOrientation = this.bodyBtTransform.getRotation();
-    quat.set(this.bodyTransform.orientation, bodyBtOrientation.x(), bodyBtOrientation.y(),
-        bodyBtOrientation.z(), bodyBtOrientation.w());
-    const angularVelocity = actuator.targetPartBody.getAngularVelocity();
-    vec3.transformQuat(this.actuatorAxis, actuator.baseAxis, this.bodyTransform.orientation);
-    state.push(actuator.constraint.getHingeAngle());
-    state.push(angularVelocity.x() * this.actuatorAxis[0] + angularVelocity.y() * this.actuatorAxis[1]
-        + angularVelocity.z() * this.actuatorAxis[2]);
-  }
-
-  getState() {
-    if (!this.initialized) {
-      return;
-    }
-
-    const state = [];
-    for (const basePart of this.shapeBaseParts) {
-      this.addBaseState(basePart, state);
-    }
-    for (const actuator of this.shapeActuators) {
-      this.addChildState(actuator, state);
-    }
-    return state;
-  }
-
   getBodyTransform(body) {
     body.getMotionState().getWorldTransform(this.bodyBtTransform);
-    const bodyBtPosition = this.bodyBtTransform.getOrigin();
-    const bodyBtOrientation = this.bodyBtTransform.getRotation();
-    vec3.set(this.bodyTransform.position, bodyBtPosition.x(), bodyBtPosition.y(), bodyBtPosition.z());
-    quat.set(this.bodyTransform.orientation, bodyBtOrientation.x(), bodyBtOrientation.y(),
-        bodyBtOrientation.z(), bodyBtOrientation.w());
-    return this.bodyTransform;
+    return convertBtTransform(this.bodyBtTransform, this.bodyTransform);
   }
 
   updateShapePosition() {
@@ -279,10 +235,16 @@ class Simulation {
 
     for (let i = 0; i < this.shapeActuators.length; i++) {
       const actuator = this.shapeActuators[i];
-      const angleScale = Math.max(-1, Math.min(1, this.angleScales[i]));
-      const angleRange = (angleScale < 0 ? -actuator.lowerAngle : actuator.upperAngle);
-      const angle = angleScale * angleRange;
-      actuator.constraint.setMotorTarget(angle, MOTOR_DELTA_TIME);
+      const torqueScale = Math.max(-1, Math.min(1, this.torqueScales[i]));
+      const torque = torqueScale * actuator.power;
+      const baseTransform = this.getBodyTransform(actuator.basePartBody);
+      multiplyTransforms(this.actuatorTransform, baseTransform, actuator.frameOffset);
+      vec3.transformQuat(this.actuatorTorque, vec3.set(this.actuatorTorque, torque, 0, 0),
+          this.actuatorTransform.orientation);
+      this.actuatorBtTorque.setX(this.actuatorTorque[0]);
+      this.actuatorBtTorque.setY(this.actuatorTorque[1]);
+      this.actuatorBtTorque.setZ(this.actuatorTorque[2]);
+      actuator.targetPartBody.applyTorque(this.actuatorBtTorque);
     }
 
     this.dynamicsWorld.stepSimulation(deltaTime, maxSubSteps, FIXED_TIME_STEP);
@@ -305,6 +267,22 @@ function convertQuaternion(Ammo, quaternion) {
 function convertTransform(Ammo, transform) {
   return new Ammo.btTransform(convertQuaternion(Ammo, transform.orientation),
       convertVector(Ammo, transform.position));
+}
+
+function convertBtVector(btVector, vector) {
+  return vec3.set(vector, btVector.x(), btVector.y(), btVector.z());
+}
+
+function convertBtQuaternion(btQuaternion, quaternion) {
+  return quat.set(quaternion, btQuaternion.x(), btQuaternion.y(), btQuaternion.z(), btQuaternion.w());
+}
+
+function convertBtTransform(btTransform, transform) {
+  const btPosition = btTransform.getOrigin();
+  const btOrientation = btTransform.getRotation();
+  convertBtVector(btPosition, transform.position);
+  convertBtQuaternion(btOrientation, transform.orientation);
+  return transform;
 }
 
 export default Simulation;
