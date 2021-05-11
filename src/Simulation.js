@@ -292,10 +292,6 @@ class Simulation {
       this.updatePrismTransforms();
     }
   }
-
-  stepOnce(deltaTime = FIXED_TIME_STEP, syncPrismTransforms = true) {
-    this.step(deltaTime, syncPrismTransforms, 0);
-  }
 }
 
 function convertVector(Ammo, vector) {

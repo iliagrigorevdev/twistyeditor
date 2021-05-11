@@ -5,9 +5,9 @@ import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
+import Simulation from './Simulation';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
-import Learning from './Learning';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -57,8 +57,6 @@ const SECTION_COLORS = new Map([
 const INDICATION_COLOR = "#90caf960";
 const CREATION_COLOR = "#fff59d60";
 
-const FRAME_TRAIN_STEPS = 1;
-
 const iblUrl = "res/environment_ibl.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
@@ -105,14 +103,14 @@ class Viewport extends Component {
       this.refreshShapeView();
     }
     if (shapeChanged) {
-      this.learning = null;
+      this.simulation = null;
     }
     if (modeChanged) {
-      if ((this.props.mode === AppMode.LEARN) || (this.props.mode === AppMode.PLAY)) {
-        if (!this.learning) {
-          this.learning = new Learning(this.shape);
+      if (this.props.mode === AppMode.SIMULATION) {
+        if (!this.simulation) {
+          this.simulation = new Simulation(this.shape);
         } else {
-          this.learning.reset();
+          this.simulation.reset();
         }
       }
     }
@@ -166,7 +164,7 @@ class Viewport extends Component {
     this.availableJunctions = null;
     this.originalAvailableJunctions = null;
 
-    this.learning = null;
+    this.simulation = null;
 
     this.pressing = false;
     this.dragging = false;
@@ -396,15 +394,11 @@ class Viewport extends Component {
     this.animationTimer = CAMERA_ANIMATION_FOLLOW_TIME;
   }
 
-  updateSimulationView(simulation) {
-    if (!simulation.initialized) {
-      return;
-    }
+  updateSimulationView() {
+    this.updateFollowPosition(this.simulation.shapePosition);
 
-    this.updateFollowPosition(simulation.shapePosition);
-
-    const prismIds = simulation.prismIds;
-    const transforms = simulation.prismWorldTransforms;
+    const prismIds = this.simulation.prismIds;
+    const transforms = this.simulation.prismWorldTransforms;
     for (let i = 0; i < prismIds.length; i++) {
       const placeableView = this.shapeView.findPlaceableView(prismIds[i]);
       const transform = transforms[i];
@@ -420,12 +414,12 @@ class Viewport extends Component {
     const deltaTime = 1e-3 * (timestamp - this.lastTime);
     this.lastTime = timestamp;
 
-    if (this.props.mode === AppMode.LEARN) {
-      this.learning.train(FRAME_TRAIN_STEPS);
-      this.updateSimulationView(this.learning.simulation);
-    } else if (this.props.mode === AppMode.PLAY) {
-      this.learning.play(deltaTime);
-      this.updateSimulationView(this.learning.simulation);
+    if ((this.props.mode === AppMode.SIMULATION) && this.simulation.initialized) {
+      for (let i = 0; i < this.simulation.angleScales.length; i++) {
+        this.simulation.angleScales[i] = 2 * (Math.random() - 0.5);
+      }
+      this.simulation.step(deltaTime);
+      this.updateSimulationView();
     }
 
     if (this.animationTimer < CAMERA_ANIMATION_TIME) {

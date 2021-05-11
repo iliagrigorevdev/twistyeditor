@@ -25,6 +25,4 @@ Click the Showcase button to display a sample shape in random order.
 
 [Ammo.js](https://github.com/kripken/ammo.js) is a direct port of the [Bullet](https://github.com/bulletphysics/bullet3) physics engine to JavaScript using Emscripten.
 
-[TensorFlow.js](https://www.tensorflow.org/js) is a library for machine learning in JavaScript.
-
 Environment map is taken from [HDRIHaven](https://hdrihaven.com/).
