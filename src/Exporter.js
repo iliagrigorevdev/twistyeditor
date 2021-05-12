@@ -46,8 +46,8 @@ class Exporter {
     for (const joint of this.rigidInfo.joints) {
       lines.push("j " + joint.baseLink.index + " "
           + joint.targetLink.index + " "
-          + joint.lowerAngle.toFixed(4) + " "
-          + joint.upperAngle.toFixed(4) + " "
+          + joint.lowerAngle.toFixed(2) + " "
+          + joint.upperAngle.toFixed(2) + " "
           + joint.power.toFixed(2) + " "
           + transformToString(joint.transform));
     }

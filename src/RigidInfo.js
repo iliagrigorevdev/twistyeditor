@@ -4,7 +4,6 @@ import { PRISM_HEIGHT, PRISM_BASE, PRISM_SIDE, PRISM_MARGIN } from './Prism';
 import { SectionType } from './Section';
 import { diagonalizeMatrix } from './VecMath';
 
-const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
 
 const PRISM_HALF_HEIGHT = 0.5 * PRISM_HEIGHT;
@@ -172,8 +171,8 @@ class RigidInfo {
     }
 
     const transform = createTransform(section.worldPosition, section.worldOrientation);
-    const lowerAngle = section.getPropertyValue("lowerAngle") * DEGREES_TO_RADIANS;
-    const upperAngle = section.getPropertyValue("upperAngle") * DEGREES_TO_RADIANS;
+    const lowerAngle = section.getPropertyValue("lowerAngle");
+    const upperAngle = section.getPropertyValue("upperAngle");
     const power = section.getPropertyValue("power");
 
     return {

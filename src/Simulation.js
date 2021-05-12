@@ -3,6 +3,8 @@ import { vec3, quat } from 'gl-matrix';
 import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
 import RigidInfo from './RigidInfo';
 
+const DEGREES_TO_RADIANS = Math.PI / 180;
+
 const MAX_SUB_STEPS = 10;
 const FIXED_TIME_STEP = 0.01;
 
@@ -157,12 +159,15 @@ class Simulation {
     const frameInB = multiplyTransforms(createTransform(),
         inverseTransform(createTransform(), this.getBodyTransform(targetPartBody)), joint.transform);
 
+    const lowerAngle = (joint.lowerAngle === -180 ? -Math.PI : joint.lowerAngle * DEGREES_TO_RADIANS);
+    const upperAngle = (joint.upperAngle === 180 ? Math.PI : joint.upperAngle * DEGREES_TO_RADIANS);
+
     const constraint = new Ammo.btGeneric6DofConstraint(basePartBody, targetPartBody,
         convertTransform(Ammo, frameInA), convertTransform(Ammo, frameInB), true);
     constraint.setLinearLowerLimit(new Ammo.btVector3(0, 0, 0));
     constraint.setLinearUpperLimit(new Ammo.btVector3(0, 0, 0));
-    constraint.setAngularLowerLimit(new Ammo.btVector3(joint.lowerAngle, 0, 0));
-    constraint.setAngularUpperLimit(new Ammo.btVector3(joint.upperAngle, 0, 0));
+    constraint.setAngularLowerLimit(new Ammo.btVector3(lowerAngle, 0, 0));
+    constraint.setAngularUpperLimit(new Ammo.btVector3(upperAngle, 0, 0));
     this.dynamicsWorld.addConstraint(constraint);
 
     this.shapeActuators.push({
