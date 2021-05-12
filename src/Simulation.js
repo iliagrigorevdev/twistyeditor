@@ -240,6 +240,9 @@ class Simulation {
 
     for (let i = 0; i < this.shapeActuators.length; i++) {
       const actuator = this.shapeActuators[i];
+      if (actuator.power === 0) {
+        continue;
+      }
       const torqueScale = Math.max(-1, Math.min(1, this.torqueScales[i]));
       const torque = torqueScale * actuator.power;
       const baseTransform = this.getBodyTransform(actuator.basePartBody);
