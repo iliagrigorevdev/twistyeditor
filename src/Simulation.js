@@ -250,6 +250,10 @@ class Simulation {
       this.actuatorBtTorque.setY(this.actuatorTorque[1]);
       this.actuatorBtTorque.setZ(this.actuatorTorque[2]);
       actuator.targetPartBody.applyTorque(this.actuatorBtTorque);
+      this.actuatorBtTorque.setX(-this.actuatorBtTorque.x());
+      this.actuatorBtTorque.setY(-this.actuatorBtTorque.y());
+      this.actuatorBtTorque.setZ(-this.actuatorBtTorque.z());
+      actuator.basePartBody.applyTorque(this.actuatorBtTorque);
     }
 
     this.dynamicsWorld.stepSimulation(deltaTime, maxSubSteps, FIXED_TIME_STEP);
