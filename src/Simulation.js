@@ -168,7 +168,7 @@ class Simulation {
     constraint.setLinearUpperLimit(new Ammo.btVector3(0, 0, 0));
     constraint.setAngularLowerLimit(new Ammo.btVector3(lowerAngle, 0, 0));
     constraint.setAngularUpperLimit(new Ammo.btVector3(upperAngle, 0, 0));
-    this.dynamicsWorld.addConstraint(constraint);
+    this.dynamicsWorld.addConstraint(constraint, true);
 
     this.shapeActuators.push({
       basePartBody: basePartBody,
