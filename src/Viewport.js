@@ -5,7 +5,8 @@ import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
-import Simulation from './Simulation';
+//import Simulation from './Simulation';
+import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
 
@@ -91,8 +92,10 @@ class Viewport extends Component {
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
-    window.Filament.init(assets, () => {
-      this.init();
+    window.Training().then(training => {
+      window.Filament.init(assets, () => {
+        this.init(training);
+      });
     });
   }
 
@@ -107,11 +110,24 @@ class Viewport extends Component {
     }
     if (modeChanged) {
       if (this.props.mode === AppMode.SIMULATION) {
-        if (!this.simulation) {
+        /*if (!this.simulation) {
           this.simulation = new Simulation(this.shape);
         } else {
           this.simulation.reset();
+        }*/
+        const exporter = new Exporter(this.shape);
+        const data = exporter.export(this.shape.name);
+        this.training.create(data);
+        // XXX performance test
+        const startTime = Date.now();
+        for (let i = 0; i < 4000; i++) {
+          const done = this.training.step();
+          if (done) {
+            this.training.restart();
+          }
         }
+        const elapsedTime = Date.now() - startTime;
+        console.log("Elapsed time: " + elapsedTime);
       }
     }
   }
@@ -142,7 +158,9 @@ class Viewport extends Component {
     this.selectPlaceable(activePlaceable, true, false);
   }
 
-  init() {
+  init(training) {
+    this.training = training;
+
     this.elevation = DEFAULT_ELEVATION;
     this.heading = DEFAULT_HEADING;
     this.focalLengthMin = CAMERA_FOCAL_LENGTH_MIN;
@@ -414,13 +432,13 @@ class Viewport extends Component {
     const deltaTime = 1e-3 * (timestamp - this.lastTime);
     this.lastTime = timestamp;
 
-    if ((this.props.mode === AppMode.SIMULATION) && this.simulation.initialized) {
+    /*if ((this.props.mode === AppMode.SIMULATION) && this.simulation.initialized) {
       for (let i = 0; i < this.simulation.torqueScales.length; i++) {
         this.simulation.torqueScales[i] = 2 * (Math.random() - 0.5);
       }
       this.simulation.step(deltaTime);
       this.updateSimulationView();
-    }
+    }*/
 
     if (this.animationTimer < CAMERA_ANIMATION_TIME) {
       this.animationTimer += deltaTime;
