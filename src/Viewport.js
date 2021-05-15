@@ -5,7 +5,6 @@ import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
-//import Simulation from './Simulation';
 import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
@@ -105,16 +104,8 @@ class Viewport extends Component {
     if (modeChanged || shapeChanged) {
       this.refreshShapeView();
     }
-    if (shapeChanged) {
-      this.simulation = null;
-    }
     if (modeChanged) {
       if (this.props.mode === AppMode.SIMULATION) {
-        /*if (!this.simulation) {
-          this.simulation = new Simulation(this.shape);
-        } else {
-          this.simulation.reset();
-        }*/
         const exporter = new Exporter(this.shape);
         const data = exporter.export(this.shape.name);
         this.training.create(data);
@@ -181,8 +172,6 @@ class Viewport extends Component {
     this.activePlaceableView = null;
     this.availableJunctions = null;
     this.originalAvailableJunctions = null;
-
-    this.simulation = null;
 
     this.pressing = false;
     this.dragging = false;
@@ -413,7 +402,7 @@ class Viewport extends Component {
   }
 
   updateSimulationView() {
-    this.updateFollowPosition(this.simulation.shapePosition);
+    /*this.updateFollowPosition(this.simulation.shapePosition);
 
     const prismIds = this.simulation.prismIds;
     const transforms = this.simulation.prismWorldTransforms;
@@ -422,7 +411,7 @@ class Viewport extends Component {
       const transform = transforms[i];
       this.setRenderableTransform(placeableView.renderable, transform.position,
           transform.orientation);
-    }
+    }*/
   }
 
   renderFrame(timestamp) {
