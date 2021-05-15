@@ -209,9 +209,10 @@ void TwistyEnv::applyForces(const Action &action) {
     auto *constraint = constraints[i];
     constraint->calculateTransforms();
     const auto torque = action[actionIndex] * joint.power;
-    const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
-    constraint->getRigidBodyB().applyTorque(torque * axis);
-    constraint->getRigidBodyA().applyTorque(-torque * axis);
+    const auto &axisB = constraint->getCalculatedTransformB().getBasis().getColumn(0);
+    const auto &axisA = constraint->getCalculatedTransformA().getBasis().getColumn(0);
+    constraint->getRigidBodyB().applyTorque(torque * axisB);
+    constraint->getRigidBodyA().applyTorque(-torque * axisA);
     actionIndex++;
   }
 }
