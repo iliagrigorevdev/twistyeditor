@@ -315,9 +315,6 @@ void TwistyEnv::validateData() const {
   if (baseLinkIndex == -1) {
     EXCEPT("No base found");
   }
-  if (activeJointCount == 0) {
-    EXCEPT("No active joint found");
-  }
   if ((baseLinkIndex < 0) || (baseLinkIndex >= links.size())) {
     EXCEPT("Out of range base link index (" + std::to_string(baseLinkIndex) + ")");
   }
