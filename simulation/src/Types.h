@@ -3,7 +3,6 @@
 #define TYPES_H
 
 #include <memory>
-#include <valarray>
 #include <vector>
 #include <array>
 #include <map>
@@ -21,11 +20,10 @@ template<typename K, typename V> using Map = std::map<K, V>;
 typedef std::string String;
 
 typedef std::vector<int> IntArray;
+typedef std::vector<float> FloatArray;
 
-typedef std::valarray<float> FloatValArray;
-
-typedef FloatValArray Observation;
-typedef FloatValArray Action;
+typedef FloatArray Observation;
+typedef FloatArray Action;
 
 typedef std::mt19937 RandomGenerator;
 
