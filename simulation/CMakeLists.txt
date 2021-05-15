@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Training)
+project(Simulation)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -17,19 +17,19 @@ set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
 set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/bullet extern/bullet EXCLUDE_FROM_ALL)
 
-add_library(Training STATIC
+add_library(Simulation STATIC
   src/Environment.cpp
-  src/Training.cpp
+  src/Simulation.cpp
   env/GoalPhysicsEnv.cpp
   env/PhysicsEnv.cpp
   env/TwistyEnv.cpp
 )
-target_include_directories(Training PUBLIC
+target_include_directories(Simulation PUBLIC
   ${PROJECT_SOURCE_DIR}/extern/bullet/src
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_SOURCE_DIR}/env
 )
-target_link_libraries(Training PUBLIC BulletDynamics)
-target_link_libraries(Training PUBLIC BulletCollision)
-target_link_libraries(Training PUBLIC LinearMath)
-target_compile_options(Training PRIVATE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wno-unused-parameter)
+target_link_libraries(Simulation PUBLIC BulletDynamics)
+target_link_libraries(Simulation PUBLIC BulletCollision)
+target_link_libraries(Simulation PUBLIC LinearMath)
+target_compile_options(Simulation PRIVATE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wno-unused-parameter)

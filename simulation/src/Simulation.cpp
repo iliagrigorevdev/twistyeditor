@@ -28,7 +28,7 @@ void restart() {
   return environment->restart();
 }
 
-EMSCRIPTEN_BINDINGS(Training) {
+EMSCRIPTEN_BINDINGS(Simulation) {
   emscripten::function("create", &create);
   emscripten::function("step", &step);
   emscripten::function("restart", &restart);

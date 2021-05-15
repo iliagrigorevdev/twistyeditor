@@ -91,9 +91,9 @@ class Viewport extends Component {
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
-    window.Training().then(training => {
+    window.Simulation().then(simulation => {
       window.Filament.init(assets, () => {
-        this.init(training);
+        this.init(simulation);
       });
     });
   }
@@ -108,13 +108,13 @@ class Viewport extends Component {
       if (this.props.mode === AppMode.SIMULATION) {
         const exporter = new Exporter(this.shape);
         const data = exporter.export(this.shape.name);
-        this.training.create(data);
+        this.simulation.create(data);
         // XXX performance test
         const startTime = Date.now();
         for (let i = 0; i < 4000; i++) {
-          const done = this.training.step();
+          const done = this.simulation.step();
           if (done) {
-            this.training.restart();
+            this.simulation.restart();
           }
         }
         const elapsedTime = Date.now() - startTime;
@@ -149,8 +149,8 @@ class Viewport extends Component {
     this.selectPlaceable(activePlaceable, true, false);
   }
 
-  init(training) {
-    this.training = training;
+  init(simulation) {
+    this.simulation = simulation;
 
     this.elevation = DEFAULT_ELEVATION;
     this.heading = DEFAULT_HEADING;

@@ -5,10 +5,10 @@ emcc \
   -O3 \
   --bind \
   -s MODULARIZE \
-  -s 'EXPORT_NAME=Training' \
-  -o ../../public/training.js \
+  -s 'EXPORT_NAME=Simulation' \
+  -o ../../public/simulation.js \
   -Wl,--whole-archive \
-  libTraining.a \
+  libSimulation.a \
   extern/bullet/src/BulletDynamics/libBulletDynamics.a \
   extern/bullet/src/BulletCollision/libBulletCollision.a \
   extern/bullet/src/LinearMath/libLinearMath.a \
