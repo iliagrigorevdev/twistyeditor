@@ -1,11 +1,9 @@
 
-import * as tf from '@tensorflow/tfjs';
 import Exporter from './Exporter';
 
-//tf.enableProdMode();
-//tf.enableDebugMode();
-//tf.setBackend("wasm");
-tf.setBackend("cpu");
+//window.tf.enableProdMode();
+//window.tf.enableDebugMode();
+//window.tf.setBackend("cpu");
 
 class Learning {
   constructor(config, simulation, shape) {
@@ -58,8 +56,8 @@ class Learning {
   }
 
   predict(observation, deterministic) {
-    return tf.tidy(() => {
-      return this.actor.mu.predict(tf.tensor2d([observation])).arraySync()[0];
+    return window.tf.tidy(() => {
+      return this.actor.mu.predict(window.tf.tensor2d([observation])).arraySync()[0];
     });
   }
 }
@@ -71,22 +69,22 @@ function createMlpNetwork(input, hiddenLayerSizes, outputLength) {
 
   let output = input;
   for (let i = 0; i < hiddenLayerSizes.length; i++) {
-    output = tf.layers.dense({units: hiddenLayerSizes[i], activation: "relu"}).apply(output);
+    output = window.tf.layers.dense({units: hiddenLayerSizes[i], activation: "relu"}).apply(output);
   }
   if (outputLength > 0) {
-    output = tf.layers.dense({units: outputLength}).apply(output);
+    output = window.tf.layers.dense({units: outputLength}).apply(output);
   }
   return output;
 }
 
 class ActorNetwork {
   constructor(config, info) {
-    const input = tf.input({shape: [info.observationLength]});
+    const input = window.tf.input({shape: [info.observationLength]});
     const network = createMlpNetwork(input, config.hiddenLayerSizes, 0);
 
-    this.mu = tf.layers.dense({units: info.actionLength}).apply(network);
-    this.mu = tf.layers.activation({activation: "tanh"}).apply(this.mu);
-    this.mu = tf.model({inputs: input, outputs: this.mu});
+    this.mu = window.tf.layers.dense({units: info.actionLength}).apply(network);
+    this.mu = window.tf.layers.activation({activation: "tanh"}).apply(this.mu);
+    this.mu = window.tf.model({inputs: input, outputs: this.mu});
   }
 }
 

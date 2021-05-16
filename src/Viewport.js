@@ -9,6 +9,8 @@ import Prism from './Prism';
 import Section, { SectionType } from './Section';
 import Learning from './Learning';
 
+window.tf.setBackend("wasm");
+
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
 
@@ -91,9 +93,11 @@ class Viewport extends Component {
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
-    window.Simulation().then(simulation => {
-      window.Filament.init(assets, () => {
-        this.init(simulation);
+    window.tf.ready().then(() => {
+      window.Simulation().then(simulation => {
+        window.Filament.init(assets, () => {
+          this.init(simulation);
+        });
       });
     });
   }
