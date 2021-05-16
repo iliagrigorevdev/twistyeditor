@@ -5,6 +5,7 @@ import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
 import Exporter from './Exporter';
+import Config from './Config';
 
 const ARCHIVE_EXTENSION = ".twy";
 const EXPORT_EXTENSION = ".twe";
@@ -23,6 +24,7 @@ class App extends Component {
 
     this.state = {
       mode: AppMode.EDIT,
+      config: new Config(),
       shape: shape,
       activePlaceableId: 0,
       historyEntries: [],
@@ -177,7 +179,7 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <Viewport mode={this.state.mode} shape={this.state.shape}
+        <Viewport mode={this.state.mode} config={this.state.config} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           onShapeChange={(shape, activePlaceableId) => this.handleShapeChange(shape, false, activePlaceableId)}
           onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)} />

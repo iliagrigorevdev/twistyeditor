@@ -5,9 +5,9 @@ import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
-import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
+import Learning from './Learning';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -100,25 +100,21 @@ class Viewport extends Component {
 
   componentDidUpdate(prevProps) {
     const modeChanged = (prevProps.mode !== this.props.mode);
+    const configChanged = (prevProps.config !== this.props.config);
     const shapeChanged = (prevProps.shape !== this.props.shape);
     if (modeChanged || shapeChanged) {
       this.refreshShapeView();
     }
+    if (configChanged || shapeChanged) {
+      this.learning = null;
+    }
     if (modeChanged) {
       if (this.props.mode === AppMode.SIMULATION) {
-        const exporter = new Exporter(this.shape);
-        const data = exporter.export(this.shape.name);
-        this.simulation.create(data);
-        // XXX performance test
-        const startTime = Date.now();
-        for (let i = 0; i < 4000; i++) {
-          const done = this.simulation.step();
-          if (done) {
-            this.simulation.restart();
-          }
+        if (!this.learning) {
+          this.learning = new Learning(this.props.config, this.simulation, this.shape);
         }
-        const elapsedTime = Date.now() - startTime;
-        console.log("Elapsed time: " + elapsedTime);
+        // XXX performance test
+        this.learning.train();
       }
     }
   }
