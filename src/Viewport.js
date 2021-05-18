@@ -118,7 +118,7 @@ class Viewport extends Component {
           this.learning = new Learning(this.props.config, this.simulation, this.shape);
         }
         // XXX performance test
-        this.learning.train();
+        this.learning.run();
       }
     }
   }
