@@ -10,9 +10,10 @@ struct Info {
   int actionLength;
 };
 
-struct State {
-  FloatArray observation;
+struct Result {
+  float reward;
   bool done;
+  FloatArray observation;
 };
 
 static std::shared_ptr<TwistyEnv> environment;
@@ -30,11 +31,12 @@ Observation reset() {
   return environment->observation;
 }
 
-State step(const FloatArray &action) {
-  environment->step(action);
+Result step(const FloatArray &action) {
+  const auto reward = environment->step(action);
   return {
-    environment->observation,
-    environment->done || environment->timeout()
+    reward,
+    environment->done || environment->timeout(),
+    environment->observation
   };
 }
 
@@ -45,9 +47,10 @@ EMSCRIPTEN_BINDINGS(Simulation) {
     .field("observationLength", &Info::observationLength)
     .field("actionLength", &Info::actionLength);
 
-  emscripten::value_object<State>("State")
-    .field("observation", &State::observation)
-    .field("done", &State::done);
+  emscripten::value_object<Result>("Result")
+    .field("reward", &Result::reward)
+    .field("done", &Result::done)
+    .field("observation", &Result::observation);
 
   emscripten::function("create", &create);
   emscripten::function("reset", &reset);
