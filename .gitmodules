@@ -1,3 +1,15 @@
 [submodule "train/extern/bullet"]
 	path = training/extern/bullet
 	url = https://github.com/bulletphysics/bullet3.git
+[submodule "training/extern/mlpack"]
+	path = training/extern/mlpack
+	url = https://github.com/mlpack/mlpack.git
+[submodule "training/extern/armadillo"]
+	path = training/extern/armadillo
+	url = https://gitlab.com/conradsnicta/armadillo-code.git
+[submodule "training/extern/ensmallen"]
+	path = training/extern/ensmallen
+	url = https://github.com/mlpack/ensmallen.git
+[submodule "training/extern/cereal"]
+	path = training/extern/cereal
+	url = https://github.com/USCiLab/cereal.git

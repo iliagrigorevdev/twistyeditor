@@ -15,6 +15,9 @@
 #include <chrono>
 
 class Environment;
+class Actor;
+class Critic;
+class Network;
 
 template<typename K, typename V> using Map = std::map<K, V>;
 
@@ -31,6 +34,9 @@ typedef std::mt19937 RandomGenerator;
 
 typedef std::shared_ptr<Environment> EnvironmentPtr;
 typedef std::shared_ptr<RandomGenerator> RandomGeneratorPtr;
+typedef std::shared_ptr<Actor> ActorPtr;
+typedef std::shared_ptr<Critic> CriticPtr;
+typedef std::shared_ptr<Network> NetworkPtr;
 
 #define EXCEPT(message) std::cerr << (message) << std::endl; throw std::runtime_error(message);
 
