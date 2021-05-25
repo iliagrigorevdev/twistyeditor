@@ -1,6 +1,3 @@
-[submodule "train/extern/bullet"]
-	path = training/extern/bullet
-	url = https://github.com/bulletphysics/bullet3.git
 [submodule "training/extern/mlpack"]
 	path = training/extern/mlpack
 	url = https://github.com/mlpack/mlpack.git
