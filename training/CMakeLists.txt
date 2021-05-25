@@ -35,6 +35,7 @@ target_include_directories(mlpack PUBLIC
   ${PROJECT_SOURCE_DIR}/extern/armadillo/include
   ${PROJECT_SOURCE_DIR}/extern/mlpack/src
 )
+#set_target_properties(mlpack PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1")
 
 add_library(Training STATIC
   src/Environment.cpp
