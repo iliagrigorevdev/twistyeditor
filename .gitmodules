@@ -1,0 +1,3 @@
+[submodule "training/extern/bullet"]
+	path = training/extern/bullet
+	url = https://github.com/bulletphysics/bullet3.git
