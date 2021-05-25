@@ -10,3 +10,6 @@
 [submodule "training/extern/cereal"]
 	path = training/extern/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "training/extern/bullet"]
+	path = training/extern/bullet
+	url = https://github.com/bulletphysics/bullet3.git
