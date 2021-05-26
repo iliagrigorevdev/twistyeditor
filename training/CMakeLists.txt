@@ -17,7 +17,7 @@ set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
 set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/bullet extern/bullet EXCLUDE_FROM_ALL)
 
-add_definitions(-DARMA_DONT_USE_WRAPPER -DMLPACK_STATIC_DEFINE -DARMA_DONT_USE_BLAS)
+add_definitions(-DARMA_DONT_USE_WRAPPER -DMLPACK_STATIC_DEFINE -DARMA_DONT_USE_BLAS -DARMA_DONT_USE_LAPACK)
 add_library(mlpack STATIC
   extern/mlpack/src/mlpack/core/data/detect_file_type.cpp
   extern/mlpack/src/mlpack/core/data/load.cpp
