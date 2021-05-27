@@ -2,7 +2,7 @@
 #include "Environment.h"
 
 void Environment::init(int observationLength, int actionLength, int moveCountMax) {
-  this->observation = Observation(0.0, observationLength);
+  this->observation = Observation(observationLength, 0.0);
   this->actionLength = actionLength;
   this->moveCountMax = moveCountMax;
   this->seed = std::chrono::system_clock::now().time_since_epoch().count();

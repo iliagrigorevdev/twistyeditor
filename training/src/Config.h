@@ -15,7 +15,6 @@ struct Config {
   int trainingStartStepCount = 1000;
   int trainingInterval = 50;
   float learningRate = 3e-4;
-  float regularization = 0.2;
   float interpolation = 0.995;
   IntArray hiddenLayerSizes = {64, 64};
 };

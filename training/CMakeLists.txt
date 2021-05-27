@@ -22,6 +22,7 @@ add_library(mlpack STATIC
   extern/mlpack/src/mlpack/core/data/detect_file_type.cpp
   extern/mlpack/src/mlpack/core/data/load.cpp
   extern/mlpack/src/mlpack/core/data/load_csv.cpp
+  extern/mlpack/src/mlpack/core/math/random.cpp
   extern/mlpack/src/mlpack/core/util/io.cpp
   extern/mlpack/src/mlpack/core/util/log.cpp
   extern/mlpack/src/mlpack/core/util/prefixedoutstream.cpp
@@ -38,9 +39,10 @@ target_include_directories(mlpack PUBLIC
 #set_target_properties(mlpack PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1")
 
 add_library(Training STATIC
+  src/Coach.cpp
   src/Environment.cpp
-  src/Model.cpp
   src/Network.cpp
+  src/ReplayBuffer.cpp
   src/Training.cpp
   env/GoalPhysicsEnv.cpp
   env/PhysicsEnv.cpp
