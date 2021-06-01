@@ -1,3 +1,6 @@
 [submodule "training/extern/bullet"]
 	path = training/extern/bullet
 	url = https://github.com/bulletphysics/bullet3.git
+[submodule "training/extern/pytorch"]
+	path = training/extern/pytorch
+	url = https://github.com/pytorch/pytorch.git
