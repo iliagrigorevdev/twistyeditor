@@ -15,6 +15,11 @@
 #include <chrono>
 
 class Environment;
+class Actor;
+class Critic;
+class Model;
+class Network;
+class ReplayBuffer;
 
 template<typename K, typename V> using Map = std::map<K, V>;
 
@@ -29,8 +34,19 @@ typedef FloatValArray Action;
 
 typedef std::mt19937 RandomGenerator;
 
+typedef std::pair<float, float> ActorCriticLosses;
+
+typedef std::tuple<Observation, Action, float, Observation, bool> Sample;
+typedef std::shared_ptr<Sample> SamplePtr;
+typedef std::vector<SamplePtr> SamplePtrs;
+
 typedef std::shared_ptr<Environment> EnvironmentPtr;
+typedef std::shared_ptr<Actor> ActorPtr;
+typedef std::shared_ptr<Critic> CriticPtr;
+typedef std::shared_ptr<Model> ModelPtr;
+typedef std::shared_ptr<Network> NetworkPtr;
 typedef std::shared_ptr<RandomGenerator> RandomGeneratorPtr;
+typedef std::shared_ptr<ReplayBuffer> ReplayBufferPtr;
 
 #define EXCEPT(message) std::cerr << (message) << std::endl; throw std::runtime_error(message);
 

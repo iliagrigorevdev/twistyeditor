@@ -1,35 +1,40 @@
 
 #include "Types.h"
+#include "Config.h"
 #include "TwistyEnv.h"
+#include "Network.h"
+#include "Coach.h"
 
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
 
-static std::shared_ptr<TwistyEnv> environment;
-
-static std::default_random_engine randomGenerator(std::chrono::system_clock::now().time_since_epoch().count());
-static std::uniform_real_distribution<float> actionDistribution(-1, 1);
+static Config config; // TODO config from JS
+static EnvironmentPtr environment;
+static NetworkPtr network;
 
 void create(const String &data) {
   environment = std::make_shared<TwistyEnv>(data);
-  environment->restart();
-}
 
-bool step() {
-  Action action(0.0, environment->actionLength);
-  for (auto &value : action) {
-    value = actionDistribution(randomGenerator);
+  const auto observationLength = environment->observation.size();
+  if ((observationLength > 0) && (environment->actionLength > 0)) {
+    network = std::make_shared<Network>(config, observationLength, environment->actionLength);
+  } else {
+    network.reset();
   }
-  environment->step(action);
-  return environment->done || environment->timeout();
 }
 
-void restart() {
-  return environment->restart();
+void run() {
+  if (network == nullptr) {
+    return;
+  }
+
+  config.epochCount = 1; // XXX performance test
+  Coach coach(config, environment, network);
+
+  coach.run();
 }
 
 EMSCRIPTEN_BINDINGS(Training) {
   emscripten::function("create", &create);
-  emscripten::function("step", &step);
-  emscripten::function("restart", &restart);
+  emscripten::function("run", &run);
 }

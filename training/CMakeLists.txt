@@ -4,6 +4,9 @@ project(Training)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
 set(USE_GRAPHICAL_BENCHMARK OFF CACHE BOOL "" FORCE)
 set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
 set(BUILD_CLSOCKET OFF CACHE BOOL "" FORCE)
@@ -17,19 +20,29 @@ set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
 set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/bullet extern/bullet EXCLUDE_FROM_ALL)
 
-add_library(Training STATIC
+add_executable(Training
+# add_library(Training STATIC
+  src/Coach.cpp
   src/Environment.cpp
-  src/Training.cpp
+  src/Model.cpp
+  src/Network.cpp
+  src/ReplayBuffer.cpp
+  # src/Training.cpp
+  src/Training_main.cpp
   env/GoalPhysicsEnv.cpp
   env/PhysicsEnv.cpp
   env/TwistyEnv.cpp
 )
 target_include_directories(Training PUBLIC
+  ${TORCH_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/extern/bullet/src
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_SOURCE_DIR}/env
 )
-target_link_libraries(Training PUBLIC BulletDynamics)
-target_link_libraries(Training PUBLIC BulletCollision)
-target_link_libraries(Training PUBLIC LinearMath)
+target_link_libraries(Training PUBLIC
+  ${TORCH_LIBRARIES}
+  BulletDynamics
+  BulletCollision
+  LinearMath
+)
 target_compile_options(Training PRIVATE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wno-unused-parameter)
