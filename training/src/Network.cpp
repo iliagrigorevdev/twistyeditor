@@ -18,9 +18,7 @@ Network::Network(const Config &config, ModelPtr model, CriticPtr targetCritic)
     , actorOptimizer(new torch::optim::Adam(model->actor->parameters(),
                      torch::optim::AdamOptions(config.learningRate)))
     , criticOptimizer(new torch::optim::Adam(model->critic->parameters(),
-                      torch::optim::AdamOptions(config.learningRate)))
-    , cudaAvailable(torch::cuda::is_available())
-    , cudaActive(false) {
+                      torch::optim::AdamOptions(config.learningRate))) {
   for (auto &parameter : targetCritic->parameters()) {
     parameter.set_requires_grad(false);
   }
@@ -28,8 +26,8 @@ Network::Network(const Config &config, ModelPtr model, CriticPtr targetCritic)
 
 NetworkPtr Network::clone() const {
   return std::make_shared<Network>(config,
-    std::dynamic_pointer_cast<Model>(model->clone(torch::kCPU)),
-    std::dynamic_pointer_cast<Critic>(targetCritic->clone(torch::kCPU)));
+    std::dynamic_pointer_cast<Model>(model->clone()),
+    std::dynamic_pointer_cast<Critic>(targetCritic->clone()));
 }
 
 // void Network::saveModel() {
@@ -38,13 +36,7 @@ NetworkPtr Network::clone() const {
 //   }
 //   const auto modelFilepath = std::filesystem::path(config.modelFolder) /
 //                              config.modelSaveFilename();
-//   if (cudaActive) {
-//     model->to(torch::kCPU);
-//   }
 //   torch::save(model, modelFilepath.string());
-//   if (cudaActive) {
-//     model->to(torch::kCUDA);
-//   }
 // }
 
 // bool Network::loadModel() {
@@ -54,13 +46,7 @@ NetworkPtr Network::clone() const {
 //     std::cout << "Model not found: " << modelFilepath << std::endl;
 //     return false;
 //   }
-//   if (cudaActive) {
-//     model->to(torch::kCPU);
-//   }
 //   torch::load(model, modelFilepath.string());
-//   if (cudaActive) {
-//     model->to(torch::kCUDA);
-//   }
 //   targetCritic = std::dynamic_pointer_cast<Critic>(model->critic->clone());
 //   for (auto &parameter : targetCritic->parameters()) {
 //     parameter.set_requires_grad(false);
@@ -70,12 +56,6 @@ NetworkPtr Network::clone() const {
 
 Action Network::predict(const Observation &observation, bool deterministic) {
   torch::NoGradGuard noGradGuard;
-
-  if (cudaActive) {
-    model->to(torch::kCPU);
-    targetCritic->to(torch::kCPU);
-    cudaActive = false;
-  }
 
   const auto inputObservation = torch::from_blob(
     reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
@@ -96,18 +76,12 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
     return {0, 0};
   }
 
-  if (!cudaActive && cudaAvailable) {
-    model->to(torch::kCUDA);
-    targetCritic->to(torch::kCUDA);
-    cudaActive = true;
-  }
-
   const auto batchSize = static_cast<int>(samples.size());
   std::vector<torch::Tensor> observations;
   std::vector<torch::Tensor> nextObservations;
   std::vector<torch::Tensor> actions;
-  auto reward = torch::empty({batchSize, 1}, torch::kFloat32);
-  auto undone = torch::empty({batchSize, 1}, torch::kFloat32);
+  const auto reward = torch::empty({batchSize, 1}, torch::kFloat32);
+  const auto undone = torch::empty({batchSize, 1}, torch::kFloat32);
   for (int i = 0; i < batchSize; i++) {
     const auto &[observation, action, r, nextObservation, d] = *samples[i];
     observations.push_back(
@@ -122,16 +96,9 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
     reward[i][0] = r;
     undone[i][0] = (d ? 0 : 1);
   }
-  auto observation = torch::cat(observations);
-  auto nextObservation = torch::cat(nextObservations);
-  auto action = torch::cat(actions);
-  if (cudaActive) {
-    observation = observation.to(torch::kCUDA);
-    nextObservation = nextObservation.to(torch::kCUDA);
-    action = action.to(torch::kCUDA);
-    reward = reward.to(torch::kCUDA);
-    undone = undone.to(torch::kCUDA);
-  }
+  const auto observation = torch::cat(observations);
+  const auto nextObservation = torch::cat(nextObservations);
+  const auto action = torch::cat(actions);
 
   criticOptimizer->zero_grad();
   const auto [q1, q2] = model->critic->forward(observation, action);

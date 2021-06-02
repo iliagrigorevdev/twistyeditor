@@ -27,8 +27,6 @@ public:
   CriticPtr targetCritic;
   OptimizerPtr actorOptimizer;
   OptimizerPtr criticOptimizer;
-  bool cudaAvailable;
-  bool cudaActive;
 };
 
 #endif // NETWORK_H
