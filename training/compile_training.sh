@@ -8,7 +8,7 @@ emcc \
   -s MODULARIZE \
   -s 'EXPORT_NAME=Training' \
   -s 'ALLOW_MEMORY_GROWTH=1' \
-  -s 'PTHREAD_POOL_SIZE=1' \
+  -s 'PTHREAD_POOL_SIZE=2' \
   -pthread \
   -o ../../public/training.js \
   -Wl,--whole-archive \

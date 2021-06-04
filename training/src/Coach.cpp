@@ -10,7 +10,26 @@ Coach::Coach(const Config &config, EnvironmentPtr environment, NetworkPtr networ
     , network(network)
     , replayBuffer(std::make_shared<ReplayBuffer>(config))
     , randomGenerator(std::chrono::system_clock::now().time_since_epoch().count())
-    , actionDistribution(-1, 1) {
+    , actionDistribution(-1, 1)
+    , running(false) {
+}
+
+Coach::~Coach() {
+  stop();
+}
+
+void Coach::start() {
+  running = true;
+  thread = std::thread([=]() {
+    run();
+  });
+}
+
+void Coach::stop() {
+  running = false;
+  if (thread.joinable()) {
+    thread.join();
+  }
 }
 
 void Coach::run() {
@@ -28,6 +47,10 @@ void Coach::run() {
 
   const auto totalStepCount = config.totalStepCount();
   for (int t = 0; t < totalStepCount; t++) {
+    if (!running) {
+      return;
+    }
+
     auto observation = environment->observation;
     auto action = (t < config.randomStepCount
                    ? randomAction(environment->actionLength)
@@ -49,6 +72,10 @@ void Coach::run() {
     if ((t >= config.trainingStartStepCount) && ((t % config.trainingInterval) == 0)) {
       const auto startTrainTime = std::chrono::steady_clock::now();
       for (int i = 0; i < config.trainingInterval; i++) {
+        if (!running) {
+          return;
+        }
+
         const auto samples = replayBuffer->sampleBatch();
         const auto losses = network->train(samples);
         trainLosses.first += losses.first;

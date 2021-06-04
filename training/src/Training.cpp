@@ -9,32 +9,40 @@
 #include <emscripten/val.h>
 
 static Config config; // TODO config from JS
-static EnvironmentPtr environment;
-static NetworkPtr network;
+static CoachPtr coach;
 
 void create(const String &data) {
-  environment = std::make_shared<TwistyEnv>(data);
+  coach.reset();
 
+  const auto environment = std::make_shared<TwistyEnv>(data);
   const auto observationLength = environment->observation.size();
-  if ((observationLength > 0) && (environment->actionLength > 0)) {
-    network = std::make_shared<Network>(config, observationLength, environment->actionLength);
-  } else {
-    network.reset();
-  }
-}
-
-void run() {
-  if (network == nullptr) {
+  if ((observationLength == 0) || (environment->actionLength == 0)) {
     return;
   }
 
-  config.epochCount = 1; // XXX performance test
-  Coach coach(config, environment, network);
+  const auto network = std::make_shared<Network>(config, observationLength,
+                                                 environment->actionLength);
+  coach = std::make_shared<Coach>(config, environment, network);
+}
 
-  coach.run();
+void start() {
+  if (coach == nullptr) {
+    return;
+  }
+
+  coach->start();
+}
+
+void stop() {
+  if (coach == nullptr) {
+    return;
+  }
+
+  coach->stop();
 }
 
 EMSCRIPTEN_BINDINGS(Training) {
   emscripten::function("create", &create);
-  emscripten::function("run", &run);
+  emscripten::function("start", &start);
+  emscripten::function("stop", &stop);
 }

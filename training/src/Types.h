@@ -20,6 +20,7 @@ class Critic;
 class Model;
 class Network;
 class ReplayBuffer;
+class Coach;
 
 template<typename K, typename V> using Map = std::map<K, V>;
 
@@ -47,6 +48,7 @@ typedef std::shared_ptr<Model> ModelPtr;
 typedef std::shared_ptr<Network> NetworkPtr;
 typedef std::shared_ptr<RandomGenerator> RandomGeneratorPtr;
 typedef std::shared_ptr<ReplayBuffer> ReplayBufferPtr;
+typedef std::shared_ptr<Coach> CoachPtr;
 
 #define EXCEPT(message) std::cerr << (message) << std::endl; throw std::runtime_error(message);
 
