@@ -3,6 +3,7 @@ $(pwd)/scripts/build_host_protoc.sh
 emcmake cmake -B build \
   -DCMAKE_INSTALL_PREFIX=$(pwd)/build/install \
   -DPYTHON_EXECUTABLE="$(which python3)" \
+  -DCMAKE_CXX_FLAGS=-pthread \
   -DCAFFE2_CUSTOM_PROTOC_EXECUTABLE=$(pwd)/build_host_protoc/bin/protoc \
   -DBUILD_SHARED_LIBS=OFF \
   -DCAFFE2_CMAKE_BUILDING_WITH_MAIN_REPO=OFF \

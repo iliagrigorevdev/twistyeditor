@@ -1,4 +1,5 @@
-emcmake cmake -B build
+emcmake cmake -B build \
+  -DCMAKE_CXX_FLAGS=-pthread
 cd build
 emmake make -j 4
 emcc \
@@ -7,6 +8,8 @@ emcc \
   -s MODULARIZE \
   -s 'EXPORT_NAME=Training' \
   -s 'ALLOW_MEMORY_GROWTH=1' \
+  -s 'PTHREAD_POOL_SIZE=1' \
+  -pthread \
   -o ../../public/training.js \
   -Wl,--whole-archive \
   libTraining.a \
