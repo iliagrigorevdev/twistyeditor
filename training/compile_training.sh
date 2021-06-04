@@ -2,7 +2,7 @@ emcmake cmake -B build
 cd build
 emmake make -j 4
 emcc \
-  -g \
+  -O3 \
   --bind \
   -s MODULARIZE \
   -s 'EXPORT_NAME=Training' \
