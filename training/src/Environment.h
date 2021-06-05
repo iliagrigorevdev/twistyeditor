@@ -31,7 +31,7 @@ public:
   RandomGeneratorPtr randomGenerator;
   int seed = 0;
   int moveNumber = 0;
-  bool done = false;
+  bool done = true;
 };
 
 #endif // ENVIRONMENT_H
