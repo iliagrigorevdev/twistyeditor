@@ -25,24 +25,15 @@ void create(const String &data) {
   coach = std::make_shared<Coach>(config, environment, network);
 }
 
-void start() {
+void step() {
   if (coach == nullptr) {
     return;
   }
 
-  coach->start();
-}
-
-void stop() {
-  if (coach == nullptr) {
-    return;
-  }
-
-  coach->stop();
+  coach->step();
 }
 
 EMSCRIPTEN_BINDINGS(Training) {
   emscripten::function("create", &create);
-  emscripten::function("start", &start);
-  emscripten::function("stop", &stop);
+  emscripten::function("step", &step);
 }

@@ -109,9 +109,12 @@ class Viewport extends Component {
         const exporter = new Exporter(this.shape);
         const data = exporter.export(this.shape.name);
         this.training.create(data);
-        this.training.start();
-      } else {
-        this.training.stop();
+        const startTime = Date.now();
+        for (let i = 0; i < 4000; i++) {
+          this.training.step();
+        }
+        const elapsedTime = Date.now() - startTime;
+        console.log("Elapsed time: " + elapsedTime);
       }
     }
   }
