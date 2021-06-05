@@ -1,0 +1,38 @@
+diff --git a/c10/macros/Macros.h b/c10/macros/Macros.h
+index 90eb759961..bb56e9aed4 100644
+--- a/c10/macros/Macros.h
++++ b/c10/macros/Macros.h
+@@ -348,8 +348,8 @@ __host__ __device__
+     __assert_fail(
+         const char* assertion,
+         const char* file,
+-        unsigned int line,
+-        const char* function) throw();
++        int line,
++        const char* function);
+ #endif
+ }
+ #endif // NDEBUG
+diff --git a/torch/csrc/autograd/engine.cpp b/torch/csrc/autograd/engine.cpp
+index 809c5e1f20..bbddba5125 100644
+--- a/torch/csrc/autograd/engine.cpp
++++ b/torch/csrc/autograd/engine.cpp
+@@ -1123,12 +1123,12 @@ auto Engine::ready_queue_by_index(std::shared_ptr<ReadyQueue> cpu_ready_queue, i
+ auto Engine::start_device_threads() -> void {
+   // See Note [Allocating GPUs to autograd threads]
+   c10::DeviceIndex num_devices = 0;
+-  for (const auto& impl_atomic : c10::impl::device_guard_impl_registry) {
+-    auto* impl = impl_atomic.load();
+-    if (impl) {
+-      num_devices = std::max(num_devices, impl->deviceCount());
+-    }
+-  }
++  // for (const auto& impl_atomic : c10::impl::device_guard_impl_registry) {
++  //   auto* impl = impl_atomic.load();
++  //   if (impl) {
++  //     num_devices = std::max(num_devices, impl->deviceCount());
++  //   }
++  // }
+ 
+   // allocate one thread for every GPU device (but colocate GPUs of different
+   // types), and pre-allocate the device_ready_queues_ to ensure safe reading on it.
