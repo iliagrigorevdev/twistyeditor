@@ -120,6 +120,19 @@ class RigidInfo {
 
     const mass = part.length * PRISM_MASS;
 
+    const childTransform = inverseTransform(createTransform(), partTransform);
+    const localTransforms = [];
+    for (const transform of transforms) {
+      const localTransform = multiplyTransforms(createTransform(), childTransform, transform);
+      localTransforms.push(localTransform);
+    }
+    const viewTransforms = [];
+    for (const prism of part) {
+      const worldTransform = createTransform(prism.worldPosition, prism.worldOrientation);
+      const viewTransform = multiplyTransforms(createTransform(), childTransform, worldTransform);
+      viewTransforms.push(viewTransform);
+    }
+
     console.log("Mass: " + mass);
     console.log("Origin: {" + partOrigin[0].toFixed(2) + ", " + partOrigin[1].toFixed(2)
         + ", " + partOrigin[2].toFixed(2) + "}");
@@ -137,7 +150,8 @@ class RigidInfo {
       mass: mass,
       inertia: inertia,
       transform: partTransform,
-      prismTransforms: transforms
+      localTransforms: localTransforms,
+      viewTransforms: viewTransforms
     };
   }
 

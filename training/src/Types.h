@@ -23,10 +23,11 @@ class ReplayBuffer;
 class Coach;
 
 template<typename K, typename V> using Map = std::map<K, V>;
+template<typename T> using Array = std::vector<T>;
 
 typedef std::string String;
 
-typedef std::vector<int> IntArray;
+typedef Array<int> IntArray;
 
 typedef std::valarray<float> FloatValArray;
 
@@ -39,7 +40,7 @@ typedef std::pair<float, float> ActorCriticLosses;
 
 typedef std::tuple<Observation, Action, float, Observation, bool> Sample;
 typedef std::shared_ptr<Sample> SamplePtr;
-typedef std::vector<SamplePtr> SamplePtrs;
+typedef Array<SamplePtr> SamplePtrs;
 
 typedef std::shared_ptr<Environment> EnvironmentPtr;
 typedef std::shared_ptr<Actor> ActorPtr;

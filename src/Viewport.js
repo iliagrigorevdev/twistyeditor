@@ -8,6 +8,7 @@ import { AppMode } from './App';
 import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
+import { createTransform, multiplyTransforms } from './Transform';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -82,6 +83,7 @@ class Viewport extends Component {
     super(props);
 
     this.auxMat4 = mat4.create();
+    this.auxTransform = createTransform();
   }
 
   componentDidMount() {
@@ -91,10 +93,8 @@ class Viewport extends Component {
     for (let i = 0; i < COLOR_MASK_COUNT; i++) {
       assets.push(getPrismTextureUrl(i));
     }
-    window.Training().then(training => {
-      window.Filament.init(assets, () => {
-        this.init(training);
-      });
+    window.Filament.init(assets, () => {
+      this.init();
     });
   }
 
@@ -105,16 +105,21 @@ class Viewport extends Component {
       this.refreshShapeView();
     }
     if (modeChanged) {
-      if (this.props.mode === AppMode.SIMULATION) {
+      if (this.worker != null) {
+        this.worker.terminate();
+        this.worker = null;
+      }
+      if (this.props.mode === AppMode.TRAINING) {
         const exporter = new Exporter(this.shape);
-        const data = exporter.export(this.shape.name);
-        this.training.create(data);
-        const startTime = Date.now();
-        for (let i = 0; i < 4000; i++) {
-          this.training.step();
+        const shapeData = exporter.export(this.shape.name);
+        this.rigidInfo = exporter.rigidInfo;
+        if (window.Worker) {
+          this.worker = new Worker("worker.js");
+          this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
+          this.worker.postMessage(shapeData);
+        } else {
+          alert("No worker support");
         }
-        const elapsedTime = Date.now() - startTime;
-        console.log("Elapsed time: " + elapsedTime);
       }
     }
   }
@@ -145,8 +150,9 @@ class Viewport extends Component {
     this.selectPlaceable(activePlaceable, true, false);
   }
 
-  init(training) {
-    this.training = training;
+  init() {
+    this.worker = null;
+    this.rigidInfo = null;
 
     this.elevation = DEFAULT_ELEVATION;
     this.heading = DEFAULT_HEADING;
@@ -397,17 +403,24 @@ class Viewport extends Component {
     this.animationTimer = CAMERA_ANIMATION_FOLLOW_TIME;
   }
 
-  updateSimulationView() {
-    /*this.updateFollowPosition(this.simulation.shapePosition);
-
-    const prismIds = this.simulation.prismIds;
-    const transforms = this.simulation.prismWorldTransforms;
-    for (let i = 0; i < prismIds.length; i++) {
-      const placeableView = this.shapeView.findPlaceableView(prismIds[i]);
-      const transform = transforms[i];
-      this.setRenderableTransform(placeableView.renderable, transform.position,
-          transform.orientation);
-    }*/
+  updateShapeView(transforms) {
+    const baseLink = (this.rigidInfo.baseLinks.length > 0
+                      ? this.rigidInfo.baseLinks[0] : null);
+    for (let i = 0; i < transforms.length; i++) {
+      const partTransform = transforms[i];
+      const link = this.rigidInfo.links[i];
+      if (link === baseLink) {
+        this.updateFollowPosition(partTransform.position);
+      }
+      for (let j = 0; j < link.prisms.length; j++) {
+        const prismId = link.prisms[j].id;
+        const viewTransform = link.viewTransforms[j];
+        multiplyTransforms(this.auxTransform, partTransform, viewTransform);
+        const placeableView = this.shapeView.findPlaceableView(prismId);
+        this.setRenderableTransform(placeableView.renderable, this.auxTransform.position,
+                                    this.auxTransform.orientation);
+      }
+    }
   }
 
   renderFrame(timestamp) {
@@ -416,14 +429,6 @@ class Viewport extends Component {
     }
     const deltaTime = 1e-3 * (timestamp - this.lastTime);
     this.lastTime = timestamp;
-
-    /*if ((this.props.mode === AppMode.SIMULATION) && this.simulation.initialized) {
-      for (let i = 0; i < this.simulation.torqueScales.length; i++) {
-        this.simulation.torqueScales[i] = 2 * (Math.random() - 0.5);
-      }
-      this.simulation.step(deltaTime);
-      this.updateSimulationView();
-    }*/
 
     if (this.animationTimer < CAMERA_ANIMATION_TIME) {
       this.animationTimer += deltaTime;
@@ -565,6 +570,12 @@ class Viewport extends Component {
         this.dragging = true;
       }
     }
+  }
+
+  handleWorkerMessage(e) {
+    const [progress, time, state] = e.data;
+    this.props.onTrainingChange(progress, time);
+    this.updateShapeView(state.transforms);
   }
 
   computeAutoZoom(shape) {

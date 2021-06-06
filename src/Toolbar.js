@@ -95,6 +95,10 @@ class Toolbar extends Component {
     });
   }
 
+  formatTime(time) {
+    return Math.floor(time / 60) + ":" + (time % 60).toString().padStart(2, "0");
+  }
+
   renderShapeParams(shape) {
     return (
       <div className="Group">
@@ -142,11 +146,17 @@ class Toolbar extends Component {
           <button id="exportShape" name="exportShape"
             onClick={() => this.props.onShapeExport(shape)}>Export</button>
         </p>
-        <h3>Simulation</h3>
-        <button id="startSimulation" name="startSimulation" disabled={this.props.mode === AppMode.SIMULATION}
-            onClick={() => this.props.onSimulationStart()}>Start</button>
-        <button id="stopSimulation" name="stopSimulation" disabled={this.props.mode !== AppMode.SIMULATION}
-            onClick={() => this.props.onSimulationStop()}>Stop</button>
+        <h3>Training</h3>
+        <p>
+          <label>Progress : {this.props.trainingProgress}%</label>
+        </p>
+        <p>
+          <label>Time : {this.formatTime(this.props.trainingTime)}</label>
+        </p>
+        <button id="startTraining" name="startTraining" disabled={this.props.mode === AppMode.TRAINING}
+            onClick={() => this.props.onTrainingStart()}>Start</button>
+        <button id="stopTraining" name="stopTraining" disabled={this.props.mode !== AppMode.TRAINING}
+            onClick={() => this.props.onTrainingStop()}>Stop</button>
       </div>
     );
   }

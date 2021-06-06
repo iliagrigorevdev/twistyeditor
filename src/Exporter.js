@@ -1,5 +1,4 @@
 import RigidInfo from './RigidInfo';
-import { createTransform, multiplyTransforms, inverseTransform } from './Transform';
 
 function vectorToString(vector, precision) {
   return vector[0].toFixed(precision) + " "
@@ -36,10 +35,8 @@ class Exporter {
       lines.push("l " + link.mass.toFixed(4) + " "
           + vectorToString(link.inertia, 4) + " "
           + transformToString(link.transform));
-      const childTransform = inverseTransform(createTransform(), link.transform);
-      for (const transform of link.prismTransforms) {
-        const prismTransform = multiplyTransforms(createTransform(), childTransform, transform);
-        lines.push("p " + transformToString(prismTransform));
+      for (const localTransform of link.localTransforms) {
+        lines.push("p " + transformToString(localTransform));
       }
     }
 

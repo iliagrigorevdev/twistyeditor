@@ -12,7 +12,7 @@ const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
   EDIT: 0,
-  SIMULATION: 1
+  TRAINING: 1
 });
 
 class App extends Component {
@@ -26,7 +26,9 @@ class App extends Component {
       shape: shape,
       activePlaceableId: 0,
       historyEntries: [],
-      historyIndex: -1
+      historyIndex: -1,
+      trainingProgress: 0,
+      trainingTime: 0
     };
     this.figures = null;
     this.figureRandomIndices = null;
@@ -170,6 +172,17 @@ class App extends Component {
     this.downloadFile(shape.name + EXPORT_EXTENSION, content);
   }
 
+  handleTrainingChange(progress, time) {
+    if ((this.state.trainingProgress === progress) &&
+        (this.state.trainingTime === time)) {
+      return;
+    }
+    this.setState({
+      trainingProgress: progress,
+      trainingTime: time
+    });
+  }
+
   handleAppModeChange(mode) {
     this.setState({ mode: mode });
   }
@@ -180,10 +193,12 @@ class App extends Component {
         <Viewport mode={this.state.mode} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           onShapeChange={(shape, activePlaceableId) => this.handleShapeChange(shape, false, activePlaceableId)}
-          onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)} />
+          onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)}
+          onTrainingChange={(progress, time) => this.handleTrainingChange(progress, time)} />
         <Toolbar mode={this.state.mode} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
+          trainingProgress={this.state.trainingProgress} trainingTime={this.state.trainingTime}
           onShapeChange={shape => this.handleShapeChange(shape)}
           onHistoryChange={index => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
@@ -191,8 +206,8 @@ class App extends Component {
           onShapeSave={shape => this.handleShapeSave(shape)}
           onShapeLoad={() => this.handleShapeLoad()}
           onShapeExport={shape => this.handleShapeExport(shape)}
-          onSimulationStart={() => this.handleAppModeChange(AppMode.SIMULATION)}
-          onSimulationStop={() => this.handleAppModeChange(AppMode.EDIT)} />
+          onTrainingStart={() => this.handleAppModeChange(AppMode.TRAINING)}
+          onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)} />
       </div>
     );
   }

@@ -12,6 +12,7 @@
 class PhysicsEnv : public Environment {
 public:
   PhysicsEnv();
+  PhysicsEnv(const PhysicsEnv &env) = delete;
   virtual ~PhysicsEnv();
 
   void putShape(const String &name, btCollisionShape *shape);
