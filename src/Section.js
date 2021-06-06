@@ -66,13 +66,6 @@ class Section extends Placeable {
     return mergedProperties;
   }
 
-  getPropertyLabel(name) {
-    return name
-      .split(/(?=[A-Z])/)
-      .map(s => s.charAt(0).toUpperCase() + s.slice(1))
-      .join(' ');
-  }
-
   getProperty(name) {
     const sectionProperties = SECTION_PROPERTIES.get(this.type);
     if (sectionProperties) {

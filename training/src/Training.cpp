@@ -11,13 +11,16 @@
 struct Vector {
   float x, y, z;
 };
+
 struct Quaternion {
   float x, y, z, w;
 };
+
 struct Transform {
   Vector position;
   Quaternion orientation;
 };
+
 struct State {
   Vector goalPosition;
   Array<Transform> transforms;
@@ -25,12 +28,11 @@ struct State {
 
 typedef std::shared_ptr<TwistyEnv> TwistyEnvPtr;
 
-static Config config; // TODO config from JS
 static TwistyEnvPtr environment;
 static NetworkPtr network;
 static CoachPtr coach;
 
-void create(const String &data) {
+void create(const Config &config, const String &data) {
   environment = std::make_shared<TwistyEnv>(data);
   const auto observationLength = environment->observation.size();
   if ((observationLength == 0) || (environment->actionLength == 0)) {
@@ -79,22 +81,37 @@ State evaluate() {
 }
 
 EMSCRIPTEN_BINDINGS(Training) {
+  emscripten::value_object<Config>("Config")
+    .field("discount", &Config::discount)
+    .field("batchSize", &Config::batchSize)
+    .field("randomSteps", &Config::randomSteps)
+    .field("replayBufferSize", &Config::replayBufferSize)
+    .field("trainingStartSteps", &Config::trainingStartSteps)
+    .field("learningRate", &Config::learningRate)
+    .field("regularization", &Config::regularization)
+    .field("interpolation", &Config::interpolation)
+    .field("hiddenLayerSizes", &Config::hiddenLayerSizes);
+
   emscripten::value_object<Vector>("Vector")
     .field("x", &Vector::x)
     .field("y", &Vector::y)
     .field("z", &Vector::z);
+
   emscripten::value_object<Quaternion>("Quaternion")
     .field("x", &Quaternion::x)
     .field("y", &Quaternion::y)
     .field("z", &Quaternion::z)
     .field("w", &Quaternion::w);
+
   emscripten::value_object<Transform>("Transform")
     .field("position", &Transform::position)
     .field("orientation", &Transform::orientation);
+
   emscripten::value_object<State>("State")
     .field("goalPosition", &State::goalPosition)
     .field("transforms", &State::transforms);
 
+  emscripten::register_vector<int>("IntArray");
   emscripten::register_vector<Transform>("Transforms");
 
   emscripten::function("create", &create);

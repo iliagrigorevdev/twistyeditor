@@ -95,11 +95,29 @@ class Toolbar extends Component {
     });
   }
 
+  handleConfigChange(prevConfig, property, value) {
+    const config = JSON.parse(JSON.stringify(prevConfig));
+    if (property === "hiddenLayerSizes") {
+      value = value.split(",").map(Number);
+    } else {
+      value = parseFloat(value) || 0;
+    }
+    config[property] = value;
+    this.props.onConfigChange(config);
+  }
+
   formatTime(time) {
     return Math.floor(time / 60) + ":" + (time % 60).toString().padStart(2, "0");
   }
 
-  renderShapeParams(shape) {
+  getPropertyLabel(name) {
+    return name
+      .split(/(?=[A-Z])/)
+      .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(' ');
+  }
+
+  renderShapeParams(config, shape) {
     return (
       <div className="Group">
         <h3>Shape</h3>
@@ -153,6 +171,15 @@ class Toolbar extends Component {
         <p>
           <label>Time : {this.formatTime(this.props.trainingTime)}</label>
         </p>
+        {Object.keys(config).map(property => {
+          const key = "config_" + property;
+          const value = config[property];
+          return <p key={key}>
+            <label htmlFor={property}>{this.getPropertyLabel(property)} : </label>
+            <input id={key} name={key} type={Array.isArray(value) ? "text" : "number"} value={value}
+              onChange={e => this.handleConfigChange(config, property, e.target.value)} />
+          </p>
+        })}
         <button id="startTraining" name="startTraining" disabled={this.props.mode === AppMode.TRAINING}
             onClick={() => this.props.onTrainingStart()}>Start</button>
         <button id="stopTraining" name="stopTraining" disabled={this.props.mode !== AppMode.TRAINING}
@@ -212,7 +239,7 @@ class Toolbar extends Component {
         {section.getProperties().map(property => {
           const key = "section_" + property.name;
           return <p key={key}>
-            <label htmlFor={key}>{section.getPropertyLabel(property.name)} : </label>
+            <label htmlFor={key}>{this.getPropertyLabel(property.name)} : </label>
             <input id={key} name={key}
               type="number" min={property.min} max={property.max} value={property.value}
               onChange={e => this.handleSectionPropertyChange(shape, section, property.name, e.target.value)} />
@@ -239,7 +266,7 @@ class Toolbar extends Component {
         return this.renderSectionParams(this.props.shape, activePlaceable);
       }
     } else {
-      return this.renderShapeParams(this.props.shape);
+      return this.renderShapeParams(this.props.config, this.props.shape);
     }
   }
 

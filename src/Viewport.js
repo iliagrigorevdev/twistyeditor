@@ -116,7 +116,7 @@ class Viewport extends Component {
         if (window.Worker) {
           this.worker = new Worker("worker.js");
           this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
-          this.worker.postMessage(shapeData);
+          this.worker.postMessage([this.props.config, shapeData]);
         } else {
           alert("No worker support");
         }

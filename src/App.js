@@ -5,6 +5,7 @@ import Toolbar from './Toolbar';
 import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
 import Exporter from './Exporter';
+import Config from './Config';
 
 const ARCHIVE_EXTENSION = ".twy";
 const EXPORT_EXTENSION = ".twe";
@@ -27,6 +28,7 @@ class App extends Component {
       activePlaceableId: 0,
       historyEntries: [],
       historyIndex: -1,
+      config: new Config(),
       trainingProgress: 0,
       trainingTime: 0
     };
@@ -172,6 +174,10 @@ class App extends Component {
     this.downloadFile(shape.name + EXPORT_EXTENSION, content);
   }
 
+  handleConfigChange(config) {
+    this.setState({ config: config });
+  }
+
   handleTrainingChange(progress, time) {
     if ((this.state.trainingProgress === progress) &&
         (this.state.trainingTime === time)) {
@@ -191,7 +197,7 @@ class App extends Component {
     return (
       <div className="App">
         <Viewport mode={this.state.mode} shape={this.state.shape}
-          activePlaceableId={this.state.activePlaceableId}
+          activePlaceableId={this.state.activePlaceableId} config={this.state.config}
           onShapeChange={(shape, activePlaceableId) => this.handleShapeChange(shape, false, activePlaceableId)}
           onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)}
           onTrainingChange={(progress, time) => this.handleTrainingChange(progress, time)} />
@@ -199,6 +205,7 @@ class App extends Component {
           activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
           trainingProgress={this.state.trainingProgress} trainingTime={this.state.trainingTime}
+          config={this.state.config}
           onShapeChange={shape => this.handleShapeChange(shape)}
           onHistoryChange={index => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
@@ -207,7 +214,8 @@ class App extends Component {
           onShapeLoad={() => this.handleShapeLoad()}
           onShapeExport={shape => this.handleShapeExport(shape)}
           onTrainingStart={() => this.handleAppModeChange(AppMode.TRAINING)}
-          onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)} />
+          onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)}
+          onConfigChange={config => this.handleConfigChange(config)} />
       </div>
     );
   }

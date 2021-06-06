@@ -8,7 +8,7 @@ ReplayBuffer::ReplayBuffer(const Config &config)
     : config(config)
     , cursor(0)
     , randomGenerator(std::chrono::system_clock::now().time_since_epoch().count()) {
-  buffer.reserve(config.replaySampleCountMax);
+  buffer.reserve(config.replayBufferSize);
 }
 
 void ReplayBuffer::append(SamplePtr sample) {
@@ -17,7 +17,7 @@ void ReplayBuffer::append(SamplePtr sample) {
   } else {
     buffer[cursor] = sample;
   }
-  cursor = (cursor + 1) % config.replaySampleCountMax;
+  cursor = (cursor + 1) % config.replayBufferSize;
 }
 
 SamplePtrs ReplayBuffer::sampleBatch() {

@@ -16,7 +16,7 @@ void Coach::step() {
   }
 
   auto observation = environment->observation;
-  auto action = (advance < config.randomStepCount
+  auto action = (advance < config.randomSteps
                  ? environment->randomAction()
                  : network->predict(observation, false));
 
@@ -26,7 +26,7 @@ void Coach::step() {
                        std::move(action), reward, std::move(nextObservation),
                        environment->done));
 
-  if (advance >= config.trainingStartStepCount) {
+  if (advance >= config.trainingStartSteps) {
     const auto samples = replayBuffer->sampleBatch();
     network->train(samples);
   }
