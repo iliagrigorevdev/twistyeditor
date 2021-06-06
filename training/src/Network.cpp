@@ -1,8 +1,6 @@
 
 #include "Network.h"
 
-// #include <filesystem>
-
 Network::Network(const Config &config, int observationLength, int actionLength)
     : Network(config, std::make_shared<Model>(config.hiddenLayerSizes, observationLength, actionLength)) {
 }
@@ -30,29 +28,16 @@ NetworkPtr Network::clone() const {
     std::dynamic_pointer_cast<Critic>(targetCritic->clone()));
 }
 
-// void Network::saveModel() {
-//   if (!std::filesystem::exists(config.modelFolder)) {
-//     std::filesystem::create_directory(config.modelFolder);
-//   }
-//   const auto modelFilepath = std::filesystem::path(config.modelFolder) /
-//                              config.modelSaveFilename();
-//   torch::save(model, modelFilepath.string());
-// }
+String Network::save() const {
+  std::ostringstream stream;
+  torch::save(model, stream);
+  return stream.str();
+}
 
-// bool Network::loadModel() {
-//   const auto modelFilepath = std::filesystem::path(config.modelFolder) /
-//                              config.modelLoadFilename();
-//   if (!std::filesystem::exists(modelFilepath)) {
-//     std::cout << "Model not found: " << modelFilepath << std::endl;
-//     return false;
-//   }
-//   torch::load(model, modelFilepath.string());
-//   targetCritic = std::dynamic_pointer_cast<Critic>(model->critic->clone());
-//   for (auto &parameter : targetCritic->parameters()) {
-//     parameter.set_requires_grad(false);
-//   }
-//   return true;
-// }
+void Network::load(const String &data) {
+  std::istringstream stream(data);
+  torch::load(model, stream);
+}
 
 Action Network::predict(const Observation &observation, bool deterministic) {
   torch::NoGradGuard noGradGuard;

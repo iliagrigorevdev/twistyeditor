@@ -16,8 +16,8 @@ public:
 
   NetworkPtr clone() const;
 
-  // void saveModel();
-  // bool loadModel();
+  String save() const;
+  void load(const String &data);
 
   Action predict(const Observation &observation, bool deterministic);
   ActorCriticLosses train(const SamplePtrs &samples);
