@@ -17,8 +17,6 @@ public:
   EnvironmentPtr environment;
   NetworkPtr network;
   ReplayBufferPtr replayBuffer;
-  std::default_random_engine randomGenerator;
-  std::uniform_real_distribution<float> actionDistribution;
   int advance;
 };
 

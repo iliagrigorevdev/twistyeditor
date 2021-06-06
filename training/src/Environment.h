@@ -25,6 +25,8 @@ public:
 
   RandomGenerator& getRandomGenerator();
 
+  Action randomAction();
+
   Observation observation;
   int actionLength = 0;
   int moveCountMax = 0;

@@ -53,3 +53,12 @@ RandomGenerator& Environment::getRandomGenerator() {
   }
   return *randomGenerator;
 }
+
+Action Environment::randomAction() {
+  std::uniform_real_distribution<float> actionDistribution(-1, 1);
+  Action action(0.0, actionLength);
+  for (auto &value : action) {
+    value = actionDistribution(getRandomGenerator());
+  }
+  return action;
+}
