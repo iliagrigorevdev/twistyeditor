@@ -18,7 +18,7 @@ void Coach::step() {
   auto observation = environment->observation;
   auto action = (advance < config.randomStepCount
                  ? environment->randomAction()
-                 : network->predict(observation, true));
+                 : network->predict(observation, false));
 
   const auto reward = environment->step(action);
   auto nextObservation = environment->observation;
