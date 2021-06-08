@@ -192,7 +192,14 @@ class App extends Component {
   }
 
   handleAppModeChange(mode) {
-    this.setState({ mode: mode });
+    const nextState = {
+      mode: mode
+    };
+    if (mode === AppMode.TRAINING) {
+      nextState.trainingProgress = 0;
+      nextState.trainingTime = 0;
+    }
+    this.setState(nextState);
   }
 
   render() {
