@@ -4,7 +4,7 @@ import ShapeView from './ShapeView';
 import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
-import { AppMode } from './App';
+import { AppMode, getTrainingKey } from './App';
 import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
@@ -112,11 +112,12 @@ class Viewport extends Component {
       if (this.props.mode === AppMode.TRAINING) {
         const exporter = new Exporter(this.shape);
         const shapeData = exporter.export(this.shape.name);
+        const key = getTrainingKey(this.props.config, shapeData);
         this.rigidInfo = exporter.rigidInfo;
         if (window.Worker) {
           this.worker = new Worker("worker.js");
           this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
-          this.worker.postMessage([this.props.config, shapeData]);
+          this.worker.postMessage([key, this.props.config, shapeData]);
         } else {
           alert("No worker support");
         }

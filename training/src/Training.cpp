@@ -55,6 +55,20 @@ void step() {
   coach->step();
 }
 
+String save() {
+  if (network == nullptr) {
+    return "";
+  }
+  return network->save();
+}
+
+void load(const String &data) {
+  if (network == nullptr) {
+    return;
+  }
+  network->load(data);
+}
+
 State evaluate() {
   if (environment->done || environment->timeout()) {
     environment->restart();
@@ -116,5 +130,7 @@ EMSCRIPTEN_BINDINGS(Training) {
 
   emscripten::function("create", &create);
   emscripten::function("step", &step);
+  emscripten::function("save", &save);
+  emscripten::function("load", &load);
   emscripten::function("evaluate", &evaluate);
 }

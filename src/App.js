@@ -135,6 +135,7 @@ class App extends Component {
       const reader = new FileReader();
       reader.onload = ((e) => {
         const shape = Shape.load(e.target.result);
+        // TODO load config and training data
         if (shape) {
           this.handleShapeChange(shape, true);
         } else {
@@ -161,6 +162,7 @@ class App extends Component {
       return;
     }
     const content = Shape.save(shape);
+    // TODO save config and training data
     this.downloadFile(shape.name + ARCHIVE_EXTENSION, content);
   }
 
@@ -221,5 +223,19 @@ class App extends Component {
   }
 }
 
+function getStringHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash &= hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
+
+function getTrainingKey(config, shapeData) {
+  return getStringHash(config.hiddenLayerSizes.toString() + shapeData);
+}
+
 export default App;
-export { AppMode };
+export { AppMode, getTrainingKey };

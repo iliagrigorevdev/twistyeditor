@@ -5,24 +5,41 @@ const maxTime = 1000;
 onmessage = function(e) {
   importScripts("training.js");
 
-  const [config, shapeData] = e.data;
+  const [key, config, shapeData] = e.data;
 
   Training().then(training => {
-    const worker = new Worker(training, config, shapeData);
-    worker.run();
+    const worker = new Worker(training, key, config, shapeData);
+    worker.start();
   });
 }
 
 class Worker {
-  constructor(training, config, shapeData) {
+  constructor(training, key, config, shapeData) {
     this.training = training;
+    this.key = key;
     this.config = config;
     this.shapeData = shapeData;
 
     this.config.hiddenLayerSizes = this.toNativeArray(this.config.hiddenLayerSizes);
   }
 
-  run() {
+  start() {
+    this.openDB(db => {
+      if (db) {
+        this.load(db, object => {
+          if (object) {
+            this.training.load(object.data);
+            console.log("Load checkpoint");
+          }
+          this.run(db);
+        });
+      } else {
+        this.run();
+      }
+    });
+  }
+
+  run(db = null) {
     this.training.create(this.config, this.shapeData);
 
     const startTime = Date.now();
@@ -34,6 +51,13 @@ class Worker {
         this.training.step();
         endTime = Date.now();
         stepNumber++;
+
+        if (((stepNumber % this.config.checkpointSteps) == 0) && db) {
+          const data = this.training.save();
+          if (data) {
+            this.save(db, data);
+          }
+        }
       }
 
       const currentTime = Date.now();
@@ -51,6 +75,73 @@ class Worker {
         postMessage([progress, time, state]);
       }
     }
+  }
+
+  openDB(ondone) {
+    const openRequest = indexedDB.open("training");
+    openRequest.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("data")) {
+        db.createObjectStore("data", {keyPath: "key"});
+        console.log("Initialize DB");
+      }
+    };
+    openRequest.onsuccess = (e) => {
+      const db = openRequest.result;
+      db.onabort = (e) => {
+        console.log("db onabort: " + e); // XXX
+      };
+      db.onclose = (e) => {
+        console.log("db onclose: " + e); // XXX
+      };
+      db.onerror = (e) => {
+        console.log("db onerror: " + e); // XXX
+      };
+      db.onversionchange = (e) => {
+        console.log("db onversionchange: " + e); // XXX
+      };
+      ondone(db);
+    };
+    openRequest.onerror = (e) => {
+      console.log("Failed to open DB");
+      ondone();
+    };
+  }
+
+  load(db, ondone) {
+    const getRequest = db.transaction("data", "readonly")
+                       .objectStore("data")
+                       .get(this.key);
+    getRequest.onsuccess = (e) => {
+      console.log("getRequest onsuccess"); // XXX
+      ondone(getRequest.result);
+    };
+    getRequest.onerror = (e) => {
+      console.log("Failed to load data");
+      ondone();
+    };
+  }
+
+  save(db, data) {
+    const transaction = db.transaction("data", "readwrite");
+    const putRequest = transaction
+                       .objectStore("data")
+                       .put({key: this.key, data: data});
+    putRequest.onsuccess = (e) => {
+      console.log("Saved"); // XXX
+    };
+    putRequest.onerror = (e) => {
+      console.log("Failed to save data");
+    };
+    transaction.oncomplete = (e) => {
+      console.log("oncomplete: " + e); // XXX
+    };
+    transaction.onabort = (e) => {
+      console.log("onabort: " + e); // XXX
+    };
+    transaction.onerror = (e) => {
+      console.log("onerror: " + e); // XXX
+    };
   }
 
   toNativeArray(array) {

@@ -2,6 +2,7 @@
 class Config {
   constructor() {
     this.totalSteps = 1000000;
+    this.checkpointSteps = 10000;
 
     this.discount = 0.99;
     this.batchSize = 100;
