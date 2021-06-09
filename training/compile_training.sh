@@ -7,7 +7,7 @@ emcc \
   -s MODULARIZE \
   -s 'EXPORT_NAME=Training' \
   -s 'ALLOW_MEMORY_GROWTH=1' \
-  -o ../../public/training.js \
+  -o ../../public/static/js/training.js \
   -Wl,--whole-archive \
   libTraining.a \
   ../extern/pytorch/build/lib/libc10.a \

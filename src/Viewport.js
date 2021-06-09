@@ -4,11 +4,12 @@ import ShapeView from './ShapeView';
 import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
-import { AppMode, getTrainingKey } from './App';
+import { AppMode } from './App';
 import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
 import { createTransform, multiplyTransforms } from './Transform';
+import Worker from "./Worker.worker.js";
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -112,12 +113,11 @@ class Viewport extends Component {
       if (this.props.mode === AppMode.TRAINING) {
         const exporter = new Exporter(this.shape);
         const shapeData = exporter.export(this.shape.name);
-        const key = getTrainingKey(this.props.config, shapeData);
         this.rigidInfo = exporter.rigidInfo;
         if (window.Worker) {
-          this.worker = new Worker("worker.js");
+          this.worker = new Worker();
           this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
-          this.worker.postMessage([key, this.props.config, shapeData]);
+          this.worker.postMessage([this.props.config, shapeData]);
         } else {
           alert("No worker support");
         }

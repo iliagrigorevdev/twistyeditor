@@ -2,23 +2,13 @@
 const frameTime = 40;
 const maxTime = 1000;
 
-onmessage = function(e) {
-  importScripts("training.js");
-
-  const [key, config, shapeData] = e.data;
-
-  Training().then(training => {
-    const worker = new Worker(training, key, config, shapeData);
-    worker.start();
-  });
-}
-
-class Worker {
-  constructor(training, key, config, shapeData) {
+class Trainer {
+  constructor(training, config, shapeData) {
     this.training = training;
-    this.key = key;
     this.config = config;
     this.shapeData = shapeData;
+
+    this.key = getTrainingKey(config, shapeData);
 
     this.config.hiddenLayerSizes = this.toNativeArray(this.config.hiddenLayerSizes);
   }
@@ -52,7 +42,7 @@ class Worker {
         endTime = Date.now();
         stepNumber++;
 
-        if (((stepNumber % this.config.checkpointSteps) == 0) && db) {
+        if (((stepNumber % this.config.checkpointSteps) === 0) && db) {
           const data = this.training.save();
           if (data) {
             this.save(db, data);
@@ -181,3 +171,20 @@ class Worker {
     return state;
   }
 }
+
+function getStringHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash &= hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
+
+function getTrainingKey(config, shapeData) {
+  return getStringHash(config.hiddenLayerSizes.toString() + shapeData);
+}
+
+export default Trainer;
+export { getTrainingKey };
