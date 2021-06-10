@@ -22,13 +22,13 @@ class Trainer {
     this.training.create(this.config, this.shapeData);
 
     const startTime = Date.now();
-    let endTime = startTime;
     let lastTime = startTime;
+    let trainingTime = 0;
     let stepNumber = 0;
     while (true) {
       if (stepNumber < this.config.totalSteps) {
         this.training.step();
-        endTime = Date.now();
+        trainingTime = Math.floor((Date.now() - startTime) / 1000);
         stepNumber++;
 
         if ((stepNumber % this.config.checkpointSteps) === 0) {
@@ -44,11 +44,9 @@ class Trainer {
         } else {
           lastTime += frameTime;
         }
-        const progress = Math.floor(stepNumber * 100 / this.config.totalSteps);
-        const time = Math.floor((endTime - startTime) / 1000);
         const nativeState = this.training.evaluate();
         const state = this.fromNativeState(nativeState);
-        postMessage([progress, time, state, this.checkpointData]);
+        postMessage([stepNumber, trainingTime, state, this.checkpointData]);
         this.checkpointData = null;
       }
     }

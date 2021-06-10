@@ -170,7 +170,7 @@ class Toolbar extends Component {
         <button id="stopTraining" name="stopTraining" disabled={this.props.mode !== AppMode.TRAINING}
           onClick={() => this.props.onTrainingStop()}>Stop</button>
         <p>
-          <label>Progress : {this.props.trainingProgress}%</label>
+          <label>Progress : {this.props.trainingSteps} ~ {Math.floor(this.props.trainingSteps * 100 / this.props.config.totalSteps)}%</label>
         </p>
         <p>
           <label>Time : {this.formatTime(this.props.trainingTime)}</label>

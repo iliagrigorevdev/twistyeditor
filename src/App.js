@@ -32,7 +32,7 @@ class App extends Component {
       historyEntries: [],
       historyIndex: -1,
       config: new Config(),
-      trainingProgress: 0,
+      trainingSteps: 0,
       trainingTime: 0,
       trainingState: null
     };
@@ -234,7 +234,7 @@ class App extends Component {
       }
       if (activeJointCount > 0) {
         nextState.mode = AppMode.LOADING;
-        nextState.trainingProgress = 0;
+        nextState.trainingSteps = 0;
         nextState.trainingTime = 0;
       } else {
         nextState.mode = this.state.mode;
@@ -271,7 +271,7 @@ class App extends Component {
   }
 
   handleWorkerMessage(e) {
-    const [progress, time, state, data] = e.data;
+    const [steps, time, state, data] = e.data;
     if (data) {
       this.checkpoint.data = data;
       this.checkpoint.time = Date.now();
@@ -280,9 +280,9 @@ class App extends Component {
     const nextState = {
       trainingState: state
     };
-    if ((this.state.trainingProgress !== progress) ||
-        (this.state.trainingTime !== time)) {
-      nextState.trainingProgress = progress;
+    if ((this.state.trainingTime !== time) ||
+        ((steps === this.state.config.totalSteps) && (nextState.trainingSteps !== steps))) {
+      nextState.trainingSteps = steps;
       nextState.trainingTime = time;
     }
     this.setState(nextState);
@@ -377,7 +377,7 @@ class App extends Component {
         <Toolbar mode={this.state.mode} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
-          trainingProgress={this.state.trainingProgress} trainingTime={this.state.trainingTime}
+          trainingSteps={this.state.trainingSteps} trainingTime={this.state.trainingTime}
           config={this.state.config}
           onShapeChange={shape => this.handleShapeChange(shape)}
           onHistoryChange={index => this.handleHistoryChange(index)}
