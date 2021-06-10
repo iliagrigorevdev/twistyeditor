@@ -46,10 +46,10 @@ class App extends Component {
     this.database = null;
     this.worker = null;
 
-    this.addHistoryEntry(this.state, shape, 0);
+    this.addHistoryEntry(this.state, shape, this.finalShape, 0);
   }
 
-  addHistoryEntry(state, shape, activePlaceableId) {
+  addHistoryEntry(state, shape, finalShape, activePlaceableId) {
     let historyLength = state.historyIndex + 1;
     const historyStart = (historyLength >= HISTORY_LENGTH_MAX ?
         historyLength - HISTORY_LENGTH_MAX + 1 : 0);
@@ -57,6 +57,7 @@ class App extends Component {
     state.historyEntries = state.historyEntries.splice(historyStart, historyLength);
     state.historyEntries.push({
       shape: shape,
+      finalShape: finalShape,
       activePlaceableId: activePlaceableId
     });
     state.historyIndex = state.historyEntries.length - 1;
@@ -93,7 +94,7 @@ class App extends Component {
     } else {
       this.finalShape = shape;
     }
-    this.addHistoryEntry(nextState, shape, nextState.activePlaceableId);
+    this.addHistoryEntry(nextState, shape, this.finalShape, nextState.activePlaceableId);
     this.setState(nextState);
   }
 
@@ -111,6 +112,7 @@ class App extends Component {
       activePlaceableId: historyEntry.activePlaceableId,
       historyIndex: index
     };
+    this.finalShape = historyEntry.finalShape;
     if (this.state.mode !== AppMode.EDIT) {
       nextState.mode = AppMode.EDIT;
     }
