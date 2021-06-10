@@ -8,6 +8,7 @@ import Exporter from './Exporter';
 import Config from './Config';
 import Worker from "./Worker.worker.js";
 
+const ARCHIVE_VERSION = 3;
 const ARCHIVE_EXTENSION = ".twy";
 const EXPORT_EXTENSION = ".twe";
 const HISTORY_LENGTH_MAX = 30;
@@ -41,8 +42,7 @@ class App extends Component {
     this.finalShape = shape;
     this.rigidInfo = null;
     this.shapeData = null;
-    this.checkpointKey = null;
-    this.checkpointData = null;
+    this.checkpoint = null;
     this.database = null;
     this.worker = null;
 
@@ -142,7 +142,7 @@ class App extends Component {
     }
   }
 
-  handleShapeLoad() {
+  handleArchiveLoad() {
     const element = document.createElement("input");
     element.setAttribute("type", "file");
     element.setAttribute("accept", ARCHIVE_EXTENSION);
@@ -153,36 +153,44 @@ class App extends Component {
       const file = element.files[0];
       const reader = new FileReader();
       reader.onload = ((e) => {
-        const shape = Shape.load(e.target.result);
-        // TODO load config and training data
+        const archive = JSON.parse(e.target.result);
+        if (archive.version > ARCHIVE_VERSION) {
+          alert("Unsupported version: " + archive.version);
+          return;
+        }
+        const shape = new Shape();
+        shape.fromArchive(archive.shape, archive.version);
+        shape.applyTransform();
         if (shape) {
           this.handleShapeChange(shape, true);
         } else {
           alert("Failed to load shape");
         }
+        const config = archive.config;
+        if (config) {
+          this.handleConfigChange(config);
+        } else {
+          alert("Failed to load config");
+        }
+        this.checkpoint = archive.checkpoint;
       });
       reader.readAsText(file);
     });
     element.click();
   }
 
-  downloadFile(name, content) {
-    const element = document.createElement("a");
-    const file = new Blob([content], {type: "text/plain;charset=utf-8"});
-    element.href = URL.createObjectURL(file);
-    element.download = name;
-    document.body.appendChild(element);
-    element.click();
-  }
-
-  handleShapeSave(shape) {
-    if (!shape.name) {
+  handleArchiveSave() {
+    if (!this.state.shape.name) {
       alert("Shape name must be given");
       return;
     }
-    const content = Shape.save(shape);
-    // TODO save config and training data
-    this.downloadFile(shape.name + ARCHIVE_EXTENSION, content);
+    const content = JSON.stringify({
+      version: ARCHIVE_VERSION,
+      shape: this.state.shape.toArchive(),
+      config: this.state.config,
+      checkpoint: this.checkpoint
+    });
+    this.downloadFile(this.state.shape.name + ARCHIVE_EXTENSION, content);
   }
 
   handleShapeExport(shape) {
@@ -211,8 +219,10 @@ class App extends Component {
       const exporter = new Exporter(this.state.shape);
       this.rigidInfo = exporter.rigidInfo;
       this.shapeData = exporter.export(this.state.shape.name);
-      this.checkpointKey = this.getCheckpointKey();
-      this.checkpointData = null;
+      const checkpoint = this.createCheckpoint(this.state.config, this.shapeData);
+      if (checkpoint.key !== this.checkpoint?.key) {
+        this.checkpoint = checkpoint;
+      }
 
       let activeJointCount = 0;
       for (const joint of this.rigidInfo.joints) {
@@ -239,21 +249,31 @@ class App extends Component {
     this.setState(nextState);
 
     if (nextState.mode === AppMode.LOADING) {
-      this.loadCheckpoint(data => {
-        this.checkpointData = data;
+      this.loadCheckpoint(checkpoint => {
+        if (checkpoint) {
+          if (checkpoint.key !== this.checkpoint.key) {
+            console.log("Checkpoint keys must be equal");
+          } else if (!this.checkpoint.data || !this.checkpoint.time ||
+                     (checkpoint.time > this.checkpoint.time)) {
+            this.checkpoint = checkpoint;
+            console.log("Use checkpoint from DB");
+          }
+        }
         this.handleAppModeChange(this.state.mode);
       });
     } else if (nextState.mode === AppMode.TRAINING) {
       this.worker = new Worker();
       this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
-      this.worker.postMessage([this.state.config, this.shapeData, this.checkpointData]);
+      this.worker.postMessage([this.state.config, this.shapeData, this.checkpoint.data]);
     }
   }
 
   handleWorkerMessage(e) {
     const [progress, time, state, data] = e.data;
     if (data) {
-      this.saveCheckpoint(this.checkpointKey, data);
+      this.checkpoint.data = data;
+      this.checkpoint.time = Date.now();
+      this.saveCheckpoint();
     }
     const nextState = {
       trainingState: state
@@ -266,8 +286,21 @@ class App extends Component {
     this.setState(nextState);
   }
 
-  getCheckpointKey() {
-    return getStringHash(this.state.config.hiddenLayerSizes.toString() + this.shapeData);
+  downloadFile(name, content) {
+    const element = document.createElement("a");
+    const file = new Blob([content], {type: "text/plain;charset=utf-8"});
+    element.href = URL.createObjectURL(file);
+    element.download = name;
+    document.body.appendChild(element);
+    element.click();
+  }
+
+  createCheckpoint(config, shapeData) {
+    return {
+      key: getStringHash(config.hiddenLayerSizes.toString() + shapeData),
+      data: null,
+      time: null
+    };
   }
 
   loadCheckpoint(ondone) {
@@ -275,9 +308,9 @@ class App extends Component {
       const getRequest = this.database
                          .transaction("checkpoint", "readonly")
                          .objectStore("checkpoint")
-                         .get(this.checkpointKey);
+                         .get(this.checkpoint.key);
       getRequest.onsuccess = (e) => {
-        ondone(getRequest.result?.data);
+        ondone(getRequest.result);
       };
       getRequest.onerror = (e) => {
         console.log("Failed to load checkpoint");
@@ -294,19 +327,19 @@ class App extends Component {
     }
   }
 
-  saveCheckpoint(key, data) {
+  saveCheckpoint() {
     if (this.database) {
       const putRequest = this.database
                          .transaction("checkpoint", "readwrite")
                          .objectStore("checkpoint")
-                         .put({key: key, data: data});
+                         .put(this.checkpoint);
       putRequest.onerror = (e) => {
         console.log("Failed to save checkpoint");
       };
     } else {
       this.openDatabase(() => {
         if (this.database) {
-          this.saveCheckpoint(key, data);
+          this.saveCheckpoint();
         }
       });
     }
@@ -348,8 +381,8 @@ class App extends Component {
           onHistoryChange={index => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}
           onShapeShowcase={() => this.handleShapeShowcase()}
-          onShapeSave={shape => this.handleShapeSave(shape)}
-          onShapeLoad={() => this.handleShapeLoad()}
+          onArchiveSave={() => this.handleArchiveSave()}
+          onArchiveLoad={() => this.handleArchiveLoad()}
           onShapeExport={shape => this.handleShapeExport(shape)}
           onTrainingStart={() => this.handleAppModeChange(AppMode.TRAINING)}
           onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)}
