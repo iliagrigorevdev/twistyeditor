@@ -6,6 +6,7 @@ import Shape from './Shape';
 import ShapeFolder from './ShapeFolder';
 import Exporter from './Exporter';
 import Config from './Config';
+import Worker from "./Worker.worker.js";
 
 const ARCHIVE_EXTENSION = ".twy";
 const EXPORT_EXTENSION = ".twe";
@@ -13,7 +14,8 @@ const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
   EDIT: 0,
-  TRAINING: 1
+  TRAINING: 1,
+  LOADING: 2
 });
 
 class App extends Component {
@@ -30,11 +32,19 @@ class App extends Component {
       historyIndex: -1,
       config: new Config(),
       trainingProgress: 0,
-      trainingTime: 0
+      trainingTime: 0,
+      trainingState: null
     };
     this.figures = null;
     this.figureRandomIndices = null;
     this.figureIndex = -1;
+    this.finalShape = shape;
+    this.rigidInfo = null;
+    this.shapeData = null;
+    this.checkpointKey = null;
+    this.checkpointData = null;
+    this.database = null;
+    this.worker = null;
 
     this.addHistoryEntry(this.state, shape, 0);
   }
@@ -73,6 +83,15 @@ class App extends Component {
       nextState.activePlaceableId = 0;
     } else if (activePlaceableId) {
       nextState.activePlaceableId = activePlaceableId;
+    }
+    if (shape.showPose) {
+      this.finalShape = shape.clone();
+      this.finalShape.applyInitialAngles();
+      if (this.finalShape.hasPrismIntersections()) {
+        console.log("Shape has intersections between prisms");
+      }
+    } else {
+      this.finalShape = shape;
     }
     this.addHistoryEntry(nextState, shape, nextState.activePlaceableId);
     this.setState(nextState);
@@ -180,36 +199,146 @@ class App extends Component {
     this.setState({ config: config });
   }
 
-  handleTrainingChange(progress, time) {
-    if ((this.state.trainingProgress === progress) &&
-        (this.state.trainingTime === time)) {
-      return;
-    }
-    this.setState({
-      trainingProgress: progress,
-      trainingTime: time
-    });
-  }
-
   handleAppModeChange(mode) {
     const nextState = {
       mode: mode
     };
+    if (this.worker != null) {
+      this.worker.terminate();
+      this.worker = null;
+    }
     if (mode === AppMode.TRAINING) {
-      nextState.trainingProgress = 0;
-      nextState.trainingTime = 0;
+      const exporter = new Exporter(this.state.shape);
+      this.rigidInfo = exporter.rigidInfo;
+      this.shapeData = exporter.export(this.state.shape.name);
+      this.checkpointKey = this.getCheckpointKey();
+      this.checkpointData = null;
+
+      let activeJointCount = 0;
+      for (const joint of this.rigidInfo.joints) {
+        if (joint.power !== 0) {
+          activeJointCount++;
+        }
+      }
+      if (activeJointCount > 0) {
+        nextState.mode = AppMode.LOADING;
+        nextState.trainingProgress = 0;
+        nextState.trainingTime = 0;
+      } else {
+        nextState.mode = this.state.mode;
+        alert("No active actuator");
+      }
+    } else if (mode === AppMode.LOADING) {
+      if (window.Worker) {
+        nextState.mode = AppMode.TRAINING;
+      } else {
+        nextState.mode = AppMode.EDIT;
+        alert("No worker support");
+      }
     }
     this.setState(nextState);
+
+    if (nextState.mode === AppMode.LOADING) {
+      this.loadCheckpoint(data => {
+        this.checkpointData = data;
+        this.handleAppModeChange(this.state.mode);
+      });
+    } else if (nextState.mode === AppMode.TRAINING) {
+      this.worker = new Worker();
+      this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
+      this.worker.postMessage([this.state.config, this.shapeData, this.checkpointData]);
+    }
+  }
+
+  handleWorkerMessage(e) {
+    const [progress, time, state, data] = e.data;
+    if (data) {
+      this.saveCheckpoint(this.checkpointKey, data);
+    }
+    const nextState = {
+      trainingState: state
+    };
+    if ((this.state.trainingProgress !== progress) ||
+        (this.state.trainingTime !== time)) {
+      nextState.trainingProgress = progress;
+      nextState.trainingTime = time;
+    }
+    this.setState(nextState);
+  }
+
+  getCheckpointKey() {
+    return getStringHash(this.state.config.hiddenLayerSizes.toString() + this.shapeData);
+  }
+
+  loadCheckpoint(ondone) {
+    if (this.database) {
+      const getRequest = this.database
+                         .transaction("checkpoint", "readonly")
+                         .objectStore("checkpoint")
+                         .get(this.checkpointKey);
+      getRequest.onsuccess = (e) => {
+        ondone(getRequest.result?.data);
+      };
+      getRequest.onerror = (e) => {
+        console.log("Failed to load checkpoint");
+        ondone();
+      };
+    } else {
+      this.openDatabase(() => {
+        if (this.database) {
+          this.loadCheckpoint(ondone);
+        } else {
+          ondone();
+        }
+      });
+    }
+  }
+
+  saveCheckpoint(key, data) {
+    if (this.database) {
+      const putRequest = this.database
+                         .transaction("checkpoint", "readwrite")
+                         .objectStore("checkpoint")
+                         .put({key: key, data: data});
+      putRequest.onerror = (e) => {
+        console.log("Failed to save checkpoint");
+      };
+    } else {
+      this.openDatabase(() => {
+        if (this.database) {
+          this.saveCheckpoint(key, data);
+        }
+      });
+    }
+  }
+
+  openDatabase(ondone) {
+    const openRequest = indexedDB.open("database");
+    openRequest.onupgradeneeded = (e) => {
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains("checkpoint")) {
+        database.createObjectStore("checkpoint", {keyPath: "key"});
+        console.log("Initialize DB");
+      }
+    };
+    openRequest.onsuccess = (e) => {
+      this.database = openRequest.result;
+      ondone();
+    };
+    openRequest.onerror = (e) => {
+      console.log("Failed to open DB");
+      ondone();
+    };
   }
 
   render() {
     return (
       <div className="App">
-        <Viewport mode={this.state.mode} shape={this.state.shape}
-          activePlaceableId={this.state.activePlaceableId} config={this.state.config}
+        <Viewport mode={this.state.mode} originalShape={this.state.shape}
+          finalShape={this.finalShape} rigidInfo={this.rigidInfo}
+          activePlaceableId={this.state.activePlaceableId} trainingState={this.state.trainingState}
           onShapeChange={(shape, activePlaceableId) => this.handleShapeChange(shape, false, activePlaceableId)}
-          onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)}
-          onTrainingChange={(progress, time) => this.handleTrainingChange(progress, time)} />
+          onActivePlaceableChange={activePlaceableId => this.handleActivePlaceableChange(activePlaceableId)} />
         <Toolbar mode={this.state.mode} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
@@ -228,6 +357,16 @@ class App extends Component {
       </div>
     );
   }
+}
+
+function getStringHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash &= hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
 }
 
 export default App;

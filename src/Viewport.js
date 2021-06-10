@@ -5,11 +5,9 @@ import './App.css';
 import tinycolor from 'tinycolor2';
 import { intersectSphere, rayToPointDistance } from './Collision';
 import { AppMode } from './App';
-import Exporter from './Exporter';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
 import { createTransform, multiplyTransforms } from './Transform';
-import Worker from "./Worker.worker.js";
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -101,27 +99,13 @@ class Viewport extends Component {
 
   componentDidUpdate(prevProps) {
     const modeChanged = (prevProps.mode !== this.props.mode);
-    const shapeChanged = (prevProps.shape !== this.props.shape);
+    const shapeChanged = (prevProps.originalShape !== this.props.originalShape);
+    const trainingStateChanged = (prevProps.trainingState !== this.props.trainingState);
     if (modeChanged || shapeChanged) {
       this.refreshShapeView();
     }
-    if (modeChanged) {
-      if (this.worker != null) {
-        this.worker.terminate();
-        this.worker = null;
-      }
-      if (this.props.mode === AppMode.TRAINING) {
-        const exporter = new Exporter(this.shape);
-        const shapeData = exporter.export(this.shape.name);
-        this.rigidInfo = exporter.rigidInfo;
-        if (window.Worker) {
-          this.worker = new Worker();
-          this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
-          this.worker.postMessage([this.props.config, shapeData]);
-        } else {
-          alert("No worker support");
-        }
-      }
+    if (trainingStateChanged) {
+      this.updateShapeView(this.props.trainingState.transforms);
     }
   }
 
@@ -132,29 +116,16 @@ class Viewport extends Component {
     if (this.shapeView) {
       this.shapeView.destroy(this);
     }
-    this.originalShape = this.props.shape;
-    if (this.originalShape.showPose) {
-      this.shape = this.originalShape.clone();
-      this.shape.applyInitialAngles();
-      if (this.shape.hasPrismIntersections()) {
-        console.log("Shape has intersections between prisms");
-      }
-    } else {
-      this.shape = this.originalShape;
-    }
     const showSections = (this.props.mode === AppMode.EDIT);
-    this.shapeView = new ShapeView(this.shape, showSections, this);
+    this.shapeView = new ShapeView(this.props.finalShape, showSections, this);
     this.shapeView.addToScene(this);
     this.activePlaceableView = null;
     const activePlaceable = (this.props.mode === AppMode.EDIT
-        ? this.shape.findPlaceable(this.props.activePlaceableId) : null);
+        ? this.props.finalShape.findPlaceable(this.props.activePlaceableId) : null);
     this.selectPlaceable(activePlaceable, true, false);
   }
 
   init() {
-    this.worker = null;
-    this.rigidInfo = null;
-
     this.elevation = DEFAULT_ELEVATION;
     this.heading = DEFAULT_HEADING;
     this.focalLengthMin = CAMERA_FOCAL_LENGTH_MIN;
@@ -169,8 +140,6 @@ class Viewport extends Component {
     this.animationTimer = 0;
     this.highlightTimer = 0;
 
-    this.shape = null;
-    this.originalShape = null;
     this.shapeView = null;
     this.activePlaceableView = null;
     this.availableJunctions = null;
@@ -405,11 +374,11 @@ class Viewport extends Component {
   }
 
   updateShapeView(transforms) {
-    const baseLink = (this.rigidInfo.baseLinks.length > 0
-                      ? this.rigidInfo.baseLinks[0] : null);
+    const baseLink = (this.props.rigidInfo.baseLinks.length > 0
+                      ? this.props.rigidInfo.baseLinks[0] : null);
     for (let i = 0; i < transforms.length; i++) {
       const partTransform = transforms[i];
-      const link = this.rigidInfo.links[i];
+      const link = this.props.rigidInfo.links[i];
       if (link === baseLink) {
         this.updateFollowPosition(partTransform.position);
       }
@@ -486,7 +455,7 @@ class Viewport extends Component {
 
     if (this.props.mode === AppMode.EDIT) {
       const ray = this.getCastingRay(e.clientX, e.clientY);
-      const placeableIntersection = this.shape.intersect(ray);
+      const placeableIntersection = this.props.finalShape.intersect(ray);
       let junctionIntersection;
       if (this.props.activePlaceableId) {
         junctionIntersection = this.intersectJunctions(ray);
@@ -571,12 +540,6 @@ class Viewport extends Component {
         this.dragging = true;
       }
     }
-  }
-
-  handleWorkerMessage(e) {
-    const [progress, time, state] = e.data;
-    this.props.onTrainingChange(progress, time);
-    this.updateShapeView(state.transforms);
   }
 
   computeAutoZoom(shape) {
@@ -685,9 +648,9 @@ class Viewport extends Component {
       this.updateHighlightColor(placeable);
     }
     if ((placeable instanceof Prism) && this.activePlaceableView) {
-      const originalPlaceable = this.originalShape.findPlaceable(placeable.id);
-      this.availableJunctions = this.shape.getAvailableJunctions(placeable);
-      this.originalAvailableJunctions = this.originalShape.getAvailableJunctions(originalPlaceable);
+      const originalPlaceable = this.props.originalShape.findPlaceable(placeable.id);
+      this.availableJunctions = this.props.finalShape.getAvailableJunctions(placeable);
+      this.originalAvailableJunctions = this.props.originalShape.getAvailableJunctions(originalPlaceable);
       this.showPrismKnobs(this.availableJunctions);
       this.showPrismSections(this.availableJunctions);
     } else {
@@ -703,8 +666,8 @@ class Viewport extends Component {
         vec3.copy(this.targetPosition, placeable.worldPosition);
         this.targetZoom = 1;
       } else {
-        vec3.copy(this.targetPosition, this.shape.aabb.center);
-        this.targetZoom = this.computeAutoZoom(this.shape);
+        vec3.copy(this.targetPosition, this.props.finalShape.aabb.center);
+        this.targetZoom = this.computeAutoZoom(this.props.finalShape);
       }
       this.animationTimer = 0;
       this.highlightTimer = 0;
@@ -715,7 +678,7 @@ class Viewport extends Component {
   }
 
   addPrism(prism) {
-    const shape = this.originalShape.clone();
+    const shape = this.props.originalShape.clone();
     prism.id = ++shape.lastPlaceableId;
     shape.prisms.push(prism);
     shape.applyTransform();
@@ -723,7 +686,7 @@ class Viewport extends Component {
   }
 
   addSection(section) {
-    const shape = this.originalShape.clone();
+    const shape = this.props.originalShape.clone();
     section.id = ++shape.lastPlaceableId;
     shape.sections.push(section);
     shape.applyTransform();
