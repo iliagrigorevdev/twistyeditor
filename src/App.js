@@ -11,6 +11,7 @@ import Worker from "./Worker.worker.js";
 const ARCHIVE_VERSION = 3;
 const ARCHIVE_EXTENSION = ".twy";
 const EXPORT_EXTENSION = ".twe";
+const CHECKPOINT_EXTENSION = ".pt";
 const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
@@ -145,40 +146,28 @@ class App extends Component {
   }
 
   handleArchiveLoad() {
-    const element = document.createElement("input");
-    element.setAttribute("type", "file");
-    element.setAttribute("accept", ARCHIVE_EXTENSION);
-    element.addEventListener("change", () => {
-      if (!element.files.length) {
+    this.uploadFile(ARCHIVE_EXTENSION, (content) => {
+      const archive = JSON.parse(content);
+      if (archive.version > ARCHIVE_VERSION) {
+        alert("Unsupported version: " + archive.version);
         return;
       }
-      const file = element.files[0];
-      const reader = new FileReader();
-      reader.onload = ((e) => {
-        const archive = JSON.parse(e.target.result);
-        if (archive.version > ARCHIVE_VERSION) {
-          alert("Unsupported version: " + archive.version);
-          return;
-        }
-        const shape = new Shape();
-        shape.fromArchive(archive.shape, archive.version);
-        shape.applyTransform();
-        if (shape) {
-          this.handleShapeChange(shape, true);
-        } else {
-          alert("Failed to load shape");
-        }
-        const config = archive.config;
-        if (config) {
-          this.handleConfigChange(config);
-        } else {
-          alert("Failed to load config");
-        }
-        this.checkpoint = archive.checkpoint;
-      });
-      reader.readAsText(file);
+      const shape = new Shape();
+      shape.fromArchive(archive.shape, archive.version);
+      shape.applyTransform();
+      if (shape) {
+        this.handleShapeChange(shape, true);
+      } else {
+        alert("Failed to load shape");
+      }
+      const config = archive.config;
+      if (config) {
+        this.handleConfigChange(config);
+      } else {
+        alert("Failed to load config");
+      }
+      this.checkpoint = archive.checkpoint;
     });
-    element.click();
   }
 
   handleArchiveSave() {
@@ -203,6 +192,14 @@ class App extends Component {
     const exporter = new Exporter(shape);
     const content = exporter.export(shape.name);
     this.downloadFile(shape.name + EXPORT_EXTENSION, content);
+  }
+
+  handleCheckpointImport() {
+    this.uploadFile(CHECKPOINT_EXTENSION, (content) => {
+      this.checkpoint.data = content;
+      this.checkpoint.time = Date.now();
+      alert("Import checkpoint for next training");
+    });
   }
 
   handleConfigChange(config) {
@@ -297,6 +294,24 @@ class App extends Component {
     element.click();
   }
 
+  uploadFile(extension, onload) {
+    const element = document.createElement("input");
+    element.setAttribute("type", "file");
+    element.setAttribute("accept", extension);
+    element.addEventListener("change", () => {
+      if (!element.files.length) {
+        return;
+      }
+      const file = element.files[0];
+      const reader = new FileReader();
+      reader.onload = ((e) => {
+        onload(e.target.result);
+      });
+      reader.readAsText(file);
+    });
+    element.click();
+  }
+
   createCheckpoint(config, shapeData) {
     return {
       key: getStringHash(config.hiddenLayerSizes.toString() + shapeData),
@@ -386,6 +401,7 @@ class App extends Component {
           onArchiveSave={() => this.handleArchiveSave()}
           onArchiveLoad={() => this.handleArchiveLoad()}
           onShapeExport={shape => this.handleShapeExport(shape)}
+          onCheckpointImport={() => this.handleCheckpointImport()}
           onTrainingStart={() => this.handleAppModeChange(AppMode.TRAINING)}
           onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)}
           onConfigChange={config => this.handleConfigChange(config)} />
