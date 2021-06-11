@@ -22,7 +22,6 @@ class Exporter {
   constructor(shape) {
     const finalShape = shape.clone();
     finalShape.applyInitialAngles();
-    finalShape.applyTransform(0);
     this.rigidInfo = new RigidInfo(finalShape);
   }
 
