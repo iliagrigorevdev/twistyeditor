@@ -3,11 +3,12 @@ const frameTime = 40;
 const maxTime = 1000;
 
 class Trainer {
-  constructor(training, config, shapeData, checkpointData) {
+  constructor(training, config, shapeData, checkpointData, playing) {
     this.training = training;
     this.config = config;
     this.shapeData = shapeData;
     this.checkpointData = checkpointData;
+    this.playing = playing;
 
     this.config.hiddenLayerSizes = this.toNativeArray(this.config.hiddenLayerSizes);
   }
@@ -26,7 +27,7 @@ class Trainer {
     let trainingTime = 0;
     let stepNumber = 0;
     while (true) {
-      if (stepNumber < this.config.totalSteps) {
+      if ((stepNumber < this.config.totalSteps) && !this.playing) {
         this.training.step();
         trainingTime = Math.floor((Date.now() - startTime) / 1000);
         stepNumber++;

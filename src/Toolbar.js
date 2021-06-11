@@ -171,6 +171,8 @@ class Toolbar extends Component {
           onClick={() => this.props.onTrainingStart()}>Start</button>
         <button id="stopTraining" name="stopTraining" disabled={this.props.mode !== AppMode.TRAINING}
           onClick={() => this.props.onTrainingStop()}>Stop</button>
+        <button id="playTraining" name="playTraining" disabled={this.props.mode !== AppMode.EDIT}
+          onClick={() => this.props.onTrainingPlay()}>Play</button>
         <p>
           <label>Progress : {this.props.trainingSteps} ~ {Math.floor(this.props.trainingSteps * 100 / this.props.config.totalSteps)}%</label>
         </p>

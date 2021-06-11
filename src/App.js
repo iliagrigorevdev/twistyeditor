@@ -17,7 +17,8 @@ const HISTORY_LENGTH_MAX = 30;
 const AppMode = Object.freeze({
   EDIT: 0,
   TRAINING: 1,
-  LOADING: 2
+  PLAY: 2,
+  LOADING: 3
 });
 
 class App extends Component {
@@ -46,6 +47,7 @@ class App extends Component {
     this.checkpoint = null;
     this.database = null;
     this.worker = null;
+    this.playing = false;
 
     this.addHistoryEntry(this.state, shape, this.finalShape, 0);
   }
@@ -219,7 +221,7 @@ class App extends Component {
       this.worker.terminate();
       this.worker = null;
     }
-    if (mode === AppMode.TRAINING) {
+    if ((mode === AppMode.TRAINING) || (mode === AppMode.PLAY)) {
       const exporter = new Exporter(this.state.shape);
       this.rigidInfo = exporter.rigidInfo;
       this.shapeData = exporter.export(this.state.shape.name);
@@ -227,6 +229,7 @@ class App extends Component {
       if (checkpoint.key !== this.checkpoint?.key) {
         this.checkpoint = checkpoint;
       }
+      this.playing = (mode === AppMode.PLAY);
 
       let activeJointCount = 0;
       for (const joint of this.rigidInfo.joints) {
@@ -268,7 +271,7 @@ class App extends Component {
     } else if (nextState.mode === AppMode.TRAINING) {
       this.worker = new Worker();
       this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
-      this.worker.postMessage([this.state.config, this.shapeData, this.checkpoint.data]);
+      this.worker.postMessage([this.state.config, this.shapeData, this.checkpoint.data, this.playing]);
     }
   }
 
@@ -417,6 +420,7 @@ class App extends Component {
           onCheckpointImport={() => this.handleCheckpointImport()}
           onTrainingStart={() => this.handleAppModeChange(AppMode.TRAINING)}
           onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)}
+          onTrainingPlay={() => this.handleAppModeChange(AppMode.PLAY)}
           onConfigChange={config => this.handleConfigChange(config)} />
       </div>
     );
