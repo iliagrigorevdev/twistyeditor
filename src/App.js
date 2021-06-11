@@ -72,14 +72,15 @@ class App extends Component {
   }
 
   handleShapeChange(shape, reset = false, activePlaceableId = undefined) {
+    if (!this.ensureEditMode()) {
+      return;
+    }
+
     const nextState = {
       shape: shape,
       historyEntries: this.state.historyEntries,
       historyIndex: this.state.historyIndex
     };
-    if (this.state.mode !== AppMode.EDIT) {
-      nextState.mode = AppMode.EDIT;
-    }
     if (reset || (this.state.activePlaceableId
         && !shape.findPlaceable(this.state.activePlaceableId))) {
       nextState.activePlaceableId = 0;
@@ -104,20 +105,20 @@ class App extends Component {
   }
 
   handleHistoryChange(index) {
+    if (!this.ensureEditMode()) {
+      return;
+    }
+
     if ((index < 0) || (index >= this.state.historyEntries.length)) {
       return;
     }
     const historyEntry = this.state.historyEntries[index];
-    const nextState = {
+    this.finalShape = historyEntry.finalShape;
+    this.setState({
       shape: historyEntry.shape,
       activePlaceableId: historyEntry.activePlaceableId,
       historyIndex: index
-    };
-    this.finalShape = historyEntry.finalShape;
-    if (this.state.mode !== AppMode.EDIT) {
-      nextState.mode = AppMode.EDIT;
-    }
-    this.setState(nextState);
+    });
   }
 
   handleShapeReset() {
@@ -146,6 +147,10 @@ class App extends Component {
   }
 
   handleArchiveLoad() {
+    if (!this.ensureEditMode()) {
+      return;
+    }
+
     this.uploadFile(ARCHIVE_EXTENSION, (content) => {
       const archive = JSON.parse(content);
       if (archive.version > ARCHIVE_VERSION) {
@@ -283,6 +288,14 @@ class App extends Component {
       nextState.trainingTime = time;
     }
     this.setState(nextState);
+  }
+
+  ensureEditMode() {
+    const editMode = (this.state.mode === AppMode.EDIT);
+    if (!editMode) {
+      alert("Stop training mode first");
+    }
+    return editMode;
   }
 
   downloadFile(name, content) {
