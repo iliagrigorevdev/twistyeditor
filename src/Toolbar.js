@@ -169,16 +169,21 @@ class Toolbar extends Component {
         <h3>Training</h3>
         <button id="startTraining" name="startTraining" disabled={this.props.mode !== AppMode.EDIT}
           onClick={() => this.props.onTrainingStart()}>Start</button>
-        <button id="stopTraining" name="stopTraining" disabled={this.props.mode !== AppMode.TRAINING}
+        <button id="stopTraining" name="stopTraining"
+          disabled={(this.props.mode !== AppMode.TRAINING) && (this.props.mode !== AppMode.PLAY)}
           onClick={() => this.props.onTrainingStop()}>Stop</button>
         <button id="playTraining" name="playTraining" disabled={this.props.mode !== AppMode.EDIT}
           onClick={() => this.props.onTrainingPlay()}>Play</button>
-        <p>
-          <label>Progress : {this.props.trainingSteps} ~ {Math.floor(this.props.trainingSteps * 100 / this.props.config.totalSteps)}%</label>
-        </p>
-        <p>
-          <label>Time : {this.formatTime(this.props.trainingTime)}</label>
-        </p>
+        {this.props.mode === AppMode.TRAINING &&
+          <p>
+            <label>Progress : {this.props.trainingSteps} ~ {Math.floor(this.props.trainingSteps * 100 / this.props.config.totalSteps)}%</label>
+          </p>
+        }
+        {this.props.mode === AppMode.TRAINING &&
+          <p>
+            <label>Time : {this.formatTime(this.props.trainingTime)}</label>
+          </p>
+        }
         {Object.keys(config).map(property => {
           const key = "config_" + property;
           const value = config[property];

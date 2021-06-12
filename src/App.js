@@ -247,7 +247,7 @@ class App extends Component {
       }
     } else if (mode === AppMode.LOADING) {
       if (window.Worker) {
-        nextState.mode = AppMode.TRAINING;
+        nextState.mode = (this.playing ? AppMode.PLAY : AppMode.TRAINING);
       } else {
         nextState.mode = AppMode.EDIT;
         alert("No worker support");
@@ -268,7 +268,7 @@ class App extends Component {
         }
         this.handleAppModeChange(this.state.mode);
       });
-    } else if (nextState.mode === AppMode.TRAINING) {
+    } else if ((nextState.mode === AppMode.TRAINING) || (nextState.mode === AppMode.PLAY)) {
       this.worker = new Worker();
       this.worker.onmessage = ((e) => this.handleWorkerMessage(e));
       this.worker.postMessage([this.state.config, this.shapeData, this.checkpoint.data, this.playing]);
