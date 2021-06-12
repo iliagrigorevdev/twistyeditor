@@ -184,15 +184,17 @@ class Toolbar extends Component {
             <label>Time : {this.formatTime(this.props.trainingTime)}</label>
           </p>
         }
-        {Object.keys(config).map(property => {
-          const key = "config_" + property;
-          const value = config[property];
-          return <p key={key}>
-            <label htmlFor={property}>{this.getPropertyLabel(property)} : </label>
-            <input id={key} name={key} type={Array.isArray(value) ? "text" : "number"} value={value}
-              onChange={e => this.handleConfigChange(config, property, e.target.value)} />
-          </p>
-        })}
+        {(this.props.mode !== AppMode.TRAINING) && (this.props.mode !== AppMode.PLAY) &&
+          Object.keys(config).map(property => {
+            const key = "config_" + property;
+            const value = config[property];
+            return <p key={key}>
+              <label htmlFor={property}>{this.getPropertyLabel(property)} : </label>
+              <input id={key} name={key} type={Array.isArray(value) ? "text" : "number"} value={value}
+                onChange={e => this.handleConfigChange(config, property, e.target.value)} />
+            </p>
+          }
+        )}
       </div>
     );
   }
