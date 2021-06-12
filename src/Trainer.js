@@ -26,15 +26,25 @@ class Trainer {
     let lastTime = startTime;
     let trainingTime = 0;
     let stepNumber = 0;
+    let trainingNumber = 0;
     while (true) {
       if ((stepNumber < this.config.totalSteps) && !this.playing) {
-        this.training.step();
-        trainingTime = Math.floor((Date.now() - startTime) / 1000);
-        stepNumber++;
+        if ((stepNumber < this.config.trainingStartSteps) ||
+            ((stepNumber % this.config.trainingInterval) !== 0) ||
+            (trainingNumber === this.config.trainingInterval)) {
+          this.training.step();
+          trainingNumber = 0;
+          stepNumber++;
 
-        if ((stepNumber % this.config.checkpointSteps) === 0) {
-          this.checkpointData = this.training.save();
+          if ((stepNumber % this.config.checkpointSteps) === 0) {
+            this.checkpointData = this.training.save();
+          }
+        } else {
+          this.training.train();
+          trainingNumber++;
         }
+
+        trainingTime = Math.floor((Date.now() - startTime) / 1000);
       }
 
       const currentTime = Date.now();

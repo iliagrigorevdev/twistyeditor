@@ -10,6 +10,7 @@ public:
   Coach(const Config &config, EnvironmentPtr environment, NetworkPtr network);
 
   void step();
+  void train();
 
   Action randomAction(int actionLength);
 

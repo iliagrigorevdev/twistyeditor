@@ -55,6 +55,13 @@ void step() {
   coach->step();
 }
 
+void train() {
+  if (coach == nullptr) {
+    return;
+  }
+  coach->train();
+}
+
 String save() {
   if (network == nullptr) {
     return "";
@@ -100,7 +107,6 @@ EMSCRIPTEN_BINDINGS(Training) {
     .field("batchSize", &Config::batchSize)
     .field("randomSteps", &Config::randomSteps)
     .field("replayBufferSize", &Config::replayBufferSize)
-    .field("trainingStartSteps", &Config::trainingStartSteps)
     .field("learningRate", &Config::learningRate)
     .field("regularization", &Config::regularization)
     .field("interpolation", &Config::interpolation)
@@ -130,6 +136,7 @@ EMSCRIPTEN_BINDINGS(Training) {
 
   emscripten::function("create", &create);
   emscripten::function("step", &step);
+  emscripten::function("train", &train);
   emscripten::function("save", &save);
   emscripten::function("load", &load);
   emscripten::function("evaluate", &evaluate);

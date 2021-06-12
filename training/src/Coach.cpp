@@ -26,10 +26,10 @@ void Coach::step() {
                        std::move(action), reward, std::move(nextObservation),
                        environment->done));
 
-  if (advance >= config.trainingStartSteps) {
-    const auto samples = replayBuffer->sampleBatch();
-    network->train(samples);
-  }
-
   advance++;
+}
+
+void Coach::train() {
+  const auto samples = replayBuffer->sampleBatch();
+  network->train(samples);
 }
