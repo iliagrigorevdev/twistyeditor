@@ -9,8 +9,8 @@ class Coach {
 public:
   Coach(const Config &config, EnvironmentPtr environment, NetworkPtr network);
 
-  void step();
-  void train();
+  float step();
+  ActorCriticLosses train();
 
   Action randomAction(int actionLength);
 

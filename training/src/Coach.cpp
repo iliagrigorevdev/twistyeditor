@@ -10,7 +10,7 @@ Coach::Coach(const Config &config, EnvironmentPtr environment, NetworkPtr networ
     , advance(0) {
 }
 
-void Coach::step() {
+float Coach::step() {
   if (environment->done || environment->timeout()) {
     environment->restart();
   }
@@ -27,9 +27,10 @@ void Coach::step() {
                        environment->done));
 
   advance++;
+  return reward;
 }
 
-void Coach::train() {
+ActorCriticLosses Coach::train() {
   const auto samples = replayBuffer->sampleBatch();
-  network->train(samples);
+  return network->train(samples);
 }

@@ -17,7 +17,9 @@ public:
   NetworkPtr clone() const;
 
   String save() const;
+  void save(std::ostream &stream) const;
   void load(const String &data);
+  void load(std::istream &stream);
 
   Action predict(const Observation &observation, bool deterministic);
   ActorCriticLosses train(const SamplePtrs &samples);

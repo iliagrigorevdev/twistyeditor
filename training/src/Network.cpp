@@ -30,12 +30,20 @@ NetworkPtr Network::clone() const {
 
 String Network::save() const {
   std::ostringstream stream;
-  torch::save(model, stream);
+  save(stream);
   return stream.str();
+}
+
+void Network::save(std::ostream &stream) const {
+  torch::save(model, stream);
 }
 
 void Network::load(const String &data) {
   std::istringstream stream(data);
+  load(stream);
+}
+
+void Network::load(std::istream &stream) {
   torch::load(model, stream);
 }
 
