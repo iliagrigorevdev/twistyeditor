@@ -1,4 +1,3 @@
-import RigidInfo from './RigidInfo';
 
 function vectorToString(vector, precision) {
   return vector[0].toFixed(precision) + " "
@@ -19,10 +18,8 @@ function transformToString(transform) {
 }
 
 class Exporter {
-  constructor(shape) {
-    const finalShape = shape.clone();
-    finalShape.applyInitialAngles();
-    this.rigidInfo = new RigidInfo(finalShape);
+  constructor(rigidInfo) {
+    this.rigidInfo = rigidInfo;
   }
 
   export(name) {

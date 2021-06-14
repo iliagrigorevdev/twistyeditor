@@ -182,9 +182,11 @@ class App extends Component {
       alert("Shape name must be given");
       return;
     }
+    this.generateShapeData();
     const content = JSON.stringify({
       version: ARCHIVE_VERSION,
       shape: this.state.shape.toArchive(),
+      shapeData: this.shapeData,
       config: this.state.config,
       checkpoint: this.checkpoint
     });
@@ -222,13 +224,7 @@ class App extends Component {
       this.worker = null;
     }
     if ((mode === AppMode.TRAINING) || (mode === AppMode.PLAY)) {
-      const exporter = new Exporter(this.state.shape);
-      this.rigidInfo = exporter.rigidInfo;
-      this.shapeData = exporter.export(this.state.shape.name);
-      const checkpoint = this.createCheckpoint(this.state.config, this.shapeData);
-      if (checkpoint.key !== this.checkpoint?.key) {
-        this.checkpoint = checkpoint;
-      }
+      this.generateShapeData();
       this.playing = (mode === AppMode.PLAY);
 
       let activeJointCount = 0;
@@ -291,6 +287,16 @@ class App extends Component {
       nextState.trainingTime = time;
     }
     this.setState(nextState);
+  }
+
+  generateShapeData() {
+    this.rigidInfo = new RigidInfo(this.finalShape);
+    const exporter = new Exporter(rigidInfo);
+    this.shapeData = exporter.export(this.finalShape.name);
+    const checkpoint = this.createCheckpoint(this.state.config, this.shapeData);
+    if (checkpoint.key !== this.checkpoint?.key) {
+      this.checkpoint = checkpoint;
+    }
   }
 
   ensureEditMode() {
