@@ -161,10 +161,6 @@ class Toolbar extends Component {
             onClick={() => this.props.onArchiveSave()}>Save</button>
           <button id="loadArchive" name="loadArchive"
             onClick={() => this.props.onArchiveLoad()}>Load</button>
-          <button id="exportShape" name="exportShape"
-            onClick={() => this.props.onShapeExport(shape)}>Export</button>
-          <button id="checkpointImport" name="checkpointImport"
-            onClick={() => this.props.onCheckpointImport()}>Import</button>
         </p>
         <h3>Training</h3>
         <button id="startTraining" name="startTraining" disabled={this.props.mode !== AppMode.EDIT}

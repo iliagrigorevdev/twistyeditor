@@ -10,8 +10,6 @@ import Worker from "./Worker.worker.js";
 
 const ARCHIVE_VERSION = 3;
 const ARCHIVE_EXTENSION = ".twy";
-const EXPORT_EXTENSION = ".twe";
-const CHECKPOINT_EXTENSION = ".pt";
 const HISTORY_LENGTH_MAX = 30;
 
 const AppMode = Object.freeze({
@@ -191,24 +189,6 @@ class App extends Component {
       checkpoint: this.checkpoint
     });
     this.downloadFile(this.state.shape.name + ARCHIVE_EXTENSION, content);
-  }
-
-  handleShapeExport(shape) {
-    if (!shape.name) {
-      alert("Shape name must be given");
-      return;
-    }
-    const exporter = new Exporter(shape);
-    const content = exporter.export(shape.name);
-    this.downloadFile(shape.name + EXPORT_EXTENSION, content);
-  }
-
-  handleCheckpointImport() {
-    this.uploadFile(CHECKPOINT_EXTENSION, (content) => {
-      this.checkpoint.data = content;
-      this.checkpoint.time = Date.now();
-      alert("Import checkpoint for next training");
-    });
   }
 
   handleConfigChange(config) {
@@ -422,8 +402,6 @@ class App extends Component {
           onShapeShowcase={() => this.handleShapeShowcase()}
           onArchiveSave={() => this.handleArchiveSave()}
           onArchiveLoad={() => this.handleArchiveLoad()}
-          onShapeExport={shape => this.handleShapeExport(shape)}
-          onCheckpointImport={() => this.handleCheckpointImport()}
           onTrainingStart={() => this.handleAppModeChange(AppMode.TRAINING)}
           onTrainingStop={() => this.handleAppModeChange(AppMode.EDIT)}
           onTrainingPlay={() => this.handleAppModeChange(AppMode.PLAY)}
