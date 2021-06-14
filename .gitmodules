@@ -4,3 +4,6 @@
 [submodule "training/extern/pytorch"]
 	path = training/extern/pytorch
 	url = https://github.com/pytorch/pytorch.git
+[submodule "training/extern/rapidjson"]
+	path = training/extern/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
