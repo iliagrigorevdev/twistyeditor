@@ -7,6 +7,7 @@ import ShapeFolder from './ShapeFolder';
 import Exporter from './Exporter';
 import Config from './Config';
 import Worker from "./Worker.worker.js";
+import RigidInfo from './RigidInfo';
 
 const ARCHIVE_VERSION = 3;
 const ARCHIVE_EXTENSION = ".twy";
@@ -271,7 +272,7 @@ class App extends Component {
 
   generateShapeData() {
     this.rigidInfo = new RigidInfo(this.finalShape);
-    const exporter = new Exporter(rigidInfo);
+    const exporter = new Exporter(this.rigidInfo);
     this.shapeData = exporter.export(this.finalShape.name);
     const checkpoint = this.createCheckpoint(this.state.config, this.shapeData);
     if (checkpoint.key !== this.checkpoint?.key) {
