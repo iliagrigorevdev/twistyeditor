@@ -5,103 +5,116 @@
 #include "Network.h"
 #include "Coach.h"
 
+#define RAPIDJSON_HAS_STDSTRING 1
+#include "rapidjson/document.h"
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/writer.h>
+#include "rapidjson/error/en.h"
+
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <streambuf>
 
 static const int epochs = 100;
 static const int epochSteps = 4000;
 static const int totalSteps = epochs * epochSteps;
 static const int trainingStartSteps = 1000;
 static const int trainingInterval = 50;
-static const String modelFolder = "../models";
-static const String extension = "pt";
 
-static String modelFilename(const Config &config, const String &name) {
-  String networkText;
-  for (const auto hiddenLayerSize : config.hiddenLayerSizes) {
-    if (networkText.empty()) {
-      networkText = "_";
-    }
-    networkText += "l" + std::to_string(hiddenLayerSize);
+static rapidjson::Document loadDocument(const String &filePath) {
+  std::ifstream file(filePath);
+  String content;
+  file.seekg(0, std::ios::end);   
+  content.reserve(file.tellg());
+  file.seekg(0, std::ios::beg);
+  content.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+  file.close();
+  rapidjson::Document document;
+  if (document.Parse(content).HasParseError()) {
+    std::cerr << "Input is not a valid JSON (offset "
+              << document.GetErrorOffset() << "): "
+              << rapidjson::GetParseError_En(document.GetParseError())
+              << std::endl;
+    exit(1);
   }
-  return name + networkText + "." + extension;
+  return document;
 }
 
-void saveCheckpoint(const Config &config, const String &name, NetworkPtr network) {
-  if (!std::filesystem::exists(modelFolder)) {
-    std::filesystem::create_directory(modelFolder);
-  }
-  const auto modelFilepath = std::filesystem::path(modelFolder) /
-                             modelFilename(config, name);
-  auto file = std::ofstream(modelFilepath);
-  network->save(file);
+static void saveDocument(const rapidjson::Document &document, const String &filePath) {
+  std::ofstream file(filePath);
+  rapidjson::OStreamWrapper stream(file);
+  rapidjson::Writer<rapidjson::OStreamWrapper> writer(stream);
+  document.Accept(writer);
   file.close();
 }
 
 int main(int argc, char* argv[]) {
-  // TODO read data from file specified as argument
-  const String name = "Cannon";
-  const auto data = "o Cannon\n"
-                    "l 13.0000 7.2261 133.5688 128.4615 -3.461539 2.461539 -0.000000 0.0000 0.0000 0.0030 1.0000\n"
-                    "p 3.460694 -0.149279 0.000000 0.0000 0.0000 -0.0030 1.0000\n"
-                    "p 4.462705 0.177960 -0.000000 1.0000 -0.0030 -0.0000 0.0000\n"
-                    "p 5.460657 -0.161456 0.000000 0.0000 -0.0000 0.0030 -1.0000\n"
-                    "p 2.462742 0.190137 0.000000 -1.0000 0.0030 -0.0000 0.0000\n"
-                    "p 1.460731 -0.137102 -0.000000 -0.0000 0.0000 0.0030 -1.0000\n"
-                    "p 0.462779 0.202314 0.000000 1.0000 -0.0030 0.0000 -0.0000\n"
-                    "p -0.539232 -0.124924 -0.000000 0.0000 -0.0000 -0.0030 1.0000\n"
-                    "p -1.537184 0.214491 0.000000 -1.0000 0.0030 -0.0000 0.0000\n"
-                    "p -2.539195 -0.112747 -0.000000 -0.0000 0.0000 0.0030 -1.0000\n"
-                    "p -2.539195 -0.112747 1.414214 -0.0000 0.0000 0.0030 -1.0000\n"
-                    "p -2.539195 -0.112747 -1.414214 -0.0000 0.0000 0.0030 -1.0000\n"
-                    "p -3.537147 0.226669 0.000000 1.0000 -0.0030 0.0000 -0.0000\n"
-                    "p -4.539158 -0.100570 -0.000000 0.0000 -0.0000 -0.0030 1.0000\n"
-                    "l 16.0000 26.3194 23.6528 34.6667 -0.000000 2.000000 2.504336 0.0000 0.0000 0.3827 0.9239\n"
-                    "p 0.235702 0.235702 -1.090123 0.0000 0.0000 -0.3827 0.9239\n"
-                    "p -0.000001 1.178511 -0.854420 -0.6533 0.2706 0.6533 -0.2706\n"
-                    "p -0.235702 -0.235702 -1.090123 0.9239 -0.3827 -0.0000 0.0000\n"
-                    "p 0.000000 -1.178511 -0.854420 -0.2706 0.6533 0.2706 -0.6533\n"
-                    "p 0.235702 1.414214 0.088389 -0.2706 -0.6533 0.6533 -0.2706\n"
-                    "p -0.235703 1.414213 0.559793 -0.2706 0.6533 0.6533 0.2706\n"
-                    "p -1.178512 1.178511 0.324091 -0.0000 0.0000 -0.9239 0.3827\n"
-                    "p 1.178511 1.178512 0.324091 -0.0000 0.0000 -0.9239 -0.3827\n"
-                    "p 1.414213 0.235703 0.559793 0.2706 0.6533 0.2706 0.6533\n"
-                    "p 1.414213 -0.235702 0.088389 0.6533 0.2706 -0.6533 -0.2706\n"
-                    "p 1.178512 -1.178511 0.324091 0.0000 -0.0000 0.3827 0.9239\n"
-                    "p 0.235703 -1.414213 0.559793 -0.6533 -0.2706 0.2706 -0.6533\n"
-                    "p -0.235702 -1.414214 0.088388 -0.6533 0.2706 0.2706 0.6533\n"
-                    "p -1.178511 -1.178512 0.324090 0.0000 0.0000 0.3827 -0.9239\n"
-                    "p -1.414214 0.235702 0.088389 0.2706 -0.6533 0.2706 -0.6533\n"
-                    "p -1.414213 -0.235703 0.559794 -0.6533 0.2706 0.6533 -0.2706\n"
-                    "l 16.0000 26.3194 23.6528 34.6667 0.000000 2.000000 -2.504337 0.0000 0.0000 0.3827 0.9239\n"
-                    "p 0.235702 0.235703 1.090123 0.0000 0.0000 -0.3827 0.9239\n"
-                    "p -0.235702 -0.235703 1.090123 0.9239 -0.3827 -0.0000 0.0000\n"
-                    "p -0.000002 1.178511 0.854421 -0.6533 0.2706 -0.6533 0.2706\n"
-                    "p 0.000002 -1.178511 0.854421 0.2706 -0.6533 0.2706 -0.6533\n"
-                    "p 0.235700 1.414214 -0.088388 0.2706 0.6533 0.6533 -0.2706\n"
-                    "p 1.178510 1.178513 -0.324090 -0.0000 0.0000 0.9239 0.3827\n"
-                    "p -0.235704 1.414213 -0.559793 -0.2706 0.6533 -0.6533 -0.2706\n"
-                    "p -1.178513 1.178510 -0.324090 0.0000 -0.0000 -0.9239 0.3827\n"
-                    "p -1.414214 0.235700 -0.088388 0.2706 -0.6533 -0.2706 0.6533\n"
-                    "p -1.414213 -0.235704 -0.559793 0.6533 -0.2706 0.6533 -0.2706\n"
-                    "p -1.178510 -1.178513 -0.324091 -0.0000 -0.0000 0.3827 -0.9239\n"
-                    "p -0.235700 -1.414214 -0.088388 -0.6533 0.2706 -0.2706 -0.6533\n"
-                    "p 0.235704 -1.414213 -0.559793 -0.6533 -0.2706 -0.2706 0.6533\n"
-                    "p 1.178513 -1.178510 -0.324091 -0.0000 0.0000 0.3827 0.9239\n"
-                    "p 1.414214 -0.235700 -0.088389 0.6533 0.2706 0.6533 0.2706\n"
-                    "p 1.414213 0.235704 -0.559793 0.2706 0.6533 -0.2706 -0.6533\n"
-                    "j 0 1 -180.00 180.00 1000.00 0.000000 2.416667 0.707107 0.0000 -0.7071 0.0000 0.7071\n"
-                    "j 0 2 -180.00 180.00 1000.00 0.000000 2.416667 -0.707107 0.0000 0.7071 0.0000 0.7071\n"
-                    "b 0";
-  const auto environment = std::make_shared<TwistyEnv>(data);
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " FILEPATH" << std::endl;
+    return 1;
+  }
+
+  const std::filesystem::path inputFilePath(argv[1]);
+
+  auto document = loadDocument(inputFilePath.string());
+  if (!document.HasMember("shapeData")) {
+    std::cerr << "Shape data not found" << std::endl;
+    return 1;
+  }
+  if (!document.HasMember("checkpoint")) {
+    std::cerr << "Checkpoint not found" << std::endl;
+    return 1;
+  }
+  if (!document["checkpoint"].HasMember("data")) {
+    std::cerr << "Checkpoint data not found" << std::endl;
+    return 1;
+  }
+  if (!document["checkpoint"].HasMember("time")) {
+    std::cerr << "Checkpoint time not found" << std::endl;
+    return 1;
+  }
+  if (!document.HasMember("config") ||
+      !document["config"].HasMember("discount") ||
+      !document["config"].HasMember("batchSize") ||
+      !document["config"].HasMember("randomSteps") ||
+      !document["config"].HasMember("replayBufferSize") ||
+      !document["config"].HasMember("learningRate") ||
+      !document["config"].HasMember("regularization") ||
+      !document["config"].HasMember("interpolation") ||
+      !document["config"].HasMember("hiddenLayerSizes")) {
+    std::cerr << "Invalid config" << std::endl;
+    return 1;
+  }
+
+  Config config;
+  config.discount = document["config"]["discount"].GetFloat();
+  config.batchSize = document["config"]["batchSize"].GetInt();
+  config.randomSteps = document["config"]["randomSteps"].GetInt();
+  config.replayBufferSize = document["config"]["replayBufferSize"].GetInt();
+  config.learningRate = document["config"]["learningRate"].GetFloat();
+  config.regularization = document["config"]["regularization"].GetFloat();
+  config.interpolation = document["config"]["interpolation"].GetFloat();
+  config.hiddenLayerSizes.clear();
+  for (const auto &value : document["config"]["hiddenLayerSizes"].GetArray()) {
+    config.hiddenLayerSizes.push_back(value.GetInt());
+  }
+
+  std::filesystem::path outputFileName = inputFilePath.stem();
+  outputFileName += "_out";
+  outputFileName += inputFilePath.extension();
+  auto outputFilePath = inputFilePath;
+  outputFilePath.replace_filename(outputFileName);
+
+  const String shapeData = document["shapeData"].GetString();
+
+  const auto environment = std::make_shared<TwistyEnv>(shapeData);
 
   const auto observationLength = environment->observation.size();
   if ((observationLength == 0) || (environment->actionLength == 0)) {
     return 1;
   }
 
-  Config config;
   const auto network = std::make_shared<Network>(config, observationLength, environment->actionLength);
 
   Coach coach(config, environment, network);
@@ -143,7 +156,12 @@ int main(int argc, char* argv[]) {
     if (((t + 1) % epochSteps == 0)) {
       const auto epochNumber = (t + 1) / epochSteps;
 
-      saveCheckpoint(config, name, network);
+      const auto checkpointData = network->save();
+      const auto checkpointTime = std::chrono::duration_cast<std::chrono::milliseconds>
+                                  (std::chrono::system_clock::now().time_since_epoch()).count();
+      document["checkpoint"]["data"].SetString(checkpointData, document.GetAllocator());
+      document["checkpoint"]["time"].SetInt64(checkpointTime);
+      saveDocument(document, outputFilePath.string());
 
       const auto currentTime = std::chrono::steady_clock::now();
       const auto epochTime = std::chrono::duration_cast<std::chrono::milliseconds>

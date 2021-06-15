@@ -68,6 +68,10 @@ set(TORCH_INCLUDES
 set(TORCH_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
+if(NOT EMSCRIPTEN)
+  set(RAPIDJSON_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/extern/rapidjson/include)
+endif()
+
 set(USE_GRAPHICAL_BENCHMARK OFF CACHE BOOL "" FORCE)
 set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
 set(BUILD_CLSOCKET OFF CACHE BOOL "" FORCE)
@@ -110,6 +114,9 @@ target_include_directories(Training PUBLIC
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_SOURCE_DIR}/env
 )
+if(NOT EMSCRIPTEN)
+  target_include_directories(Training PUBLIC ${RAPIDJSON_INCLUDE_PATH})
+endif()
 target_link_libraries(Training PUBLIC
   BulletDynamics
   BulletCollision
