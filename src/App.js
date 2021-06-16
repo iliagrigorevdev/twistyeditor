@@ -257,7 +257,9 @@ class App extends Component {
     if (data) {
       this.checkpoint.data = data;
       this.checkpoint.time = Date.now();
-      this.saveCheckpoint();
+      this.saveCheckpoint(() => {
+        console.log("Save checkpoint at " + steps + "/" + this.state.config.totalSteps);
+      });
     }
     const nextState = {
       trainingState: state
@@ -347,19 +349,20 @@ class App extends Component {
     }
   }
 
-  saveCheckpoint() {
+  saveCheckpoint(onsuccess) {
     if (this.database) {
       const putRequest = this.database
                          .transaction("checkpoint", "readwrite")
                          .objectStore("checkpoint")
                          .put(this.checkpoint);
+      putRequest.onsuccess = (e) => onsuccess();
       putRequest.onerror = (e) => {
         console.log("Failed to save checkpoint");
       };
     } else {
       this.openDatabase(() => {
         if (this.database) {
-          this.saveCheckpoint();
+          this.saveCheckpoint(onsuccess);
         }
       });
     }
