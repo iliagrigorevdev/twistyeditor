@@ -8,6 +8,7 @@ import { AppMode } from './App';
 import Prism from './Prism';
 import Section, { SectionType } from './Section';
 import { createTransform, multiplyTransforms } from './Transform';
+import Shape from './Shape';
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 const RADIANS_TO_DEGREES = 180 / Math.PI;
@@ -57,6 +58,8 @@ const SECTION_COLORS = new Map([
 const INDICATION_COLOR = "#90caf960";
 const CREATION_COLOR = "#fff59d60";
 
+const GOAL_ARCHIVE = "{\"version\":3,\"shape\":{\"name\":\"Goal\",\"prisms\":[{\"id\":1,\"colorMask\":3,\"backgroundColor\":\"#d32f2f\",\"foregroundColor\":\"#d9d9d9\",\"position\":{\"0\":0,\"1\":0.5,\"2\":-1.5739213228225708},\"orientation\":{\"0\":0,\"1\":0,\"2\":0,\"3\":1}},{\"id\":2,\"colorMask\":3,\"backgroundColor\":\"#d9d9d9\",\"foregroundColor\":\"#d32f2f\",\"position\":{\"0\":1,\"1\":0.5,\"2\":-1.5739213228225708},\"orientation\":{\"0\":1,\"1\":0,\"2\":0,\"3\":6.123234262925839e-17}},{\"id\":3,\"colorMask\":3,\"backgroundColor\":\"#d32f2f\",\"foregroundColor\":\"#d9d9d9\",\"position\":{\"0\":2,\"1\":0.5,\"2\":-1.5739213228225708},\"orientation\":{\"0\":1.2246468525851679e-16,\"1\":0,\"2\":0,\"3\":-1}},{\"id\":4,\"colorMask\":3,\"backgroundColor\":\"#d9d9d9\",\"foregroundColor\":\"#d32f2f\",\"position\":{\"0\":1,\"1\":1.5,\"2\":-1.5739213228225708},\"orientation\":{\"0\":1.2246468525851679e-16,\"1\":0,\"2\":0,\"3\":-1}},{\"id\":5,\"colorMask\":3,\"backgroundColor\":\"#d32f2f\",\"foregroundColor\":\"#d9d9d9\",\"position\":{\"0\":0.5,\"1\":2,\"2\":-1.5739213228225708},\"orientation\":{\"0\":1.7934537957764396e-17,\"1\":-1.2989341566884322e-16,\"2\":-0.7071067690849304,\"3\":0.7071067690849304}},{\"id\":6,\"colorMask\":3,\"backgroundColor\":\"#d32f2f\",\"foregroundColor\":\"#d9d9d9\",\"position\":{\"0\":1.5,\"1\":2,\"2\":-1.5739213228225708},\"orientation\":{\"0\":-1.911257582981016e-16,\"1\":4.329780632585522e-17,\"2\":0.7071067690849304,\"3\":0.7071067690849304}},{\"id\":7,\"colorMask\":3,\"backgroundColor\":\"#d9d9d9\",\"foregroundColor\":\"#d32f2f\",\"position\":{\"0\":1.5,\"1\":3,\"2\":-1.5739213228225708},\"orientation\":{\"0\":0.7071067690849304,\"1\":0.7071067690849304,\"2\":-2.3657788664006152e-24,\"3\":2.344235679326793e-16}},{\"id\":8,\"colorMask\":3,\"backgroundColor\":\"#d9d9d9\",\"foregroundColor\":\"#d32f2f\",\"position\":{\"0\":0.5000000596046448,\"1\":3,\"2\":-1.5739213228225708},\"orientation\":{\"0\":2.7772137756725695e-16,\"1\":4.329780301713277e-17,\"2\":-0.7071067690849304,\"3\":-0.7071067690849304}},{\"id\":9,\"colorMask\":3,\"backgroundColor\":\"#d32f2f\",\"foregroundColor\":\"#d9d9d9\",\"position\":{\"0\":0.5000001192092896,\"1\":4,\"2\":-1.5739213228225708},\"orientation\":{\"0\":-0.7071067690849304,\"1\":-0.7071067690849304,\"2\":-8.659560603426554e-17,\"3\":-3.210191872018346e-16}},{\"id\":10,\"colorMask\":3,\"backgroundColor\":\"#d32f2f\",\"foregroundColor\":\"#d9d9d9\",\"position\":{\"0\":1.5,\"1\":4,\"2\":-1.5739213228225708},\"orientation\":{\"0\":2.7772137756725695e-16,\"1\":4.329780301713277e-17,\"2\":-0.7071067690849304,\"3\":-0.7071067690849304}},{\"id\":11,\"colorMask\":3,\"backgroundColor\":\"#d9d9d9\",\"foregroundColor\":\"#d32f2f\",\"position\":{\"0\":1,\"1\":4.5,\"2\":-1.5739213228225708},\"orientation\":{\"0\":-2.702926603918203e-16,\"1\":6.12323624815931e-17,\"2\":1,\"3\":0}},{\"id\":12,\"colorMask\":3,\"backgroundColor\":\"#d9d9d9\",\"foregroundColor\":\"#d32f2f\",\"position\":{\"0\":1,\"1\":5.5,\"2\":-1.5739213228225708},\"orientation\":{\"0\":-1.6550653361678656e-32,\"1\":1,\"2\":-1.9852334701272664e-23,\"3\":2.702926603918203e-16}}],\"sections\":[],\"lastPlaceableId\":12,\"roll\":0,\"pitch\":0,\"yaw\":0,\"showPose\":true}}";
+
 const iblUrl = "res/environment_ibl.ktx";
 const prismMeshUrl = "res/prism.filamesh";
 const prismMaterialUrl = "res/prism.filamat";
@@ -104,8 +107,10 @@ class Viewport extends Component {
     if (modeChanged || shapeChanged) {
       this.refreshShapeView();
     }
+    this.prepareGoalView();
     if (trainingStateChanged) {
       this.updateShapeView(this.props.trainingState.transforms);
+      this.updateGoalView(this.props.trainingState.goalPosition);
     }
   }
 
@@ -123,6 +128,26 @@ class Viewport extends Component {
     const activePlaceable = (this.props.mode === AppMode.EDIT
         ? this.props.finalShape.findPlaceable(this.props.activePlaceableId) : null);
     this.selectPlaceable(activePlaceable, true, false);
+  }
+
+  prepareGoalView() {
+    if (!this.engine) {
+      return;
+    }
+    if (!this.goalShape) {
+      const archive = JSON.parse(GOAL_ARCHIVE);
+      this.goalShape = new Shape();
+      this.goalShape.fromArchive(archive.shape, archive.version);
+      this.goalShape.applyTransform(true);
+    }
+    if (!this.goalView) {
+      if (this.props.mode !== AppMode.EDIT) {
+        this.goalView = new ShapeView(this.goalShape, false, this);
+      }
+    } else if (this.goalPosition) {
+      this.goalView.removeFromScene(this);
+    }
+    this.goalPosition = null;
   }
 
   init() {
@@ -144,6 +169,10 @@ class Viewport extends Component {
     this.activePlaceableView = null;
     this.availableJunctions = null;
     this.originalAvailableJunctions = null;
+
+    this.goalPosition = null;
+    this.goalShape = null;
+    this.goalView = null;
 
     this.pressing = false;
     this.dragging = false;
@@ -390,6 +419,21 @@ class Viewport extends Component {
         this.setRenderableTransform(placeableView.renderable, this.auxTransform.position,
                                     this.auxTransform.orientation);
       }
+    }
+  }
+
+  updateGoalView(goalPosition) {
+    if (!this.goalPosition) {
+      this.goalView.addToScene(this);
+    }
+    if (!this.goalPosition || !vec3.equals(this.goalPosition, goalPosition)) {
+      this.goalView.placeableViews.forEach(placeableView => {
+        quat.copy(this.auxTransform.orientation, placeableView.placeable.worldOrientation);
+        vec3.add(this.auxTransform.position, placeableView.placeable.worldPosition, goalPosition);
+        this.setRenderableTransform(placeableView.renderable, this.auxTransform.position,
+                                    this.auxTransform.orientation);
+      });
+      this.goalPosition = goalPosition;
     }
   }
 

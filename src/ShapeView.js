@@ -40,6 +40,10 @@ class ShapeView {
     this.placeableViews.forEach(placeableView => viewport.scene.addEntity(placeableView.renderable));
   }
 
+  removeFromScene(viewport) {
+    this.placeableViews.forEach(placeableView => viewport.scene.remove(placeableView.renderable));
+  }
+
   syncTransform(viewport) {
     this.placeableViews.forEach(placeableView =>
         viewport.setRenderableTransform(placeableView.renderable, placeableView.placeable.worldPosition,

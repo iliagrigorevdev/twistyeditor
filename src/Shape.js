@@ -42,7 +42,7 @@ class Shape {
     return orientation;
   }
 
-  applyTransform() {
+  applyTransform(alignHorizontally = false) {
     const orientation = this.getOrientation();
     for (let i = 0; i < 2; i++) {
       vec3.zero(this.aabb.min);
@@ -67,7 +67,9 @@ class Shape {
       if (i === 0) {
         // Align to ground
         const inverseOrientation = quat.invert(quat.create(), orientation);
-        const translation = vec3.fromValues(0, -this.aabb.min[1], 0);
+        const x = (alignHorizontally ? -0.5 * (this.aabb.min[0] + this.aabb.max[0]) : 0);
+        const z = (alignHorizontally ? -0.5 * (this.aabb.min[2] + this.aabb.max[2]) : 0);
+        const translation = vec3.fromValues(x, -this.aabb.min[1], z);
         vec3.transformQuat(translation, translation, inverseOrientation);
         this.translate(translation);
       } else {
