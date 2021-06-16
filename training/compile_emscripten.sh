@@ -1,3 +1,9 @@
+if [ "$(uname)" == 'Darwin' ]; then
+  MAX_JOBS=$(sysctl -n hw.ncpu)
+else
+  MAX_JOBS=$(nproc)
+fi
+
 cd extern/pytorch
 $(pwd)/scripts/build_host_protoc.sh
 emcmake cmake -B build \
@@ -23,13 +29,13 @@ emcmake cmake -B build \
   -DUSE_XNNPACK=OFF \
   -DONNX_ML=OFF
 cd build
-emmake make -j 4
+emmake make "-j${MAX_JOBS}"
 emmake make install
 cd ../../..
 
 emcmake cmake -B build_emscripten
 cd build_emscripten
-emmake make -j 4
+emmake make "-j${MAX_JOBS}"
 emcc \
   -O3 \
   --bind \
