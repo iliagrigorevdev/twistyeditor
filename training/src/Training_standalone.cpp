@@ -117,6 +117,13 @@ int main(int argc, char* argv[]) {
 
   const auto network = std::make_shared<Network>(config, observationLength, environment->actionLength);
 
+  if (!document["checkpoint"]["data"].IsNull()) {
+    const String checkpointData(document["checkpoint"]["data"].GetString(),
+                                document["checkpoint"]["data"].GetStringLength());
+    network->load(checkpointData);
+    std::cout << "Load checkpoint" << std::endl;
+  }
+
   Coach coach(config, environment, network);
 
   int playGameCount = 0;
