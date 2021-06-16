@@ -65,18 +65,7 @@ target_include_directories(Training PUBLIC
 if(NOT EMSCRIPTEN)
   target_include_directories(Training PUBLIC ${RAPIDJSON_INCLUDE_PATH})
   target_link_libraries(Training PUBLIC ${TORCH_LIBRARIES})
-endif()
-target_link_libraries(Training PUBLIC
-  BulletDynamics
-  BulletCollision
-  LinearMath
-)
-if(NOT EMSCRIPTEN)
-  add_dependencies(Training Torch)
-  target_link_libraries(Training PUBLIC
-    ${TORCH_LIBRARIES}
-    stdc++fs
-  )
+  target_link_libraries(Training PUBLIC stdc++fs)
 
   # The following code block is suggested to be used on Windows.
   # According to https://github.com/pytorch/pytorch/issues/25457,
@@ -90,4 +79,9 @@ if(NOT EMSCRIPTEN)
                       $<TARGET_FILE_DIR:Training>)
   endif (MSVC)
 endif()
+target_link_libraries(Training PUBLIC
+  BulletDynamics
+  BulletCollision
+  LinearMath
+)
 target_compile_options(Training PRIVATE -Wall -Wextra -Wpedantic -Wno-sign-compare -Wno-unused-parameter)
