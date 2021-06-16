@@ -75,7 +75,7 @@ if(NOT EMSCRIPTEN)
   add_dependencies(Training Torch)
   target_link_libraries(Training PUBLIC
     ${TORCH_LIBRARIES}
-    rt dl pthread stdc++fs
+    stdc++fs
   )
 
   # The following code block is suggested to be used on Windows.
