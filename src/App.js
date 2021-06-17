@@ -166,13 +166,15 @@ class App extends Component {
       } else {
         alert("Failed to load shape");
       }
-      const config = archive.config;
-      if (config) {
-        this.handleConfigChange(config);
-      } else {
-        alert("Failed to load config");
+      if (archive.version >= 3) {
+        const config = archive.config;
+        if (config) {
+          this.handleConfigChange(config);
+        } else {
+          alert("Failed to load config");
+        }
+        this.checkpoint = archive.checkpoint;
       }
-      this.checkpoint = archive.checkpoint;
     });
   }
 
