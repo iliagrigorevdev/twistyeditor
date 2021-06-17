@@ -82,7 +82,7 @@ State evaluate() {
   }
   const auto action = (network == nullptr
                        ? environment->randomAction()
-                       : network->predict(environment->observation, true));
+                       : network->predict(environment->observation));
   environment->step(action);
 
   State state;

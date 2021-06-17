@@ -47,14 +47,14 @@ void Network::load(std::istream &stream) {
   torch::load(model, stream);
 }
 
-Action Network::predict(const Observation &observation, bool deterministic) {
+Action Network::predict(const Observation &observation) {
   torch::NoGradGuard noGradGuard;
 
   const auto inputObservation = torch::from_blob(
     reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
     {1, static_cast<int>(observation.size())}, torch::kFloat32);
 
-  const auto sample = model->actor->forward(inputObservation, deterministic);
+  const auto sample = model->actor->forward(inputObservation);
   const auto sampleAccessor = sample.accessor<float, 2>();
   Action action(0.0, model->actionLength);
   for (int i = 0; i < model->actionLength; i++) {
@@ -98,7 +98,7 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   torch::Tensor backup;
   {
     torch::NoGradGuard noGradGuard;
-    const auto nextAction = model->actor->forward(nextObservation, false);
+    const auto nextAction = model->actor->forward(nextObservation);
     const auto [targetQ1, targetQ2] = targetCritic->forward(nextObservation, nextAction);
     const auto targetQ = torch::min(targetQ1, targetQ2);
     backup = reward + config.discount * undone * targetQ;
@@ -114,7 +114,7 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   }
 
   actorOptimizer->zero_grad();
-  const auto sample = model->actor->forward(observation, false);
+  const auto sample = model->actor->forward(observation);
   const auto [sampleQ1, sampleQ2] = model->critic->forward(observation, sample);
   const auto sampleQ = torch::min(sampleQ1, sampleQ2);
   const auto actorLoss = -sampleQ.mean();

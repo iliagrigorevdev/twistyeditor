@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
       for (int i = 0; i < testEpisodeCount; i++) {
         testEnvironment->restart();
         while (!testEnvironment->done && !testEnvironment->timeout()) {
-          const auto action = network->predict(testEnvironment->observation, true);
+          const auto action = network->predict(testEnvironment->observation);
           const auto reward = testEnvironment->step(action);
           testValue += reward;
           testMoveCount++;

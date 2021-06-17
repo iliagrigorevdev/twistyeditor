@@ -18,7 +18,7 @@ float Coach::step() {
   auto observation = environment->observation;
   auto action = (advance < config.randomSteps
                  ? environment->randomAction()
-                 : network->predict(observation, false));
+                 : network->predict(observation));
 
   const auto reward = environment->step(action);
   auto nextObservation = environment->observation;

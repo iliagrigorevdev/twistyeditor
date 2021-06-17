@@ -15,7 +15,7 @@ public:
 
   void reset() override;
 
-  torch::Tensor forward(torch::Tensor observation, bool deterministic);
+  torch::Tensor forward(torch::Tensor observation);
 
   IntArray hiddenLayerSizes;
   int observationLength;
@@ -23,7 +23,6 @@ public:
 
   torch::nn::Sequential net = nullptr;
   torch::nn::Linear muLayer = nullptr;
-  torch::nn::Linear logStdLayer = nullptr;
 };
 
 class Critic : public torch::nn::Cloneable<Critic> {

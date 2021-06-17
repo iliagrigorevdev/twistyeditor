@@ -21,7 +21,7 @@ public:
   void load(const String &data);
   void load(std::istream &stream);
 
-  Action predict(const Observation &observation, bool deterministic);
+  Action predict(const Observation &observation);
   ActorCriticLosses train(const SamplePtrs &samples);
 
   Config config;
