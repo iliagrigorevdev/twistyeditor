@@ -14,13 +14,13 @@ class Trainer {
   }
 
   run() {
+    this.training.create(this.config, this.shapeData);
+
     if (this.checkpointData) {
       this.training.load(this.checkpointData);
       this.checkpointData = null;
       console.log("Load checkpoint");
     }
-
-    this.training.create(this.config, this.shapeData);
 
     const startTime = Date.now();
     let lastTime = startTime;
