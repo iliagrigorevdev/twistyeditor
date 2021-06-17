@@ -108,7 +108,6 @@ EMSCRIPTEN_BINDINGS(Training) {
     .field("randomSteps", &Config::randomSteps)
     .field("replayBufferSize", &Config::replayBufferSize)
     .field("learningRate", &Config::learningRate)
-    .field("regularization", &Config::regularization)
     .field("interpolation", &Config::interpolation)
     .field("hiddenLayerSizes", &Config::hiddenLayerSizes);
 

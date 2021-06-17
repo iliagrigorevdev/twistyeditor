@@ -15,8 +15,7 @@ public:
 
   void reset() override;
 
-  std::pair<torch::Tensor, torch::Tensor>
-  forward(torch::Tensor observation, bool deterministic, bool withLogProb);
+  torch::Tensor forward(torch::Tensor observation, bool deterministic);
 
   IntArray hiddenLayerSizes;
   int observationLength;

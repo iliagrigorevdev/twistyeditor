@@ -10,7 +10,6 @@ struct Config {
   int randomSteps = 10000;
   int replayBufferSize = 1000000;
   float learningRate = 3e-4;
-  float regularization = 0.2;
   float interpolation = 0.995;
   IntArray hiddenLayerSizes = {64, 64};
 };

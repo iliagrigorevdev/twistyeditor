@@ -36,8 +36,7 @@ void Actor::reset() {
   logStdLayer = register_module("logStdLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
 }
 
-std::pair<torch::Tensor, torch::Tensor>
-Actor::forward(torch::Tensor observation, bool deterministic, bool withLogProb) {
+torch::Tensor Actor::forward(torch::Tensor observation, bool deterministic) {
   const auto netOut = net->forward(observation);
   const auto mu = muLayer->forward(netOut);
   auto logStd = logStdLayer->forward(netOut);
@@ -47,15 +46,8 @@ Actor::forward(torch::Tensor observation, bool deterministic, bool withLogProb) 
   if (!deterministic) {
     sample += torch::randn(mu.sizes(), mu.device()) * std;
   }
-  torch::Tensor logProb;
-  if (withLogProb) {
-    logProb = -0.5 * (torch::square((sample - mu) / (std + 1e-9)) +
-              2 * logStd + std::log(2 * M_PI));
-    logProb -= (2 * (std::log(2) - sample - torch::softplus(-2 * sample)));
-    logProb = logProb.sum(1, true);
-  }
   sample = torch::tanh(sample);
-  return {sample, logProb};
+  return sample;
 }
 
 Critic::Critic(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
