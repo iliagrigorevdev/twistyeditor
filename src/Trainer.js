@@ -27,12 +27,19 @@ class Trainer {
     let trainingTime = 0;
     let stepNumber = 0;
     let trainingNumber = 0;
+    let currentValue = 0;
+    let totalValue = 0;
     while (true) {
       if ((stepNumber < this.config.totalSteps) && !this.playing) {
         if ((stepNumber < this.config.trainingStartSteps) ||
             ((stepNumber % this.config.trainingInterval) !== 0) ||
             (trainingNumber === this.config.trainingInterval)) {
-          this.training.step();
+          const result = this.training.step();
+          currentValue += result.reward;
+          if (result.done) {
+            totalValue = currentValue;
+            currentValue = 0;
+          }
           trainingNumber = 0;
           stepNumber++;
 
@@ -57,7 +64,7 @@ class Trainer {
         }
         const nativeState = this.training.evaluate();
         const state = this.fromNativeState(nativeState);
-        postMessage([stepNumber, trainingTime, state, this.checkpointData]);
+        postMessage([stepNumber, totalValue, trainingTime, state, this.checkpointData]);
         this.checkpointData = null;
       }
     }

@@ -34,6 +34,7 @@ class App extends Component {
       historyIndex: -1,
       config: new Config(),
       trainingSteps: 0,
+      trainingValue: 0,
       trainingTime: 0,
       trainingState: null
     };
@@ -219,6 +220,7 @@ class App extends Component {
       if (activeJointCount > 0) {
         nextState.mode = AppMode.LOADING;
         nextState.trainingSteps = 0;
+        nextState.trainingValue = 0;
         nextState.trainingTime = 0;
       } else {
         nextState.mode = this.state.mode;
@@ -255,7 +257,7 @@ class App extends Component {
   }
 
   handleWorkerMessage(e) {
-    const [steps, time, state, data] = e.data;
+    const [steps, value, time, state, data] = e.data;
     if (data) {
       this.checkpoint.data = data;
       this.checkpoint.time = Date.now();
@@ -266,9 +268,10 @@ class App extends Component {
     const nextState = {
       trainingState: state
     };
-    if ((this.state.trainingTime !== time) ||
+    if ((this.state.trainingValue !== value) || (this.state.trainingTime !== time) ||
         ((steps === this.state.config.totalSteps) && (nextState.trainingSteps !== steps))) {
       nextState.trainingSteps = steps;
+      nextState.trainingValue = value;
       nextState.trainingTime = time;
     }
     this.setState(nextState);
@@ -400,8 +403,8 @@ class App extends Component {
         <Toolbar mode={this.state.mode} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
-          trainingSteps={this.state.trainingSteps} trainingTime={this.state.trainingTime}
-          config={this.state.config}
+          trainingSteps={this.state.trainingSteps} trainingValue={this.state.trainingValue}
+          trainingTime={this.state.trainingTime} config={this.state.config}
           onShapeChange={shape => this.handleShapeChange(shape)}
           onHistoryChange={index => this.handleHistoryChange(index)}
           onShapeReset={() => this.handleShapeReset()}

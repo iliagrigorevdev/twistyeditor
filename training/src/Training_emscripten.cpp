@@ -21,6 +21,11 @@ struct Transform {
   Quaternion orientation;
 };
 
+struct StepResult {
+  float reward;
+  bool done;
+};
+
 struct State {
   Vector goalPosition;
   Array<Transform> transforms;
@@ -48,11 +53,13 @@ void create(const Config &config, const String &data) {
                                   network);
 }
 
-void step() {
+StepResult step() {
   if (coach == nullptr) {
-    return;
+    return {0, false};
   }
-  coach->step();
+  const auto reward = coach->step();
+  const auto done = coach->environment->done || coach->environment->timeout();
+  return {reward, done};
 }
 
 void train() {
@@ -125,6 +132,10 @@ EMSCRIPTEN_BINDINGS(Training) {
   emscripten::value_object<Transform>("Transform")
     .field("position", &Transform::position)
     .field("orientation", &Transform::orientation);
+
+  emscripten::value_object<StepResult>("StepResult")
+    .field("reward", &StepResult::reward)
+    .field("done", &StepResult::done);
 
   emscripten::value_object<State>("State")
     .field("goalPosition", &State::goalPosition)

@@ -177,6 +177,11 @@ class Toolbar extends Component {
         }
         {this.props.mode === AppMode.TRAINING &&
           <p>
+            <label>Value : {Math.floor(this.props.trainingValue)}</label>
+          </p>
+        }
+        {this.props.mode === AppMode.TRAINING &&
+          <p>
             <label>Time : {this.formatTime(this.props.trainingTime)}</label>
           </p>
         }
