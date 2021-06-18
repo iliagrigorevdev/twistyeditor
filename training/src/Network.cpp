@@ -1,5 +1,6 @@
 
 #include "Network.h"
+#include "Base64.h"
 
 Network::Network(const Config &config, int observationLength, int actionLength)
     : Network(config, std::make_shared<Model>(config.hiddenLayerSizes, observationLength, actionLength)) {
@@ -31,7 +32,7 @@ NetworkPtr Network::clone() const {
 String Network::save() const {
   std::ostringstream stream;
   save(stream);
-  return stream.str();
+  return macaron::Base64::Encode(stream.str());
 }
 
 void Network::save(std::ostream &stream) const {
@@ -39,7 +40,12 @@ void Network::save(std::ostream &stream) const {
 }
 
 void Network::load(const String &data) {
-  std::istringstream stream(data);
+  String out;
+  const auto error = macaron::Base64::Decode(data, out);
+  if (!error.empty()) {
+    EXCEPT(error);
+  }
+  std::istringstream stream(out);
   load(stream);
 }
 
