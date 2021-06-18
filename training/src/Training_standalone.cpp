@@ -21,7 +21,6 @@ static const int epochSteps = 4000;
 static const int totalSteps = epochs * epochSteps;
 static const int trainingStartSteps = 1000;
 static const int trainingInterval = 50;
-static const int testEpisodeCount = 10;
 
 static rapidjson::Document loadDocument(const String &filePath) {
   std::ifstream file(filePath);
@@ -108,11 +107,11 @@ int main(int argc, char* argv[]) {
   const String shapeData = document["shapeData"].GetString();
 
   const auto environment = std::make_shared<TwistyEnv>(shapeData);
+
   const auto observationLength = environment->observation.size();
   if ((observationLength == 0) || (environment->actionLength == 0)) {
     return 1;
   }
-  const auto testEnvironment = std::make_shared<TwistyEnv>(shapeData);
 
   const auto network = std::make_shared<Network>(config, observationLength, environment->actionLength);
 
@@ -169,22 +168,7 @@ int main(int argc, char* argv[]) {
       document["checkpoint"]["time"].SetInt64(checkpointTime);
       saveDocument(document, outputFilePath.string());
 
-      const auto startTestTime = std::chrono::steady_clock::now();
-      float testValue = 0;
-      int testMoveCount = 0;
-      for (int i = 0; i < testEpisodeCount; i++) {
-        testEnvironment->restart();
-        while (!testEnvironment->done && !testEnvironment->timeout()) {
-          const auto action = network->predict(testEnvironment->observation);
-          const auto reward = testEnvironment->step(action);
-          testValue += reward;
-          testMoveCount++;
-        }
-      }
-
       const auto currentTime = std::chrono::steady_clock::now();
-      const auto testTime = std::chrono::duration_cast<std::chrono::milliseconds>
-                            (currentTime - startTestTime).count();
       const auto epochTime = std::chrono::duration_cast<std::chrono::milliseconds>
                              (currentTime - startEpochTime).count();
       const auto totalTime = std::chrono::duration_cast<std::chrono::seconds>
@@ -196,13 +180,10 @@ int main(int argc, char* argv[]) {
       std::cout << "Games     : " << playGameCount << std::endl;
       std::cout << "Moves     : " << (playGameCount > 0 ? playMoveCount / playGameCount : playMoveCount) << std::endl;
       std::cout << "Value     : " << (playGameCount > 0 ? playTotalValue / playGameCount : playTotalValue) << std::endl;
-      std::cout << "TestMoves : " << testMoveCount / testEpisodeCount << std::endl;
-      std::cout << "TestValue : " << testValue / testEpisodeCount << std::endl;
       std::cout << "LossP     : " << (trainStepCount > 0 ? trainLosses.first / trainStepCount : trainLosses.first) << std::endl;
       std::cout << "LossV     : " << (trainStepCount > 0 ? trainLosses.second / trainStepCount : trainLosses.second) << std::endl;
-      std::cout << "PlayTime  : " << epochTime - trainTime - testTime << std::endl;
+      std::cout << "PlayTime  : " << epochTime - trainTime << std::endl;
       std::cout << "TrainTime : " << trainTime << std::endl;
-      std::cout << "TestTime  : " << testTime << std::endl;
       std::cout << "EpochTime : " << epochTime << std::endl;
       std::cout << "TotalTime : " << totalTime / 60 << ":" << std::setfill('0') << std::setw(2) << totalTime % 60 << std::endl;
 
