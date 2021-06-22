@@ -67,8 +67,10 @@ class RigidInfo {
     }
 
     const partChains = shape.discoverPartChains(parts);
-    this.baseLinks.push(...partChains.map(partChain =>
+    if (partChains) {
+      this.baseLinks.push(...partChains.map(partChain =>
         this.links[parts.findIndex(p => p === partChain[0])]));
+    }
   }
 
   createLink(part) {
