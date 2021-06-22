@@ -23,4 +23,6 @@ Click the Showcase button to display a sample shape in random order.
 
 [React](https://reactjs.org) is a JavaScript library for building user interfaces.
 
+[PyTorch](https://pytorch.org/) is an open source machine learning framework.
+
 Environment map is taken from [HDRIHaven](https://hdrihaven.com/).
