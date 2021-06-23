@@ -5,16 +5,24 @@
 [Open on GitHub Pages](https://iliagrigorevdev.github.io/twistyeditor/)
 
 ## Description
-Create shapes consisting of right isosceles triangular prisms.
+Make creations consisting of right isosceles triangular prisms with sections and let them learn to move through reinforcement learning.
 
 ## How to Use
 Pick a prism to select it.
 
 Pull the knobs to create adjacent prisms.
 
+Pick the ring between prisms to create a section.
+
 Click on an empty area to deselect.
 
-Change shape and prism properties using the toolbar.
+Change shape, prism, section and training properties using the toolbar.
+
+Change section type between actuator and separator. Actuators used for movement during training. Separators used to disjoint contacting prisms.
+
+Start training with viewing intermediate results or just play trained simulation.
+
+Save and load creations including trained data which is updated at a specified interval.
 
 Click the Showcase button to display a sample shape in random order.
 
