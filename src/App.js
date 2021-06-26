@@ -324,7 +324,7 @@ class App extends Component {
 
   createCheckpoint(config, shapeData) {
     return {
-      key: getStringHash(config.hiddenLayerSizes.toString() + shapeData),
+      key: getStringHash(config.hiddenLayerSizes.toString() + "\n" + shapeData),
       data: null,
       time: null
     };
