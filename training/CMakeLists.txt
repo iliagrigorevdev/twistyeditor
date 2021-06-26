@@ -65,7 +65,9 @@ target_include_directories(Training PUBLIC
 if(NOT EMSCRIPTEN)
   target_include_directories(Training PUBLIC ${RAPIDJSON_INCLUDE_PATH})
   target_link_libraries(Training PUBLIC ${TORCH_LIBRARIES})
-  target_link_libraries(Training PUBLIC stdc++fs)
+  if(LINUX)
+    target_link_libraries(Training PUBLIC stdc++fs)
+  endif()
 
   # The following code block is suggested to be used on Windows.
   # According to https://github.com/pytorch/pytorch/issues/25457,
