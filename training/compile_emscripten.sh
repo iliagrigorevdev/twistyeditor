@@ -33,6 +33,7 @@ emmake make "-j${MAX_JOBS}"
 emmake make install
 cd ../../..
 
+mkdir -p ../public/static/js
 emcmake cmake -B build_emscripten
 cd build_emscripten
 emmake make "-j${MAX_JOBS}"
