@@ -136,13 +136,11 @@ void TwistyEnv::reset() {
     const auto &targetLink = links[joint.targetIndex];
     const auto baseFrame = baseLink.transform.inverse() * joint.transform;
     const auto targetFrame = targetLink.transform.inverse() * joint.transform;
-    const auto lowerAngle = (joint.lowerAngle == -180 ? -SIMD_PI : btRadians(joint.lowerAngle));
-    const auto upperAngle = (joint.upperAngle == 180 ? SIMD_PI : btRadians(joint.upperAngle));
     auto *constraint = constrainBodies(baseBody, targetBody,
                                        baseFrame, targetFrame,
                                        {0, 0, 0}, {0, 0, 0},
-                                       {lowerAngle, 0, 0},
-                                       {upperAngle, 0, 0},
+                                       {btRadians(joint.lowerAngle), 0, 0},
+                                       {btRadians(joint.upperAngle), 0, 0},
                                        true);
     constraints.push_back(constraint);
   }
@@ -233,7 +231,7 @@ float TwistyEnv::react(const Action &action, float timeStep) {
     const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
     const auto angle = constraint->getAngle(0);
     const auto speed = (axis * angularVelocity).x();
-    if (((joint.lowerAngle != -180) || (joint.upperAngle != 180)) &&
+    if ((joint.lowerAngle < joint.upperAngle) &&
         (((angle < 0) && (angle < btRadians(joint.lowerAngle) * jointLimit)) ||
          ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
       reward += jointAtLimitCost;

@@ -83,6 +83,18 @@ class Toolbar extends Component {
     });
   }
 
+  handleContinuousChange(prevShape, prevSection, continuous) {
+    this.modifyPlaceable(prevShape, prevSection, (section) => {
+      if (continuous) {
+        section.setPropertyValue("lowerAngle", 1);
+        section.setPropertyValue("upperAngle", -1);
+      } else {
+        section.clearPropertyValue("lowerAngle");
+        section.clearPropertyValue("upperAngle");
+      }
+    });
+  }
+
   handleSwapSection(prevShape, prevSection) {
     this.modifyPlaceable(prevShape, prevSection, (section) => {
       section.swap();
@@ -233,6 +245,9 @@ class Toolbar extends Component {
   }
 
   renderSectionParams(shape, section) {
+    const lowerAngle = section.getPropertyValue("lowerAngle");
+    const upperAngle = section.getPropertyValue("upperAngle");
+    const continuous = (lowerAngle > upperAngle);
     return (
       <div className="Group">
         <h3>Section</h3>
@@ -250,13 +265,19 @@ class Toolbar extends Component {
         </p>
         {section.getProperties().map(property => {
           const key = "section_" + property.name;
+          const disabled = (continuous && ((property.name === "lowerAngle") || (property.name === "upperAngle")));
           return <p key={key}>
             <label htmlFor={key}>{this.getPropertyLabel(property.name)} : </label>
-            <input id={key} name={key}
+            <input id={key} name={key} disabled={disabled}
               type="number" min={property.min} max={property.max} value={property.value}
               onChange={e => this.handleSectionPropertyChange(shape, section, property.name, e.target.value)} />
           </p>
         })}
+        <p>
+          <input type="checkbox" id="continuous" name="continuous" checked={continuous}
+            onChange={e => this.handleContinuousChange(shape, section, e.target.checked)} />
+          <label htmlFor="continuous">Continuous</label>
+        </p>
         <p>
           <button id="swapSection" name="swapSection"
             onClick={() => this.handleSwapSection(shape, section)}>Swap</button>

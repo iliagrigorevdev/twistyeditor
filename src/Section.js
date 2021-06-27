@@ -15,8 +15,8 @@ const SWAP_ROTATION = quat.setAxisAngle(quat.create(),
 const SECTION_PROPERTIES = new Map([
   [SectionType.ACTUATOR, [
     { name: "initialAngle", min: -180, max: 180, default: 0 },
-    { name: "lowerAngle", min: -180, max: 0, default: -90 },
-    { name: "upperAngle", min: 0, max: 180, default: 90 },
+    { name: "lowerAngle", min: -180, max: 1, default: -90 },
+    { name: "upperAngle", min: -1, max: 180, default: 90 },
     { name: "power", min: 0, max: 10000, default: 1000 }
   ]]
 ]);
@@ -85,6 +85,10 @@ class Section extends Placeable {
 
   setPropertyValue(name, value) {
     this.properties.set(name, this.validatePropertyValue(name, value));
+  }
+
+  clearPropertyValue(name) {
+    this.properties.delete(name);
   }
 
   validatePropertyValue(name, value) {
