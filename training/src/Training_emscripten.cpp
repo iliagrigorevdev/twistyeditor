@@ -62,11 +62,11 @@ StepResult step() {
   return {reward, done};
 }
 
-void train() {
+ActorCriticLosses train() {
   if (coach == nullptr) {
-    return;
+    return {0, 0};
   }
-  coach->train();
+  return coach->train();
 }
 
 String save() {
@@ -136,6 +136,10 @@ EMSCRIPTEN_BINDINGS(Training) {
   emscripten::value_object<StepResult>("StepResult")
     .field("reward", &StepResult::reward)
     .field("done", &StepResult::done);
+
+  emscripten::value_object<ActorCriticLosses>("ActorCriticLosses")
+    .field("lossP", &ActorCriticLosses::first)
+    .field("lossV", &ActorCriticLosses::second);
 
   emscripten::value_object<State>("State")
     .field("goalPosition", &State::goalPosition)

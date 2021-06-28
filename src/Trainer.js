@@ -28,7 +28,9 @@ class Trainer {
     let stepNumber = 0;
     let trainingNumber = 0;
     let currentValue = 0;
-    let totalValue = 0;
+    let finalValue = 0;
+    let currentLosses = new ActorCriticLosses();
+    let finalLosses = new ActorCriticLosses();
     while (true) {
       if ((stepNumber < this.config.totalSteps) && !this.playing) {
         if ((stepNumber < this.config.trainingStartSteps) ||
@@ -37,7 +39,7 @@ class Trainer {
           const result = this.training.step();
           currentValue += result.reward;
           if (result.done) {
-            totalValue = currentValue;
+            finalValue = currentValue;
             currentValue = 0;
           }
           trainingNumber = 0;
@@ -47,8 +49,17 @@ class Trainer {
             this.checkpointData = this.training.save();
           }
         } else {
-          this.training.train();
+          const losses = this.training.train();
+          currentLosses.lossP += losses.lossP;
+          currentLosses.lossV += losses.lossV;
           trainingNumber++;
+          if (trainingNumber === this.config.trainingInterval) {
+            finalLosses = new ActorCriticLosses(
+              currentLosses.lossP / this.config.trainingInterval,
+              currentLosses.lossV / this.config.trainingInterval
+            );
+            currentLosses = new ActorCriticLosses();
+          }
         }
 
         trainingTime = Math.floor((Date.now() - startTime) / 1000);
@@ -64,7 +75,7 @@ class Trainer {
         }
         const nativeState = this.training.evaluate();
         const state = this.fromNativeState(nativeState);
-        postMessage([stepNumber, totalValue, trainingTime, state, this.checkpointData]);
+        postMessage([stepNumber, finalValue, finalLosses, trainingTime, state, this.checkpointData]);
         this.checkpointData = null;
       }
     }
@@ -108,4 +119,12 @@ class Trainer {
   }
 }
 
+class ActorCriticLosses {
+  constructor(lossP = 0, lossV = 0) {
+    this.lossP = lossP;
+    this.lossV = lossV;
+  }
+}
+
 export default Trainer;
+export { ActorCriticLosses };

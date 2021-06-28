@@ -199,6 +199,11 @@ class Toolbar extends Component {
         }
         {this.props.trainingActive && (this.props.mode === AppMode.TRAINING) &&
           <p>
+            <label>Losses : {this.props.trainingLosses.lossP.toFixed(2)} / {this.props.trainingLosses.lossV.toFixed(2)}</label>
+          </p>
+        }
+        {this.props.trainingActive && (this.props.mode === AppMode.TRAINING) &&
+          <p>
             <label>Time : {this.formatTime(this.props.trainingTime)}</label>
           </p>
         }
