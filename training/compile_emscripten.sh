@@ -10,6 +10,7 @@ emcmake cmake -B build \
   -DCMAKE_INSTALL_PREFIX=$(pwd)/build/install \
   -DPYTHON_EXECUTABLE="$(which python3)" \
   -DCAFFE2_CUSTOM_PROTOC_EXECUTABLE=$(pwd)/build_host_protoc/bin/protoc \
+  -DSELECTED_OP_LIST=$(pwd)/../../ops.yaml \
   -DBUILD_SHARED_LIBS=OFF \
   -DCAFFE2_CMAKE_BUILDING_WITH_MAIN_REPO=OFF \
   -DUSE_DISTRIBUTED=OFF \
