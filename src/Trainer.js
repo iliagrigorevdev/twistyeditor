@@ -14,6 +14,12 @@ class Trainer {
   }
 
   run() {
+    if (this.playing) {
+      console.log("Playing...");
+    } else {
+      console.log("Trainig...");
+    }
+
     this.training.create(this.config, this.shapeData);
 
     if (this.checkpointData) {

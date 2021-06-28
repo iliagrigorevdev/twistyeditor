@@ -18,9 +18,11 @@ static const float prismCgDy = prismHalfHeight - prismCgH;
 
 static const float linkFriction = 0.8;
 static const float jointLimit = 0.99;
-static const float jointAtLimitCost = -10;
-static const float electricityCost = 0;//-0.3;
-static const float stallTorqueCost = 0;//-0.1;
+
+static const float defaultAdvanceReward = 1;
+static const float defaultJointAtLimitCost = -10;
+static const float defaultDriveCost = 0;
+static const float defaultStallTorqueCost = 0;
 
 static const std::array<btVector3, 6> prismCollisionVertices = {{
   {
@@ -79,7 +81,11 @@ static btTransform readTransform(std::istringstream &stream) {
 }
 
 TwistyEnv::TwistyEnv(const String &data)
-    : activeJointCount(0)
+    : advanceReward(defaultAdvanceReward)
+    , jointAtLimitCost(defaultJointAtLimitCost)
+    , driveCost(defaultDriveCost)
+    , stallTorqueCost(defaultStallTorqueCost)
+    , activeJointCount(0)
     , baseLinkIndex(-1) {
   parseData(data);
   validateData();
@@ -216,9 +222,9 @@ void TwistyEnv::applyForces(const Action &action) {
 }
 
 float TwistyEnv::react(const Action &action, float timeStep) {
-  auto reward = GoalPhysicsEnv::react(action, timeStep);
+  auto reward = advanceReward * GoalPhysicsEnv::react(action, timeStep);
 
-  float actionCost = 0;
+  float electricityCost = 0;
   int actionIndex = 0;
   for (int i = 0; i < joints.size(); i++) {
     const auto &joint = joints[i];
@@ -236,14 +242,14 @@ float TwistyEnv::react(const Action &action, float timeStep) {
          ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
       reward += jointAtLimitCost;
     }
-    actionCost += electricityCost * std::abs(action[actionIndex] * speed) +
-                  stallTorqueCost * action[actionIndex] * action[actionIndex];
+    electricityCost += driveCost * std::abs(action[actionIndex] * speed) +
+                       stallTorqueCost * action[actionIndex] * action[actionIndex];
     actionIndex++;
   }
   if (activeJointCount > 0) {
-    actionCost /= activeJointCount;
+    electricityCost /= activeJointCount;
   }
-  reward += actionCost;
+  reward += electricityCost;
 
   return reward;
 }
@@ -264,6 +270,12 @@ void TwistyEnv::parseData(const String &data) {
     switch (type) {
     case 'o':
       stream >> name;
+      break;
+    case 'c':
+      advanceReward = readValue<float>(stream);
+      jointAtLimitCost = readValue<float>(stream);
+      driveCost = readValue<float>(stream);
+      stallTorqueCost = readValue<float>(stream);
       break;
     case 'l':
       links.push_back({

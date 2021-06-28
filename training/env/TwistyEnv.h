@@ -37,6 +37,10 @@ public:
   };
 
   String name;
+  float advanceReward;
+  float jointAtLimitCost;
+  float driveCost;
+  float stallTorqueCost;
   std::vector<Link> links;
   std::vector<Joint> joints;
   int activeJointCount;

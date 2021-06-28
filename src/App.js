@@ -9,7 +9,7 @@ import Config from './Config';
 import Worker from "./Worker.worker.js";
 import RigidInfo from './RigidInfo';
 
-const ARCHIVE_VERSION = 3;
+const ARCHIVE_VERSION = 4;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 
@@ -167,7 +167,7 @@ class App extends Component {
       } else {
         alert("Failed to load shape");
       }
-      if (archive.version >= 3) {
+      if (archive.version >= 4) {
         const config = archive.config;
         if (config) {
           this.handleConfigChange(config);
@@ -279,10 +279,13 @@ class App extends Component {
 
   generateShapeData() {
     this.rigidInfo = new RigidInfo(this.finalShape);
-    const exporter = new Exporter(this.rigidInfo);
+    const exporter = new Exporter(this.state.config, this.rigidInfo);
     this.shapeData = exporter.export(this.finalShape.name);
     const checkpoint = this.createCheckpoint(this.state.config, this.shapeData);
     if (checkpoint.key !== this.checkpoint?.key) {
+      if (this.checkpoint?.data) {
+        console.log("Clear checkpoint data due to key change");
+      }
       this.checkpoint = checkpoint;
     }
   }

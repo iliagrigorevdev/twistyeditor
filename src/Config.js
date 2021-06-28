@@ -1,6 +1,11 @@
 
 class Config {
   constructor() {
+    this.advanceReward = 1;
+    this.jointAtLimitCost = -10;
+    this.driveCost = -0.1;
+    this.stallTorqueCost = -0.01;
+
     this.totalSteps = 1000000;
     this.trainingStartSteps = 1000;
     this.trainingInterval = 50;
