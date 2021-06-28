@@ -28,10 +28,10 @@ class Exporter {
 
     lines.push("o " + name);
 
-    lines.push("c " + this.config.advanceReward.toFixed(4) + " "
-               + this.config.jointAtLimitCost.toFixed(4) + " "
-               + this.config.driveCost.toFixed(4) + " "
-               + this.config.stallTorqueCost.toFixed(4));
+    lines.push("c " + this.config.advanceReward + " "
+               + this.config.jointAtLimitCost + " "
+               + this.config.driveCost + " "
+               + this.config.stallTorqueCost);
 
     for (const link of this.rigidInfo.links) {
       lines.push("l " + link.mass.toFixed(4) + " "
