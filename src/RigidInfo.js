@@ -40,7 +40,8 @@ const PRISM_INERTIA_Y = 1 / 3 * PRISM_INERTIA_FACTOR;
 const PRISM_INERTIA_Z = 2 / 9 * PRISM_INERTIA_FACTOR;
 
 class RigidInfo {
-  constructor(shape) {
+  constructor(shape, debug = false) {
+    this.debug = debug;
     this.prismCollisionMargin = PRISM_MARGIN;
     this.prismCollisionVertices = PRISM_COLLISION_VERTICES;
 
@@ -50,7 +51,9 @@ class RigidInfo {
 
     const parts = shape.discoverParts();
     for (let i = 0; i < parts.length; i++) {
-      console.log("Link " + (i + 1) + "/" + parts.length + ":");
+      if (this.debug) {
+        console.log("Link " + (i + 1) + "/" + parts.length + ":");
+      }
       const link = this.createLink(parts[i]);
       if (link) {
         this.links.push(link);
@@ -135,16 +138,18 @@ class RigidInfo {
       viewTransforms.push(viewTransform);
     }
 
-    console.log("Mass: " + mass);
-    console.log("Origin: {" + partOrigin[0].toFixed(2) + ", " + partOrigin[1].toFixed(2)
-        + ", " + partOrigin[2].toFixed(2) + "}");
-    console.log("Inertia: {" + inertia[0].toFixed(2) + ", " + inertia[1].toFixed(2)
-        + ", " + inertia[2].toFixed(2) + "}");
-    const principalAxis = vec3.create();
-    const principalAngle = quat.getAxisAngle(principalAxis, principalRotation);
-    console.log("Principal: axis={" + principalAxis[0].toFixed(2) + ", "
-        + principalAxis[1].toFixed(2) + ", " + principalAxis[2].toFixed(2)
-        + "} angle=" + (principalAngle * RADIANS_TO_DEGREES).toFixed(0));
+    if (this.debug) {
+      console.log("Mass: " + mass);
+      console.log("Origin: {" + partOrigin[0].toFixed(2) + ", " + partOrigin[1].toFixed(2)
+          + ", " + partOrigin[2].toFixed(2) + "}");
+      console.log("Inertia: {" + inertia[0].toFixed(2) + ", " + inertia[1].toFixed(2)
+          + ", " + inertia[2].toFixed(2) + "}");
+      const principalAxis = vec3.create();
+      const principalAngle = quat.getAxisAngle(principalAxis, principalRotation);
+      console.log("Principal: axis={" + principalAxis[0].toFixed(2) + ", "
+          + principalAxis[1].toFixed(2) + ", " + principalAxis[2].toFixed(2)
+          + "} angle=" + (principalAngle * RADIANS_TO_DEGREES).toFixed(0));
+    }
 
     return {
       index: this.links.length,
