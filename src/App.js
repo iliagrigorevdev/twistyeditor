@@ -123,8 +123,13 @@ class App extends Component {
     });
   }
 
-  handleShapeReset() {
+  handleReset() {
+    if (!this.ensureEditMode()) {
+      return;
+    }
     this.handleShapeChange(Shape.createInitialShape(), true);
+    this.handleConfigChange(new Config());
+    this.checkpoint = null;
   }
 
   handleShapeShowcase() {
@@ -410,7 +415,7 @@ class App extends Component {
           trainingTime={this.state.trainingTime} config={this.state.config}
           onShapeChange={shape => this.handleShapeChange(shape)}
           onHistoryChange={index => this.handleHistoryChange(index)}
-          onShapeReset={() => this.handleShapeReset()}
+          onReset={() => this.handleReset()}
           onShapeShowcase={() => this.handleShapeShowcase()}
           onArchiveSave={() => this.handleArchiveSave()}
           onArchiveLoad={() => this.handleArchiveLoad()}

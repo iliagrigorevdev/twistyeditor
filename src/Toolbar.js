@@ -163,8 +163,8 @@ class Toolbar extends Component {
         </p>
         <h3>File</h3>
         <p>
-          <button id="resetShape" name="resetShape"
-            onClick={() => this.props.onShapeReset()}>Reset</button>
+          <button id="reset" name="reset"
+            onClick={() => this.props.onReset()}>Reset</button>
           <button id="showcaseShape" name="showcaseShape"
             onClick={() => this.props.onShapeShowcase()}>Showcase</button>
         </p>
