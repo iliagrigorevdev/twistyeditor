@@ -182,17 +182,22 @@ class Toolbar extends Component {
           onClick={() => this.props.onTrainingStop()}>Stop</button>
         <button id="playTraining" name="playTraining" disabled={this.props.mode !== AppMode.EDIT}
           onClick={() => this.props.onTrainingPlay()}>Play</button>
-        {this.props.mode === AppMode.TRAINING &&
+        {!this.props.trainingActive && ((this.props.mode === AppMode.TRAINING) || (this.props.mode === AppMode.PLAY)) &&
+          <p>
+            <label>Starting...</label>
+          </p>
+        }
+        {this.props.trainingActive && (this.props.mode === AppMode.TRAINING) &&
           <p>
             <label>Progress : {this.props.trainingSteps} ~ {Math.floor(this.props.trainingSteps * 100 / this.props.config.totalSteps)}%</label>
           </p>
         }
-        {this.props.mode === AppMode.TRAINING &&
+        {this.props.trainingActive && (this.props.mode === AppMode.TRAINING) &&
           <p>
             <label>Value : {Math.floor(this.props.trainingValue)}</label>
           </p>
         }
-        {this.props.mode === AppMode.TRAINING &&
+        {this.props.trainingActive && (this.props.mode === AppMode.TRAINING) &&
           <p>
             <label>Time : {this.formatTime(this.props.trainingTime)}</label>
           </p>

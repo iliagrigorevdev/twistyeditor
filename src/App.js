@@ -33,6 +33,7 @@ class App extends Component {
       historyEntries: [],
       historyIndex: -1,
       config: new Config(),
+      trainingActive: false,
       trainingSteps: 0,
       trainingValue: 0,
       trainingTime: 0,
@@ -224,6 +225,7 @@ class App extends Component {
       }
       if (activeJointCount > 0) {
         nextState.mode = AppMode.LOADING;
+        nextState.trainingActive = false;
         nextState.trainingSteps = 0;
         nextState.trainingValue = 0;
         nextState.trainingTime = 0;
@@ -273,8 +275,12 @@ class App extends Component {
     const nextState = {
       trainingState: state
     };
-    if ((this.state.trainingValue !== value) || (this.state.trainingTime !== time) ||
+    if (!this.state.trainingActive ||
+        (this.state.trainingValue !== value) || (this.state.trainingTime !== time) ||
         ((steps === this.state.config.totalSteps) && (nextState.trainingSteps !== steps))) {
+      if (!this.state.trainingActive) {
+        nextState.trainingActive = true;
+      }
       nextState.trainingSteps = steps;
       nextState.trainingValue = value;
       nextState.trainingTime = time;
@@ -411,6 +417,7 @@ class App extends Component {
         <Toolbar mode={this.state.mode} shape={this.state.shape}
           activePlaceableId={this.state.activePlaceableId}
           historyEntries={this.state.historyEntries} historyIndex={this.state.historyIndex}
+          trainingActive={this.state.trainingActive}
           trainingSteps={this.state.trainingSteps} trainingValue={this.state.trainingValue}
           trainingTime={this.state.trainingTime} config={this.state.config}
           onShapeChange={shape => this.handleShapeChange(shape)}
