@@ -83,6 +83,16 @@ class Toolbar extends Component {
     });
   }
 
+  handleActiveChange(prevShape, prevSection, active) {
+    this.modifyPlaceable(prevShape, prevSection, (section) => {
+      if (active) {
+        section.clearPropertyValue("power");
+      } else {
+        section.setPropertyValue("power", 0);
+      }
+    });
+  }
+
   handleContinuousChange(prevShape, prevSection, continuous) {
     this.modifyPlaceable(prevShape, prevSection, (section) => {
       if (continuous) {
@@ -257,6 +267,8 @@ class Toolbar extends Component {
   renderSectionParams(shape, section) {
     const lowerAngle = section.getPropertyValue("lowerAngle");
     const upperAngle = section.getPropertyValue("upperAngle");
+    const power = section.getPropertyValue("power");
+    const active = (power !== 0);
     const continuous = (lowerAngle > upperAngle);
     return (
       <div className="Group">
@@ -275,7 +287,8 @@ class Toolbar extends Component {
         </p>
         {section.getProperties().map(property => {
           const key = "section_" + property.name;
-          const disabled = (continuous && ((property.name === "lowerAngle") || (property.name === "upperAngle")));
+          const disabled = (continuous && ((property.name === "lowerAngle") || (property.name === "upperAngle"))) ||
+                           (!active && (property.name === "power"));
           return <p key={key}>
             <label htmlFor={key}>{this.getPropertyLabel(property.name)} : </label>
             <input id={key} name={key} disabled={disabled}
@@ -283,6 +296,11 @@ class Toolbar extends Component {
               onChange={e => this.handleSectionPropertyChange(shape, section, property.name, e.target.value)} />
           </p>
         })}
+        <p>
+          <input type="checkbox" id="active" name="active" checked={active}
+            onChange={e => this.handleActiveChange(shape, section, e.target.checked)} />
+          <label htmlFor="active">Active</label>
+        </p>
         <p>
           <input type="checkbox" id="continuous" name="continuous" checked={continuous}
             onChange={e => this.handleContinuousChange(shape, section, e.target.checked)} />
