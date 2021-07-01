@@ -16,7 +16,7 @@
 #include <fstream>
 #include <streambuf>
 
-static const int epochs = 100;
+static const int epochs = 1000;
 static const int epochSteps = 4000;
 static const int totalSteps = epochs * epochSteps;
 static const int trainingStartSteps = 1000;
