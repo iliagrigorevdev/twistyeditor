@@ -2,6 +2,7 @@
 class Config {
   constructor() {
     this.advanceReward = 1;
+    this.aliveReward = 0;
     this.jointAtLimitCost = -10;
     this.driveCost = 0;//-0.1;
     this.stallTorqueCost = 0;//-0.01;

@@ -29,6 +29,7 @@ class Exporter {
     lines.push("o " + name);
 
     lines.push("c " + this.config.advanceReward + " "
+               + this.config.aliveReward + " "
                + this.config.jointAtLimitCost + " "
                + this.config.driveCost + " "
                + this.config.stallTorqueCost);

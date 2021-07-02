@@ -20,6 +20,7 @@ static const float linkFriction = 0.8;
 static const float jointLimit = 0.99;
 
 static const float defaultAdvanceReward = 1;
+static const float defaultAliveReward = 0;
 static const float defaultJointAtLimitCost = -10;
 static const float defaultDriveCost = 0;
 static const float defaultStallTorqueCost = 0;
@@ -82,6 +83,7 @@ static btTransform readTransform(std::istringstream &stream) {
 
 TwistyEnv::TwistyEnv(const String &data)
     : advanceReward(defaultAdvanceReward)
+    , aliveReward(defaultAliveReward)
     , jointAtLimitCost(defaultJointAtLimitCost)
     , driveCost(defaultDriveCost)
     , stallTorqueCost(defaultStallTorqueCost)
@@ -199,6 +201,9 @@ void TwistyEnv::update() {
     if (linkIndex == -1) {
       continue;
     }
+    if ((linkIndex == baseLinkIndex) && (aliveReward != 0)) {
+      done = true;
+    }
     observation[index + linkIndex] = 1;
   }
 }
@@ -223,6 +228,8 @@ void TwistyEnv::applyForces(const Action &action) {
 
 float TwistyEnv::react(const Action &action, float timeStep) {
   auto reward = advanceReward * GoalPhysicsEnv::react(action, timeStep);
+
+  reward += aliveReward;
 
   float electricityCost = 0;
   int actionIndex = 0;
@@ -273,6 +280,7 @@ void TwistyEnv::parseData(const String &data) {
       break;
     case 'c':
       advanceReward = readValue<float>(stream);
+      aliveReward = readValue<float>(stream);
       jointAtLimitCost = readValue<float>(stream);
       driveCost = readValue<float>(stream);
       stallTorqueCost = readValue<float>(stream);
