@@ -531,8 +531,8 @@ class Viewport extends Component {
     if (this.props.mode === AppMode.EDIT) {
       if (this.pickedJunction) {
         if (this.pickedJunction.section || this.activeJunctionPrism) {
-          const junctionIndex = this.availableJunctions.indexOf(this.pickedJunction);
-          const originalPickedJunction = this.originalAvailableJunctions[junctionIndex];
+          const originalPickedJunction = this.originalAvailableJunctions.find(
+            junction => junction.face === this.pickedJunction.face);
           if (originalPickedJunction.section) {
             this.addSection(originalPickedJunction.section);
           } else {
