@@ -30,6 +30,7 @@ class Exporter {
 
     lines.push("c " + this.config.advanceReward + " "
                + this.config.aliveReward + " "
+               + this.config.forwardReward + " "
                + this.config.jointAtLimitCost + " "
                + this.config.driveCost + " "
                + this.config.stallTorqueCost);

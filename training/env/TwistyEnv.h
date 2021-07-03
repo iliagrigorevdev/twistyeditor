@@ -39,6 +39,7 @@ public:
   String name;
   float advanceReward;
   float aliveReward;
+  float forwardReward;
   float jointAtLimitCost;
   float driveCost;
   float stallTorqueCost;
