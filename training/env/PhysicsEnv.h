@@ -24,16 +24,13 @@ public:
   btCollisionObject* createGround(float friction, float restitution);
 
   btRigidBody* createBody(const String &shapeName, const btTransform &transform,
-                          int group, int mask, float mass, float friction, float restitution,
-                          float rollingFriction = 0, float spinningFriction = 0);
+                          int group, int mask, float mass, float friction, float restitution);
   btRigidBody* createBody(const String &shapeName, const btTransform &transform,
                           int group, int mask, float mass, const btVector3 &inertia,
-                          float friction, float restitution,
-                          float rollingFriction = 0, float spinningFriction = 0);
+                          float friction, float restitution);
   btRigidBody* createBody(btCollisionShape *shape, const btTransform &transform,
                           int group, int mask, float mass, const btVector3 &inertia,
-                          float friction, float restitution,
-                          float rollingFriction = 0, float spinningFriction = 0);
+                          float friction, float restitution);
 
   btGeneric6DofSpring2Constraint*
   constrainBody(btRigidBody *body, const btTransform &frame,

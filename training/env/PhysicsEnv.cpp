@@ -68,34 +68,27 @@ btCollisionObject* PhysicsEnv::createGround(float friction, float restitution) {
 }
 
 btRigidBody* PhysicsEnv::createBody(const String &shapeName, const btTransform &transform,
-                                    int group, int mask, float mass, float friction, float restitution,
-                                    float rollingFriction, float spinningFriction) {
+                                    int group, int mask, float mass, float friction, float restitution) {
   auto *shape = getShape(shapeName);
   btVector3 inertia;
   shape->calculateLocalInertia(mass, inertia);
-  return createBody(shape, transform, group, mask, mass, inertia,
-                    friction, restitution, rollingFriction, spinningFriction);
+  return createBody(shape, transform, group, mask, mass, inertia, friction, restitution);
 }
 
 btRigidBody* PhysicsEnv::createBody(const String &shapeName, const btTransform &transform,
                                     int group, int mask, float mass, const btVector3 &inertia,
-                                    float friction, float restitution,
-                                    float rollingFriction, float spinningFriction) {
+                                    float friction, float restitution) {
   auto *shape = getShape(shapeName);
-  return createBody(shape, transform, group, mask, mass, inertia,
-                    friction, restitution, rollingFriction, spinningFriction);
+  return createBody(shape, transform, group, mask, mass, inertia, friction, restitution);
 }
 
 btRigidBody* PhysicsEnv::createBody(btCollisionShape *shape, const btTransform &transform,
                                     int group, int mask, float mass, const btVector3 &inertia,
-                                    float friction, float restitution,
-                                    float rollingFriction, float spinningFriction) {
+                                    float friction, float restitution) {
   btRigidBody::btRigidBodyConstructionInfo info(mass, nullptr, shape, inertia);
   info.m_startWorldTransform = transform;
   info.m_friction = friction;
   info.m_restitution = restitution;
-  info.m_rollingFriction = rollingFriction;
-  info.m_spinningFriction = spinningFriction;
   auto *body = new btRigidBody(info);
   body->setActivationState(DISABLE_DEACTIVATION);
   dynamicsWorld->addRigidBody(body, group, mask);
