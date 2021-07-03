@@ -16,8 +16,15 @@ static const float prismMarginDiag = prismMargin * std::cos(SIMD_PI / 4);
 static const float prismCgH = prismHeight / 3;
 static const float prismCgDy = prismHalfHeight - prismCgH;
 
-static const float linkFriction = 0.8;
 static const float jointLimit = 0.99;
+
+static const int defaultEnvironmentSteps = 1000;
+static const float defaultGravity = -9.81;
+static const float defaultTargetDistance = 30;
+static const float defaultGroundFriction = 0.8;
+static const float defaultPrismFriction = 0.8;
+static const float defaultGroundRestitution = 0;
+static const float defaultPrismRestitution = 0;
 
 static const float defaultAdvanceReward = 1;
 static const float defaultAliveReward = 0;
@@ -83,19 +90,33 @@ static btTransform readTransform(std::istringstream &stream) {
 }
 
 TwistyEnv::TwistyEnv(const String &data)
-    : advanceReward(defaultAdvanceReward)
+    : environmentSteps(defaultEnvironmentSteps)
+    , gravity(defaultGravity)
+    , targetDistance(defaultTargetDistance)
+    , groundFriction(defaultGroundFriction)
+    , prismFriction(defaultPrismFriction)
+    , groundRestitution(defaultGroundRestitution)
+    , prismRestitution(defaultPrismRestitution)
+    , advanceReward(defaultAdvanceReward)
     , aliveReward(defaultAliveReward)
     , forwardReward(defaultForwardReward)
     , jointAtLimitCost(defaultJointAtLimitCost)
     , driveCost(defaultDriveCost)
     , stallTorqueCost(defaultStallTorqueCost)
     , activeJointCount(0)
-    , baseLinkIndex(-1) {
+    , baseLinkIndex(-1)
+    , groundObject(nullptr) {
   parseData(data);
   validateData();
 
+  setTargetDistance(targetDistance);
+
+  dynamicsWorld->setGravity({0, gravity, 0});
+
+  groundObject = createGround(groundFriction, groundRestitution);
+
   const auto observationLength = 10 + 2 * activeJointCount + links.size();
-  Environment::init(observationLength, activeJointCount, 1000);
+  Environment::init(observationLength, activeJointCount, environmentSteps);
 
   auto *prismShape = new btConvexHullShape();
   prismShape->setMargin(prismMargin);
@@ -129,7 +150,7 @@ void TwistyEnv::reset() {
     }
 
     auto *body = createBody(shapeName, link.transform, dynamicGroup, dynamicMask,
-                            link.mass, link.inertia, linkFriction);
+                            link.mass, link.inertia, prismFriction, prismRestitution);
     body->setUserIndex2(i);
     if (i == baseLinkIndex) {
       baseBody = body;
@@ -286,6 +307,17 @@ void TwistyEnv::parseData(const String &data) {
     switch (type) {
     case 'o':
       stream >> name;
+      break;
+    case 's':
+      timeStep = readValue<float>(stream);
+      frameSteps = readValue<int>(stream);
+      environmentSteps = readValue<int>(stream);
+      gravity = readValue<float>(stream);
+      targetDistance = readValue<float>(stream);
+      groundFriction = readValue<float>(stream);
+      prismFriction = readValue<float>(stream);
+      groundRestitution = readValue<float>(stream);
+      prismRestitution = readValue<float>(stream);
       break;
     case 'c':
       advanceReward = readValue<float>(stream);

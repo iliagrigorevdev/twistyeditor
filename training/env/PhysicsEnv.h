@@ -19,19 +19,21 @@ public:
   btCollisionShape* getShape(const String &name, bool required = true) const;
 
   btCollisionObject* createStatic(const String &shapeName, const btTransform &transform,
-                                  int group, int mask, float friction);
+                                  int group, int mask, float friction, float restitution);
 
-  btCollisionObject* createGround(float friction);
+  btCollisionObject* createGround(float friction, float restitution);
 
   btRigidBody* createBody(const String &shapeName, const btTransform &transform,
-                          int group, int mask, float mass, float friction,
+                          int group, int mask, float mass, float friction, float restitution,
                           float rollingFriction = 0, float spinningFriction = 0);
   btRigidBody* createBody(const String &shapeName, const btTransform &transform,
                           int group, int mask, float mass, const btVector3 &inertia,
-                          float friction, float rollingFriction = 0, float spinningFriction = 0);
+                          float friction, float restitution,
+                          float rollingFriction = 0, float spinningFriction = 0);
   btRigidBody* createBody(btCollisionShape *shape, const btTransform &transform,
                           int group, int mask, float mass, const btVector3 &inertia,
-                          float friction, float rollingFriction = 0, float spinningFriction = 0);
+                          float friction, float restitution,
+                          float rollingFriction = 0, float spinningFriction = 0);
 
   btGeneric6DofSpring2Constraint*
   constrainBody(btRigidBody *body, const btTransform &frame,
@@ -72,6 +74,9 @@ public:
   btDiscreteDynamicsWorld *dynamicsWorld;
 
   Map<String, btCollisionShape*> shapes;
+
+  float timeStep;
+  int frameSteps;
 };
 
 #endif // PHYSICSENV_H

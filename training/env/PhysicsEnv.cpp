@@ -1,10 +1,12 @@
 
 #include "PhysicsEnv.h"
 
-static const float timeStep = 0.01;
-static const int stepCount = 4;
+static const float defaultTimeStep = 0.01;
+static const int defaultFrameSteps = 4;
 
-PhysicsEnv::PhysicsEnv() {
+PhysicsEnv::PhysicsEnv()
+    : timeStep(defaultTimeStep)
+    , frameSteps(defaultFrameSteps) {
   collisionConfiguration = new btDefaultCollisionConfiguration();
   dispatcher = new btCollisionDispatcher(collisionConfiguration);
   overlappingPairCache = new btDbvtBroadphase();
@@ -48,46 +50,50 @@ btCollisionShape* PhysicsEnv::getShape(const String &name, bool required) const 
 }
 
 btCollisionObject* PhysicsEnv::createStatic(const String &shapeName, const btTransform &transform,
-                                            int group, int mask, float friction) {
+                                            int group, int mask, float friction, float restitution) {
   auto *shape = getShape(shapeName);
   btRigidBody::btRigidBodyConstructionInfo info(0, nullptr, shape);
   info.m_startWorldTransform = transform;
   info.m_friction = friction;
+  info.m_restitution = restitution;
   auto *body = new btRigidBody(info);
   dynamicsWorld->addRigidBody(body, group, mask);
   return body;
 }
 
-btCollisionObject* PhysicsEnv::createGround(float friction) {
+btCollisionObject* PhysicsEnv::createGround(float friction, float restitution) {
   auto *groundShape = new btStaticPlaneShape({0, 1, 0}, 0);
   putShape("ground", groundShape);
-  return createStatic("ground", btTransform::getIdentity(), staticGroup, staticMask, friction);
+  return createStatic("ground", btTransform::getIdentity(), staticGroup, staticMask, friction, restitution);
 }
 
 btRigidBody* PhysicsEnv::createBody(const String &shapeName, const btTransform &transform,
-                                    int group, int mask, float mass, float friction,
+                                    int group, int mask, float mass, float friction, float restitution,
                                     float rollingFriction, float spinningFriction) {
   auto *shape = getShape(shapeName);
   btVector3 inertia;
   shape->calculateLocalInertia(mass, inertia);
   return createBody(shape, transform, group, mask, mass, inertia,
-                    friction, rollingFriction, spinningFriction);
+                    friction, restitution, rollingFriction, spinningFriction);
 }
 
 btRigidBody* PhysicsEnv::createBody(const String &shapeName, const btTransform &transform,
                                     int group, int mask, float mass, const btVector3 &inertia,
-                                    float friction, float rollingFriction, float spinningFriction) {
+                                    float friction, float restitution,
+                                    float rollingFriction, float spinningFriction) {
   auto *shape = getShape(shapeName);
   return createBody(shape, transform, group, mask, mass, inertia,
-                    friction, rollingFriction, spinningFriction);
+                    friction, restitution, rollingFriction, spinningFriction);
 }
 
 btRigidBody* PhysicsEnv::createBody(btCollisionShape *shape, const btTransform &transform,
                                     int group, int mask, float mass, const btVector3 &inertia,
-                                    float friction, float rollingFriction, float spinningFriction) {
+                                    float friction, float restitution,
+                                    float rollingFriction, float spinningFriction) {
   btRigidBody::btRigidBodyConstructionInfo info(mass, nullptr, shape, inertia);
   info.m_startWorldTransform = transform;
   info.m_friction = friction;
+  info.m_restitution = restitution;
   info.m_rollingFriction = rollingFriction;
   info.m_spinningFriction = spinningFriction;
   auto *body = new btRigidBody(info);
@@ -161,9 +167,9 @@ void PhysicsEnv::reset() {
 }
 
 float PhysicsEnv::act(const Action &action) {
-  for (int i = 0; i < stepCount; i++) {
+  for (int i = 0; i < frameSteps; i++) {
     applyForces(action);
     dynamicsWorld->stepSimulation(timeStep, 0);
   }
-  return react(action, stepCount * timeStep);
+  return react(action, frameSteps * timeStep);
 }

@@ -1,5 +1,4 @@
 
-const frameTime = 40;
 const maxTime = 1000;
 
 class Trainer {
@@ -9,6 +8,8 @@ class Trainer {
     this.shapeData = shapeData;
     this.checkpointData = checkpointData;
     this.playing = playing;
+
+    this.frameTime = Math.floor(config.timeStep * config.frameSteps * 1000 + 0.5);
 
     this.config.hiddenLayerSizes = this.toNativeArray(this.config.hiddenLayerSizes);
   }
@@ -67,11 +68,11 @@ class Trainer {
 
       const currentTime = Date.now();
       const elapsedTime = currentTime - lastTime;
-      if (elapsedTime >= frameTime) {
+      if (elapsedTime >= this.frameTime) {
         if (elapsedTime > maxTime) {
           lastTime = currentTime;
         } else {
-          lastTime += frameTime;
+          lastTime += this.frameTime;
         }
         const nativeState = this.training.evaluate();
         const state = this.fromNativeState(nativeState);

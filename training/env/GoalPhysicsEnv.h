@@ -16,6 +16,8 @@ public:
 
   GoalPhysicsEnv();
 
+  void setTargetDistance(float distance);
+
   virtual void reset() override;
 
   void resetTarget();
@@ -24,9 +26,11 @@ public:
 
   virtual float react(const Action &action, float timeStep) override;
 
-  btCollisionObject *groundObject;
   btRigidBody *baseBody;
   btVector3 target;
+  float aliveDistance;
+  float targetStartDistance;
+  float targetReachedDistance;
   float prevDistance;
 };
 

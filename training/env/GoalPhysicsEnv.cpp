@@ -1,20 +1,22 @@
 
 #include "GoalPhysicsEnv.h"
 
-static const float aliveDistance = 50;
-static const float targetStartDistance = 30;
-static const float targetReachedDistance = 5;
-static const btVector3 gravity(0, -9.81, 0);
-static const float groundFriction = 0.8;
+static const float defaultTargetDistance = 30;
 
 GoalPhysicsEnv::GoalPhysicsEnv()
-    : groundObject(nullptr)
-    , baseBody(nullptr)
+    : baseBody(nullptr)
     , target(0, 0, 0)
+    , aliveDistance(0)
+    , targetStartDistance(0)
+    , targetReachedDistance(0)
     , prevDistance(0) {
-  dynamicsWorld->setGravity(gravity);
+  setTargetDistance(defaultTargetDistance);
+}
 
-  groundObject = createGround(groundFriction);
+void GoalPhysicsEnv::setTargetDistance(float distance) {
+  targetStartDistance = distance;
+  aliveDistance = 2 * distance;
+  targetReachedDistance = 0.1 * distance;
 }
 
 void GoalPhysicsEnv::reset() {

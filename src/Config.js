@@ -1,12 +1,22 @@
 
 class Config {
   constructor() {
+    this.timeStep = 0.01;
+    this.frameSteps = 4;
+    this.environmentSteps = 1000;
+    this.gravity = -9.81;
+    this.targetDistance = 30;
+    this.groundFriction = 0.8;
+    this.prismFriction = 0.8;
+    this.groundRestitution = 0;
+    this.prismRestitution = 0
+
     this.advanceReward = 1;
     this.aliveReward = 0;
     this.forwardReward = 0;
     this.jointAtLimitCost = -10;
-    this.driveCost = 0;//-0.1;
-    this.stallTorqueCost = 0;//-0.01;
+    this.driveCost = 0;
+    this.stallTorqueCost = 0;
 
     this.totalSteps = 1000000;
     this.trainingStartSteps = 1000;

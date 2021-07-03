@@ -37,6 +37,13 @@ public:
   };
 
   String name;
+  int environmentSteps;
+  float gravity;
+  float targetDistance;
+  float groundFriction;
+  float prismFriction;
+  float groundRestitution;
+  float prismRestitution;
   float advanceReward;
   float aliveReward;
   float forwardReward;
@@ -48,6 +55,7 @@ public:
   int activeJointCount;
   int baseLinkIndex;
 
+  btCollisionObject *groundObject;
   std::vector<btRigidBody*> bodies;
   std::vector<btGeneric6DofSpring2Constraint*> constraints;
 };

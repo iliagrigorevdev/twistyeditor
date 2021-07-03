@@ -28,6 +28,16 @@ class Exporter {
 
     lines.push("o " + name);
 
+    lines.push("s " + this.config.timeStep + " "
+               + this.config.frameSteps + " "
+               + this.config.environmentSteps + " "
+               + this.config.gravity + " "
+               + this.config.targetDistance + " "
+               + this.config.groundFriction + " "
+               + this.config.prismFriction + " "
+               + this.config.groundRestitution + " "
+               + this.config.prismRestitution);
+
     lines.push("c " + this.config.advanceReward + " "
                + this.config.aliveReward + " "
                + this.config.forwardReward + " "
