@@ -180,6 +180,7 @@ class App extends Component {
         if (config) {
           this.handleConfigChange(config);
         } else {
+          this.handleConfigChange(new Config());
           alert("Failed to load config");
         }
         this.checkpoint = archive.checkpoint;
