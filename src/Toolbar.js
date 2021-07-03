@@ -7,6 +7,14 @@ import Prism from './Prism';
 import Section, { SectionType } from './Section';
 
 class Toolbar extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      syncColors: true
+    }
+  }
+
   modifyShape(prevShape, shapeModifier) {
     const shape = prevShape.clone();
     shapeModifier(shape);
@@ -42,18 +50,46 @@ class Toolbar extends Component {
   }
 
   handleColorMaskChange(prevShape, prevPrism, colorMask) {
-    this.modifyPlaceable(prevShape, prevPrism,
-        (prism) => prism.colorMask = parseInt(colorMask) || 0);
+    const prevColorMask = prevPrism.colorMask;
+    const nextColorMask = parseInt(colorMask) || 0;
+    this.modifyShape(prevShape, (shape) => {
+      for (const prism of shape.prisms) {
+        if ((prism.id === prevPrism.id) || 
+            (this.state.syncColors && (prism.colorMask === prevColorMask))) {
+          prism.colorMask = nextColorMask;
+        }
+      }
+    });
   }
 
   handleBackgroundColorChange(prevShape, prevPrism, color) {
-    this.modifyPlaceable(prevShape, prevPrism,
-        (prism) => prism.backgroundColor = color);
+    const prevBackgroundColor = prevPrism.backgroundColor;
+    this.modifyShape(prevShape, (shape) => {
+      for (const prism of shape.prisms) {
+        if ((prism.id === prevPrism.id) ||
+            (this.state.syncColors && (prism.backgroundColor === prevBackgroundColor))) {
+          prism.backgroundColor = color;
+        }
+        if (this.state.syncColors && (prism.foregroundColor === prevBackgroundColor)) {
+          prism.foregroundColor = color;
+        }
+      }
+    });
   }
 
   handleForegroundColorChange(prevShape, prevPrism, color) {
-    this.modifyPlaceable(prevShape, prevPrism,
-        (prism) => prism.foregroundColor = color);
+    const prevForegroundColor = prevPrism.foregroundColor;
+    this.modifyShape(prevShape, (shape) => {
+      for (const prism of shape.prisms) {
+        if ((prism.id === prevPrism.id) ||
+            (this.state.syncColors && (prism.foregroundColor === prevForegroundColor))) {
+          prism.foregroundColor = color;
+        }
+        if (this.state.syncColors && (prism.backgroundColor === prevForegroundColor)) {
+          prism.backgroundColor = color;
+        }
+      }
+    });
   }
 
   handleSwapColors(prevShape, prevPrism) {
@@ -252,6 +288,11 @@ class Toolbar extends Component {
           <ColorPicker id="foregroundColor" name="foregroundColor" color={prism.foregroundColor}
             onChange={color => this.handleForegroundColorChange(shape, prism, color)} />
         </div>
+        <p>
+          <input type="checkbox" id="syncColors" name="syncColors" checked={this.state.syncColors}
+            onChange={e => this.setState({ syncColors: e.target.checked })} />
+          <label htmlFor="syncColors">Sync Colors</label>
+        </p>
         <p>
           <button id="swapColors" name="swapColors"
             onClick={() => this.handleSwapColors(shape, prism)}>Swap</button>
