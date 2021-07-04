@@ -226,7 +226,7 @@ class App extends Component {
           activeJointCount++;
         }
       }
-      if (activeJointCount > 0) {
+      if ((activeJointCount > 0) && !this.rigidInfo.error) {
         nextState.mode = AppMode.LOADING;
         nextState.trainingActive = false;
         nextState.trainingSteps = 0;
@@ -235,7 +235,11 @@ class App extends Component {
         nextState.trainingTime = 0;
       } else {
         nextState.mode = this.state.mode;
-        alert("No active actuator");
+        if (this.rigidInfo.error) {
+          alert(this.rigidInfo.error);
+        } else {
+          alert("No active actuator");
+        }
       }
     } else if (mode === AppMode.LOADING) {
       if (window.Worker) {

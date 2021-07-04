@@ -21,6 +21,8 @@ class Shape {
       max: vec3.create(),
       center: vec3.create()
     };
+
+    this.error = null;
   }
 
   static createInitialShape() {
@@ -199,6 +201,7 @@ class Shape {
   }
 
   discoverParts() {
+    this.error = null;
     let parts = [];
     for (const prism of this.prisms) {
       const suitableParts = [];
@@ -231,6 +234,7 @@ class Shape {
   }
 
   discoverPartChains(parts) {
+    this.error = null;
     const partChains = [];
     const remainingParts = new Set(parts);
     while (remainingParts.size > 0) {
@@ -266,10 +270,12 @@ class Shape {
     const basePart = parts.find(part => part.some(prism => prism === basePrism));
     const targetPart = parts.find(part => part.some(prism => prism === targetPrism));
     if (!basePart || !targetPart) {
-      console.log("Section parts not found");
+      this.error = "Section parts not found";
+      return;
     }
     if (basePart === targetPart) {
-      console.log("Section must connect different parts");
+      this.error = "Section must connect different parts";
+      return;
     }
     return {
       basePart: basePart,
@@ -297,7 +303,7 @@ class Shape {
         continue;
       }
       if ((childPart === rootPart) || childParts.find(part => part === childPart)) {
-        console.log("Child parts must not be looped");
+        this.error = "Child parts must not be looped";
         return;
       }
       childParts.push(childPart);
@@ -309,6 +315,7 @@ class Shape {
   }
 
   applyInitialAngles() {
+    this.error = null;
     let parts;
     const positionInversed = vec3.create();
     const axis = vec3.create();

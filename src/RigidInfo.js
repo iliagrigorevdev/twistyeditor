@@ -45,11 +45,16 @@ class RigidInfo {
     this.prismCollisionMargin = PRISM_MARGIN;
     this.prismCollisionVertices = PRISM_COLLISION_VERTICES;
 
+    this.error = null;
     this.links = [];
     this.baseLinks = [];
     this.joints = [];
 
     const parts = shape.discoverParts();
+    if (shape.error) {
+      this.error = shape.error;
+      return;
+    }
     for (let i = 0; i < parts.length; i++) {
       if (this.debug) {
         console.log("Link " + (i + 1) + "/" + parts.length + ":");
@@ -70,10 +75,12 @@ class RigidInfo {
     }
 
     const partChains = shape.discoverPartChains(parts);
-    if (partChains) {
-      this.baseLinks.push(...partChains.map(partChain =>
-        this.links[parts.findIndex(p => p === partChain[0])]));
+    if (shape.error) {
+      this.error = shape.error;
+      return;
     }
+    this.baseLinks.push(...partChains.map(partChain =>
+      this.links[parts.findIndex(p => p === partChain[0])]));
   }
 
   createLink(part) {
@@ -168,26 +175,26 @@ class RigidInfo {
     const basePartIndex = parts.findIndex(part => part.some(prism => prism === basePrism));
     const targetPartIndex = parts.findIndex(part => part.some(prism => prism === targetPrism));
     if (basePartIndex === -1) {
-      console.log("Base part not found");
+      this.error = "Base part not found";
       return;
     }
     if (targetPartIndex === -1) {
-      console.log("Target part not found");
+      this.error = "Target part not found";
       return;
     }
     if (basePartIndex === targetPartIndex) {
-      console.log("Actuator must connect different parts");
+      this.error = "Actuator must connect different parts";
       return;
     }
 
     const baseLink = this.links[basePartIndex];
     if (!baseLink) {
-      console.log("Base link not found");
+      this.error = "Base link not found";
       return;
     }
     const targetLink = this.links[targetPartIndex];
     if (!targetLink) {
-      console.log("Target link not found");
+      this.error = "Target link not found";
       return;
     }
 
