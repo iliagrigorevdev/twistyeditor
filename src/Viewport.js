@@ -199,7 +199,7 @@ class Viewport extends Component {
       .build(engine, sunlight);
     this.scene.addEntity(sunlight);
 
-    const indirectLight = engine.createIblFromKtx(iblUrl);
+    const indirectLight = engine.createIblFromKtx1(iblUrl);
     indirectLight.setIntensity(40000);
     this.scene.setIndirectLight(indirectLight);
 
