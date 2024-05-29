@@ -16,8 +16,8 @@ public:
 
   NetworkPtr clone() const;
 
-  String save() const;
-  void save(std::ostream &stream) const;
+  String save();
+  void save(std::ostream &stream);
   void load(const String &data);
   void load(std::istream &stream);
 
@@ -29,6 +29,8 @@ public:
   CriticPtr targetCritic;
   OptimizerPtr actorOptimizer;
   OptimizerPtr criticOptimizer;
+  bool cudaAvailable;
+  bool cudaActive;
 };
 
 #endif // NETWORK_H

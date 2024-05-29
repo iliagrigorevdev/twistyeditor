@@ -17,7 +17,9 @@ Network::Network(const Config &config, ModelPtr model, CriticPtr targetCritic)
     , actorOptimizer(new torch::optim::Adam(model->actor->parameters(),
                      torch::optim::AdamOptions(config.learningRate)))
     , criticOptimizer(new torch::optim::Adam(model->critic->parameters(),
-                      torch::optim::AdamOptions(config.learningRate))) {
+                      torch::optim::AdamOptions(config.learningRate)))
+    , cudaAvailable(torch::cuda::is_available())
+    , cudaActive(false) {
   for (auto &parameter : targetCritic->parameters()) {
     parameter.set_requires_grad(false);
   }
@@ -29,13 +31,17 @@ NetworkPtr Network::clone() const {
     std::dynamic_pointer_cast<Critic>(targetCritic->clone()));
 }
 
-String Network::save() const {
+String Network::save() {
   std::ostringstream stream;
   save(stream);
   return macaron::Base64::Encode(stream.str());
 }
 
-void Network::save(std::ostream &stream) const {
+void Network::save(std::ostream &stream) {
+  if (cudaActive) {
+    model->to(torch::kCPU);
+    cudaActive = false;
+  }
   torch::save(model, stream);
 }
 
@@ -50,11 +56,24 @@ void Network::load(const String &data) {
 }
 
 void Network::load(std::istream &stream) {
+  if (cudaActive) {
+    model->to(torch::kCPU);
+    cudaActive = false;
+  }
   torch::load(model, stream);
 }
 
 Action Network::predict(const Observation &observation) {
   torch::NoGradGuard noGradGuard;
+
+  if (model->is_training()) {
+    model->eval();
+  }
+
+  if (cudaActive) {
+    model->to(torch::kCPU);
+    cudaActive = false;
+  }
 
   const auto inputObservation = torch::from_blob(
     reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
@@ -75,12 +94,22 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
     return {0, 0};
   }
 
+  if (!model->is_training()) {
+    model->train();
+  }
+
+  if (!cudaActive && cudaAvailable) {
+    model->to(torch::kCUDA);
+    targetCritic->to(torch::kCUDA);
+    cudaActive = true;
+  }
+
   const auto batchSize = static_cast<int>(samples.size());
   std::vector<torch::Tensor> observations;
   std::vector<torch::Tensor> nextObservations;
   std::vector<torch::Tensor> actions;
-  const auto reward = torch::empty({batchSize, 1}, torch::kFloat32);
-  const auto undone = torch::empty({batchSize, 1}, torch::kFloat32);
+  auto reward = torch::empty({batchSize, 1}, torch::kFloat32);
+  auto undone = torch::empty({batchSize, 1}, torch::kFloat32);
   for (int i = 0; i < batchSize; i++) {
     const auto &[observation, action, r, nextObservation, d] = *samples[i];
     observations.push_back(
@@ -95,9 +124,16 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
     reward[i][0] = r;
     undone[i][0] = (d ? 0 : 1);
   }
-  const auto observation = torch::cat(observations);
-  const auto nextObservation = torch::cat(nextObservations);
-  const auto action = torch::cat(actions);
+  auto observation = torch::cat(observations);
+  auto nextObservation = torch::cat(nextObservations);
+  auto action = torch::cat(actions);
+  if (cudaActive) {
+    observation = observation.to(torch::kCUDA);
+    nextObservation = nextObservation.to(torch::kCUDA);
+    action = action.to(torch::kCUDA);
+    reward = reward.to(torch::kCUDA);
+    undone = undone.to(torch::kCUDA);
+  }
 
   criticOptimizer->zero_grad();
   const auto [q1, q2] = model->critic->forward(observation, action);
