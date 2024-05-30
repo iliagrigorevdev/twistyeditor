@@ -16,11 +16,23 @@
 #include <fstream>
 #include <streambuf>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+#include "OpenGLWindow/SimpleOpenGL3App.h"
+#include "ExampleBrowser/OpenGLGuiHelper.h"
+#include "LinearMath/btVector3.h"
+#pragma clang diagnostic pop
+
 static const int epochs = 1000;
 static const int epochSteps = 4000;
 static const int totalSteps = epochs * epochSteps;
 static const int trainingStartSteps = 1000;
 static const int trainingInterval = 50;
+
+static const int frameTime = 40;
+static const float cameraDistance = 10;
+static const float cameraYaw = 190;
+static const float cameraPitch = -45;
 
 static rapidjson::Document loadDocument(const String &filePath) {
   std::ifstream file(filePath);
@@ -126,6 +138,67 @@ int main(int argc, char* argv[]) {
     std::cout << "Load checkpoint" << std::endl;
   }
 
+  std::mutex mutex;
+  auto checkpointNetwork = network->clone();
+  const auto testEnvironment = std::make_shared<TwistyEnv>(shapeData);
+
+  // Testing
+  std::thread thread([&mutex, &checkpointNetwork, testEnvironment]() {
+    auto *app = new SimpleOpenGL3App("Training", 1600, 1600);
+    auto *guiHelper = new OpenGLGuiHelper(app, false);
+    guiHelper->setUpAxis(1);
+
+    NetworkPtr testNetwork;
+    std::unique_lock<std::mutex> lock(mutex, std::defer_lock);
+    auto lastTime = std::chrono::steady_clock::now();
+
+    while (!app->m_window->requestedExit()) {
+      auto networkChanged = false;
+      lock.lock();
+      if (testNetwork != checkpointNetwork) {
+        testNetwork = checkpointNetwork;
+        networkChanged = true;
+      }
+      lock.unlock();
+
+      if (networkChanged || testEnvironment->done || testEnvironment->timeout()) {
+        guiHelper->removeAllGraphicsInstances();
+
+        testEnvironment->restart();
+        for (const auto &shapeEntry : testEnvironment->shapes) {
+          shapeEntry.second->setUserIndex(-1);
+        }
+        for (int i = 0; i < testEnvironment->dynamicsWorld->getNumCollisionObjects(); i++) {
+          btCollisionObject *object = testEnvironment->dynamicsWorld->getCollisionObjectArray()[i];
+          object->setUserIndex(-1);
+        }
+
+        guiHelper->autogenerateGraphicsObjects(testEnvironment->dynamicsWorld);
+      }
+
+      const auto action = testNetwork->predict(testEnvironment->observation);
+      testEnvironment->step(action);
+
+      const auto &cameraTarget = testEnvironment->baseBody->getWorldTransform().getOrigin();
+      guiHelper->resetCamera(cameraDistance, cameraYaw, cameraPitch,
+                             cameraTarget.x(), cameraTarget.y(), cameraTarget.z());
+      guiHelper->syncPhysicsToGraphics(testEnvironment->dynamicsWorld);
+      guiHelper->render(testEnvironment->dynamicsWorld);
+      app->swapBuffer();
+
+      const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>
+                               (std::chrono::steady_clock::now() - lastTime).count();
+      if (elapsedTime < frameTime) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - elapsedTime));
+      }
+      lastTime = std::chrono::steady_clock::now();
+    }
+
+    delete guiHelper;
+    delete app;
+    exit(0);
+  });
+
   Coach coach(config, environment, network);
 
   int playGameCount = 0;
@@ -139,6 +212,7 @@ int main(int argc, char* argv[]) {
   const auto startRunTime = std::chrono::steady_clock::now();
   auto startEpochTime = startRunTime;
 
+  // Training
   for (int t = 0; t < totalSteps; t++) {
     const auto reward = coach.step();
     playCurrentValue += reward;
@@ -165,7 +239,11 @@ int main(int argc, char* argv[]) {
     if (((t + 1) % epochSteps == 0)) {
       const auto epochNumber = (t + 1) / epochSteps;
 
-      const auto checkpointData = network->save();
+      {
+        std::lock_guard<std::mutex> lock(mutex);
+        checkpointNetwork = network->clone();
+      }
+      const auto checkpointData = checkpointNetwork->save();
       const auto checkpointTime = std::chrono::duration_cast<std::chrono::milliseconds>
                                   (std::chrono::system_clock::now().time_since_epoch()).count();
       document["checkpoint"]["data"].SetString(checkpointData, document.GetAllocator());

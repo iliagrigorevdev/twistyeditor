@@ -24,17 +24,13 @@ endif()
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/bullet extern/bullet EXCLUDE_FROM_ALL)
 
-set(CORE_SOURCES
+set(TRAINING_SOURCES
   src/Environment.cpp
   src/Model.cpp
   src/Network.cpp
   env/GoalPhysicsEnv.cpp
   env/PhysicsEnv.cpp
   env/TwistyEnv.cpp
-)
-
-set(TRAINING_SOURCES
-  ${CORE_SOURCES}
   src/Coach.cpp
   src/ReplayBuffer.cpp
 )
@@ -50,11 +46,6 @@ else()
     ${TRAINING_SOURCES}
     src/Training_standalone.cpp
   )
-
-  add_executable(Playing
-    ${CORE_SOURCES}
-    src/Playing.cpp
-  )
 endif()
 
 target_include_directories(Training PUBLIC
@@ -63,30 +54,18 @@ target_include_directories(Training PUBLIC
   ${PROJECT_SOURCE_DIR}/env
 )
 if(NOT EMSCRIPTEN)
-  target_include_directories(Training PRIVATE ${RAPIDJSON_INCLUDE_PATH})
-  target_link_libraries(Training PRIVATE ${TORCH_LIBRARIES})
-  if(LINUX)
-    target_link_libraries(Training PRIVATE stdc++fs)
-  endif()
-
-  target_include_directories(Playing PRIVATE
-    ${PROJECT_SOURCE_DIR}/extern/bullet/src
-    ${PROJECT_SOURCE_DIR}/extern/bullet/examples
-    ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/env
+  target_include_directories(Training PRIVATE
     ${RAPIDJSON_INCLUDE_PATH}
+    ${PROJECT_SOURCE_DIR}/extern/bullet/examples
   )
-  target_link_libraries(Playing PRIVATE
+  target_link_libraries(Training PRIVATE
     ${TORCH_LIBRARIES}
     OpenGLWindow
     BulletExampleBrowserLib
     Bullet3Common
-    BulletDynamics
-    BulletCollision
-    LinearMath
   )
   if(LINUX)
-    target_link_libraries(Playing PRIVATE stdc++fs)
+    target_link_libraries(Training PRIVATE stdc++fs)
   endif()
 
   # The following code block is suggested to be used on Windows.
