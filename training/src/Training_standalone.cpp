@@ -79,7 +79,9 @@ int main(int argc, char* argv[]) {
       !document["config"].HasMember("batchSize") ||
       !document["config"].HasMember("randomSteps") ||
       !document["config"].HasMember("replayBufferSize") ||
-      !document["config"].HasMember("learningRate") ||
+      !document["config"].HasMember("actorLearningRate") ||
+      !document["config"].HasMember("criticLearningRate") ||
+      !document["config"].HasMember("regularization") ||
       !document["config"].HasMember("interpolation") ||
       !document["config"].HasMember("hiddenLayerSizes")) {
     std::cerr << "Invalid config" << std::endl;
@@ -91,7 +93,9 @@ int main(int argc, char* argv[]) {
   config.batchSize = document["config"]["batchSize"].GetInt();
   config.randomSteps = document["config"]["randomSteps"].GetInt();
   config.replayBufferSize = document["config"]["replayBufferSize"].GetInt();
-  config.learningRate = document["config"]["learningRate"].GetFloat();
+  config.actorLearningRate = document["config"]["actorLearningRate"].GetFloat();
+  config.criticLearningRate = document["config"]["criticLearningRate"].GetFloat();
+  config.regularization = document["config"]["regularization"].GetFloat();
   config.interpolation = document["config"]["interpolation"].GetFloat();
   config.hiddenLayerSizes.clear();
   for (const auto &value : document["config"]["hiddenLayerSizes"].GetArray()) {

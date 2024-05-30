@@ -15,9 +15,9 @@ Network::Network(const Config &config, ModelPtr model, CriticPtr targetCritic)
     , model(model)
     , targetCritic(targetCritic)
     , actorOptimizer(new torch::optim::Adam(model->actor->parameters(),
-                     torch::optim::AdamOptions(config.learningRate)))
+                     torch::optim::AdamOptions(config.actorLearningRate)))
     , criticOptimizer(new torch::optim::Adam(model->critic->parameters(),
-                      torch::optim::AdamOptions(config.learningRate)))
+                      torch::optim::AdamOptions(config.criticLearningRate)))
     , cudaAvailable(torch::cuda::is_available())
     , cudaActive(false) {
   for (auto &parameter : targetCritic->parameters()) {
@@ -77,7 +77,7 @@ Action Network::predict(const Observation &observation) {
 
   const auto inputObservation = wrapArray(observation);
 
-  const auto sample = model->actor->forward(inputObservation);
+  const auto [sample, _] = model->actor->forward(inputObservation);
   const auto sampleAccessor = sample.accessor<float, 2>();
   Action action(0.0, model->actionLength);
   for (int i = 0; i < model->actionLength; i++) {
@@ -132,10 +132,10 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   torch::Tensor backup;
   {
     torch::NoGradGuard noGradGuard;
-    const auto nextAction = model->actor->forward(nextObservation);
+    const auto [nextAction, nextLogProb] = model->actor->forward(nextObservation);
     const auto [targetQ1, targetQ2] = targetCritic->forward(nextObservation, nextAction);
     const auto targetQ = torch::min(targetQ1, targetQ2);
-    backup = reward + config.discount * undone * targetQ;
+    backup = reward + config.discount * undone * (targetQ - config.regularization * nextLogProb);
   }
   const auto lossQ1 = torch::mse_loss(q1, backup);
   const auto lossQ2 = torch::mse_loss(q2, backup);
@@ -148,10 +148,10 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   }
 
   actorOptimizer->zero_grad();
-  const auto sample = model->actor->forward(observation);
+  const auto [sample, logProb] = model->actor->forward(observation);
   const auto [sampleQ1, sampleQ2] = model->critic->forward(observation, sample);
   const auto sampleQ = torch::min(sampleQ1, sampleQ2);
-  const auto actorLoss = -sampleQ.mean();
+  const auto actorLoss = (config.regularization * logProb - sampleQ).mean();
   actorLoss.backward();
   actorOptimizer->step();
 

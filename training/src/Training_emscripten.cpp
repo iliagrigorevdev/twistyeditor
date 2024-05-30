@@ -114,7 +114,9 @@ EMSCRIPTEN_BINDINGS(Training) {
     .field("batchSize", &Config::batchSize)
     .field("randomSteps", &Config::randomSteps)
     .field("replayBufferSize", &Config::replayBufferSize)
-    .field("learningRate", &Config::learningRate)
+    .field("actorLearningRate", &Config::actorLearningRate)
+    .field("criticLearningRate", &Config::criticLearningRate)
+    .field("regularization", &Config::regularization)
     .field("interpolation", &Config::interpolation)
     .field("hiddenLayerSizes", &Config::hiddenLayerSizes);
 

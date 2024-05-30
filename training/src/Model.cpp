@@ -1,6 +1,9 @@
 
 #include "Model.h"
 
+static const float logStdMin = -20;
+static const float logStdMax = 2;
+
 static torch::nn::Sequential
 mlpNet(const IntArray &hiddenLayerSizes, int inputLength, int outputLength) {
   if (hiddenLayerSizes.empty()) {
@@ -30,13 +33,25 @@ Actor::Actor(const IntArray &hiddenLayerSizes, int observationLength, int action
 void Actor::reset() {
   net = register_module("net", mlpNet(hiddenLayerSizes, observationLength, 0));
   muLayer = register_module("muLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
+  logStdLayer = register_module("logStdLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
 }
 
-torch::Tensor Actor::forward(torch::Tensor observation) {
+std::pair<torch::Tensor, torch::Tensor> Actor::forward(torch::Tensor observation) {
   const auto netOut = net->forward(observation);
   const auto mu = muLayer->forward(netOut);
-  const auto sample = torch::tanh(mu);
-  return sample;
+  auto sample = mu;
+  torch::Tensor logProb;
+  if (is_training()) {
+    auto logStd = logStdLayer->forward(netOut);
+    logStd = torch::clamp(logStd, logStdMin, logStdMax);
+    const auto std = torch::exp(logStd);
+    sample += torch::randn(mu.sizes(), mu.device()) * std;
+    logProb = -0.5 * (torch::square((sample - mu) / (std + 1e-9)) + 2 * logStd + std::log(2 * M_PI));
+    logProb -= (2 * (std::log(2) - sample - torch::softplus(-2 * sample)));
+    logProb = logProb.sum(1, true);
+  }
+  sample = torch::tanh(sample);
+  return {sample, logProb};
 }
 
 Critic::Critic(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)

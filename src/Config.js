@@ -27,7 +27,9 @@ class Config {
     this.batchSize = 100;
     this.randomSteps = 10000;
     this.replayBufferSize = 1000000;
-    this.learningRate = 3e-4;
+    this.actorLearningRate = 3e-4;
+    this.criticLearningRate = 1e-3;
+    this.regularization = 0.2;
     this.interpolation = 0.995;
     this.hiddenLayerSizes = [64, 64];
   }
