@@ -21,28 +21,22 @@ if(NOT EMSCRIPTEN)
   set(RAPIDJSON_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/extern/rapidjson/include)
 endif()
 
-set(USE_GRAPHICAL_BENCHMARK OFF CACHE BOOL "" FORCE)
-set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
-set(BUILD_CLSOCKET OFF CACHE BOOL "" FORCE)
-set(BUILD_ENET OFF CACHE BOOL "" FORCE)
-set(BUILD_EGL OFF CACHE BOOL "" FORCE)
-set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "" FORCE)
-set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
-set(BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
-set(INSTALL_LIBS OFF CACHE BOOL "" FORCE)
-set(INSTALL_CMAKE_FILES OFF CACHE BOOL "" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/bullet extern/bullet EXCLUDE_FROM_ALL)
 
-set(TRAINING_SOURCES
-  src/Coach.cpp
+set(CORE_SOURCES
   src/Environment.cpp
   src/Model.cpp
   src/Network.cpp
-  src/ReplayBuffer.cpp
   env/GoalPhysicsEnv.cpp
   env/PhysicsEnv.cpp
   env/TwistyEnv.cpp
+)
+
+set(TRAINING_SOURCES
+  ${CORE_SOURCES}
+  src/Coach.cpp
+  src/ReplayBuffer.cpp
 )
 
 if(EMSCRIPTEN)
@@ -56,6 +50,11 @@ else()
     ${TRAINING_SOURCES}
     src/Training_standalone.cpp
   )
+
+  add_executable(Playing
+    ${CORE_SOURCES}
+    src/Playing.cpp
+  )
 endif()
 
 target_include_directories(Training PUBLIC
@@ -64,10 +63,30 @@ target_include_directories(Training PUBLIC
   ${PROJECT_SOURCE_DIR}/env
 )
 if(NOT EMSCRIPTEN)
-  target_include_directories(Training PUBLIC ${RAPIDJSON_INCLUDE_PATH})
-  target_link_libraries(Training PUBLIC ${TORCH_LIBRARIES})
+  target_include_directories(Training PRIVATE ${RAPIDJSON_INCLUDE_PATH})
+  target_link_libraries(Training PRIVATE ${TORCH_LIBRARIES})
   if(LINUX)
-    target_link_libraries(Training PUBLIC stdc++fs)
+    target_link_libraries(Training PRIVATE stdc++fs)
+  endif()
+
+  target_include_directories(Playing PRIVATE
+    ${PROJECT_SOURCE_DIR}/extern/bullet/src
+    ${PROJECT_SOURCE_DIR}/extern/bullet/examples
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/env
+    ${RAPIDJSON_INCLUDE_PATH}
+  )
+  target_link_libraries(Playing PRIVATE
+    ${TORCH_LIBRARIES}
+    OpenGLWindow
+    BulletExampleBrowserLib
+    Bullet3Common
+    BulletDynamics
+    BulletCollision
+    LinearMath
+  )
+  if(LINUX)
+    target_link_libraries(Playing PRIVATE stdc++fs)
   endif()
 
   # The following code block is suggested to be used on Windows.
