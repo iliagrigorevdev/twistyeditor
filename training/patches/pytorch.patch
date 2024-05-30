@@ -1,38 +1,130 @@
+diff --git a/aten/src/ATen/core/TensorBase.h b/aten/src/ATen/core/TensorBase.h
+index af55eff2083..a8333316368 100644
+--- a/aten/src/ATen/core/TensorBase.h
++++ b/aten/src/ATen/core/TensorBase.h
+@@ -307,7 +307,7 @@ class TORCH_API TensorBase {
+                 "nbytes is not defined for sparse tensors.  If you want the size of the constituent " \
+                 "tensors, add the nbytes of the indices and values.  If you want the size of the  " \
+                 "equivalent dense tensor, multiply numel() by element_size()");
+-    return impl_->sym_numel() * impl_->itemsize();
++    return impl_->sym_numel() * (uint64_t) impl_->itemsize();
+   }
+ 
+   int64_t numel() const {
+diff --git a/aten/src/ATen/native/ComparisonUtils.cpp b/aten/src/ATen/native/ComparisonUtils.cpp
+index 5a1138d041b..83914065224 100644
+--- a/aten/src/ATen/native/ComparisonUtils.cpp
++++ b/aten/src/ATen/native/ComparisonUtils.cpp
+@@ -7,6 +7,11 @@
+ #include <ATen/ops/_assert_tensor_metadata_native.h>
+ #endif
+ 
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wmissing-prototypes"
++#endif
++
+ namespace at {
+ 
+ class Tensor;
+diff --git a/aten/src/ATen/native/LegacyBatching.cpp b/aten/src/ATen/native/LegacyBatching.cpp
+index 8aa08a875f7..6fc0898ea45 100644
+--- a/aten/src/ATen/native/LegacyBatching.cpp
++++ b/aten/src/ATen/native/LegacyBatching.cpp
+@@ -8,6 +8,11 @@
+ #include <ATen/ops/_remove_batch_dim_native.h>
+ #endif
+ 
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wmissing-prototypes"
++#endif
++
+ namespace at::native {
+ 
+ // Adds a batch dimension to the tensor `self` out-of-place
+diff --git a/aten/src/ATen/native/Resize.h b/aten/src/ATen/native/Resize.h
+index 0a1f2129895..b6dce78d998 100644
+--- a/aten/src/ATen/native/Resize.h
++++ b/aten/src/ATen/native/Resize.h
+@@ -87,7 +87,7 @@ static inline void checkInBoundsForStorage(
+     const Storage& new_storage) {
+   T storage_size_bytes =
+       at::detail::computeStorageNbytes(size, stride, data_type.itemsize());
+-  T storage_offset_bytes = storage_offset * data_type.itemsize();
++  T storage_offset_bytes = storage_offset * (uint64_t) data_type.itemsize();
+   if (storage_size_bytes == 0) {
+     // NB: (a tensor with arbitrary 0 dims)'s storage can have any numel.
+     return;
+diff --git a/aten/src/ATen/native/TensorShape.cpp b/aten/src/ATen/native/TensorShape.cpp
+index 1873201d200..c62df355425 100644
+--- a/aten/src/ATen/native/TensorShape.cpp
++++ b/aten/src/ATen/native/TensorShape.cpp
+@@ -3982,8 +3982,8 @@ at::Tensor clone_preserve_strides(const at::Tensor& self) {
+   }
+   auto dtype_size = self.dtype().itemsize();
+   auto nbytes = self.storage().sym_nbytes();
+-  TORCH_INTERNAL_ASSERT(nbytes % dtype_size == 0);
+-  auto numel = nbytes / dtype_size;
++  TORCH_INTERNAL_ASSERT(nbytes % (uint64_t) dtype_size == 0);
++  auto numel = nbytes / (uint64_t) dtype_size;
+   auto self_full_size = self.as_strided_symint({std::move(numel)}, {1}, 0);
+   auto clone = self_full_size.clone();
+   auto out = clone.as_strided_symint(self.sym_sizes(), self.sym_strides(), self.sym_storage_offset());
+diff --git a/aten/src/ATen/native/quantized/cpu/MakePerTensorQuantizedTensor.cpp b/aten/src/ATen/native/quantized/cpu/MakePerTensorQuantizedTensor.cpp
+index 3c047de3034..3c2c8228399 100644
+--- a/aten/src/ATen/native/quantized/cpu/MakePerTensorQuantizedTensor.cpp
++++ b/aten/src/ATen/native/quantized/cpu/MakePerTensorQuantizedTensor.cpp
+@@ -11,6 +11,11 @@
+ #include <ATen/ops/_make_per_tensor_quantized_tensor_native.h>
+ #endif
+ 
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wmissing-prototypes"
++#endif
++
+ namespace at {
+ namespace native {
+ 
+diff --git a/aten/src/ATen/native/quantized/cpu/qembeddingbag_unpack.cpp b/aten/src/ATen/native/quantized/cpu/qembeddingbag_unpack.cpp
+index 3612f8eba2f..547f9c7d5ad 100644
+--- a/aten/src/ATen/native/quantized/cpu/qembeddingbag_unpack.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qembeddingbag_unpack.cpp
+@@ -173,7 +173,7 @@ Tensor qembeddingbag_byte_unpack_meta(const Tensor& packed_weight) {
+   const auto input_columns = packed_weight_sizes[col_dim];
+   // The last 2 values are used to store the FP32 scale and zero_point values
+   // per row.
+-  const auto output_columns = input_columns - 2 * sizeof(float);
++  const auto output_columns = input_columns - 2 * (uint64_t) sizeof(float);
+ 
+   auto output_shape = packed_weight_sizes.vec();
+   output_shape[col_dim] = output_columns;
 diff --git a/c10/macros/Macros.h b/c10/macros/Macros.h
-index 90eb759961..bb56e9aed4 100644
+index 8c0dfea6e2b..49c82ac8786 100644
 --- a/c10/macros/Macros.h
 +++ b/c10/macros/Macros.h
-@@ -348,8 +348,8 @@ __host__ __device__
+@@ -386,8 +386,8 @@ __host__ __device__
      __assert_fail(
          const char* assertion,
          const char* file,
 -        unsigned int line,
--        const char* function) throw();
+-        const char* function) noexcept __attribute__((__noreturn__));
 +        int line,
 +        const char* function);
- #endif
- }
- #endif // NDEBUG
-diff --git a/torch/csrc/autograd/engine.cpp b/torch/csrc/autograd/engine.cpp
-index 809c5e1f20..bbddba5125 100644
---- a/torch/csrc/autograd/engine.cpp
-+++ b/torch/csrc/autograd/engine.cpp
-@@ -1123,12 +1123,12 @@ auto Engine::ready_queue_by_index(std::shared_ptr<ReadyQueue> cpu_ready_queue, i
- auto Engine::start_device_threads() -> void {
-   // See Note [Allocating GPUs to autograd threads]
-   c10::DeviceIndex num_devices = 0;
--  for (const auto& impl_atomic : c10::impl::device_guard_impl_registry) {
--    auto* impl = impl_atomic.load();
--    if (impl) {
--      num_devices = std::max(num_devices, impl->deviceCount());
--    }
--  }
-+  // for (const auto& impl_atomic : c10::impl::device_guard_impl_registry) {
-+  //   auto* impl = impl_atomic.load();
-+  //   if (impl) {
-+  //     num_devices = std::max(num_devices, impl->deviceCount());
-+  //   }
-+  // }
  
-   // allocate one thread for every GPU device (but colocate GPUs of different
-   // types), and pre-allocate the device_ready_queues_ to ensure safe reading on it.
+ #endif // __SYCL_DEVICE_ONLY__
+ }
+diff --git a/torch/csrc/autograd/FunctionsManual.cpp b/torch/csrc/autograd/FunctionsManual.cpp
+index b689a9bdead..eb5baf49325 100644
+--- a/torch/csrc/autograd/FunctionsManual.cpp
++++ b/torch/csrc/autograd/FunctionsManual.cpp
+@@ -2140,7 +2140,7 @@ Tensor split_backward(
+   auto num_splits = grads.size();
+   std::vector<c10::SymInt> split_sizes(num_splits, split_size);
+   split_sizes[num_splits - 1] =
+-      split_size - (split_size * num_splits - dim_size);
++      split_size - (split_size * (uint64_t) num_splits - dim_size);
+   return split_with_sizes_backward(grads, split_sizes, dim, sym_sizes, options);
+ }
+ 

@@ -1,13 +1,13 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index e2d7d53..b18a8ce 100644
+index b5db1a7..c08dc96 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -73,7 +73,7 @@ IF(NOT CMAKE_SYSTEM_NAME)
+@@ -105,7 +105,7 @@ IF(NOT CMAKE_SYSTEM_NAME)
        "Target operating system is not specified. "
        "cpuinfo will compile, but cpuinfo_initialize() will always fail.")
    SET(CPUINFO_SUPPORTED_PLATFORM FALSE)
--ELSEIF(NOT CMAKE_SYSTEM_NAME MATCHES "^(Windows|CYGWIN|MSYS|Darwin|Linux|Android)$")
-+ELSEIF(NOT CMAKE_SYSTEM_NAME MATCHES "^(Windows|CYGWIN|MSYS|Darwin|Linux|Android|Emscripten)$")
-   IF(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.14" AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+-ELSEIF(NOT CMAKE_SYSTEM_NAME MATCHES "^(Windows|WindowsStore|CYGWIN|MSYS|Darwin|Linux|Android)$")
++ELSEIF(NOT CMAKE_SYSTEM_NAME MATCHES "^(Windows|WindowsStore|CYGWIN|MSYS|Darwin|Linux|Android|Emscripten)$")
+   IF(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.14" AND NOT IS_APPLE_OS)
      MESSAGE(WARNING
        "Target operating system \"${CMAKE_SYSTEM_NAME}\" is not supported in cpuinfo. "
