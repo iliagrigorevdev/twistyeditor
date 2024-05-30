@@ -18,6 +18,8 @@ static const float prismCgDy = prismHalfHeight - prismCgH;
 
 static const float jointLimit = 0.99;
 
+static const float forwardCosMin = 0.8;
+
 static const int defaultEnvironmentSteps = 1000;
 static const float defaultGravity = -9.81;
 static const float defaultTargetDistance = 30;
@@ -256,8 +258,10 @@ float TwistyEnv::react(const Action &action, float timeStep) {
 
   if (forwardReward != 0) {
     const auto cosAngleToGoal = observation[0];
-    if (cosAngleToGoal > 0) {
+    if (cosAngleToGoal > forwardCosMin) {
       reward += forwardReward;
+    } else {
+      reward += forwardReward * cosAngleToGoal / forwardCosMin;
     }
   }
 
@@ -268,6 +272,7 @@ float TwistyEnv::react(const Action &action, float timeStep) {
     if (joint.power == 0) {
       continue;
     }
+    const auto actionValue = action[actionIndex];
     auto *constraint = constraints[i];
     constraint->calculateTransforms();
     const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
@@ -279,8 +284,8 @@ float TwistyEnv::react(const Action &action, float timeStep) {
          ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
       reward += jointAtLimitCost;
     }
-    electricityCost += driveCost * std::abs(action[actionIndex] * speed) +
-                       stallTorqueCost * action[actionIndex] * action[actionIndex];
+    electricityCost += driveCost * std::abs(actionValue * speed) +
+                       stallTorqueCost * actionValue * actionValue;
     actionIndex++;
   }
   if (activeJointCount > 0) {
