@@ -34,6 +34,7 @@ static const float cameraDistance = 10;
 static const float cameraYaw = 190;
 static const float cameraPitch = -45;
 
+static const bool testEnabled = true;
 static const bool printTestData = true;
 
 static rapidjson::Document loadDocument(const String &filePath) {
@@ -142,82 +143,86 @@ int main(int argc, char* argv[]) {
 
   std::mutex mutex;
   auto checkpointNetwork = network->clone();
-  const auto testEnvironment = std::make_shared<TwistyEnv>(shapeData);
 
   // Testing
-  std::thread thread([&mutex, &checkpointNetwork, testEnvironment]() {
-    auto *app = new SimpleOpenGL3App("Training", 1600, 1600);
-    auto *guiHelper = new OpenGLGuiHelper(app, false);
-    guiHelper->setUpAxis(1);
+  std::thread testThread;
+  if (testEnabled) {
+    const auto testEnvironment = std::make_shared<TwistyEnv>(shapeData);
 
-    NetworkPtr testNetwork;
-    std::unique_lock<std::mutex> lock(mutex, std::defer_lock);
-    auto lastTime = std::chrono::steady_clock::now();
+    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment]() {
+      auto *app = new SimpleOpenGL3App("Training", 1600, 1600);
+      auto *guiHelper = new OpenGLGuiHelper(app, false);
+      guiHelper->setUpAxis(1);
 
-    while (!app->m_window->requestedExit()) {
-      auto networkChanged = false;
-      lock.lock();
-      if (testNetwork != checkpointNetwork) {
-        testNetwork = checkpointNetwork;
-        networkChanged = true;
-      }
-      lock.unlock();
+      NetworkPtr testNetwork;
+      std::unique_lock<std::mutex> lock(mutex, std::defer_lock);
+      auto lastTime = std::chrono::steady_clock::now();
 
-      if (networkChanged || testEnvironment->done || testEnvironment->timeout()) {
-        guiHelper->removeAllGraphicsInstances();
-
-        testEnvironment->restart();
-        for (const auto &shapeEntry : testEnvironment->shapes) {
-          shapeEntry.second->setUserIndex(-1);
+      while (!app->m_window->requestedExit()) {
+        auto networkChanged = false;
+        lock.lock();
+        if (testNetwork != checkpointNetwork) {
+          testNetwork = checkpointNetwork;
+          networkChanged = true;
         }
-        for (int i = 0; i < testEnvironment->dynamicsWorld->getNumCollisionObjects(); i++) {
-          btCollisionObject *object = testEnvironment->dynamicsWorld->getCollisionObjectArray()[i];
-          object->setUserIndex(-1);
+        lock.unlock();
+
+        if (networkChanged || testEnvironment->done || testEnvironment->timeout()) {
+          guiHelper->removeAllGraphicsInstances();
+
+          testEnvironment->restart();
+          for (const auto &shapeEntry : testEnvironment->shapes) {
+            shapeEntry.second->setUserIndex(-1);
+          }
+          for (int i = 0; i < testEnvironment->dynamicsWorld->getNumCollisionObjects(); i++) {
+            btCollisionObject *object = testEnvironment->dynamicsWorld->getCollisionObjectArray()[i];
+            object->setUserIndex(-1);
+          }
+
+          guiHelper->autogenerateGraphicsObjects(testEnvironment->dynamicsWorld);
         }
 
-        guiHelper->autogenerateGraphicsObjects(testEnvironment->dynamicsWorld);
-      }
-
-      const auto action = testNetwork->predict(testEnvironment->observation);
-      if (printTestData) {
-        std::cout << std::endl << testEnvironment->moveNumber << std::endl;
-        std::cout << std::fixed << std::showpos << std::setprecision(1);
-        std::cout << "#";
-        for (const auto o : testEnvironment->observation) {
-          std::cout << " " << o;
+        const auto action = testNetwork->predict(testEnvironment->observation);
+        if (printTestData) {
+          std::cout << std::endl << testEnvironment->moveNumber << std::endl;
+          std::cout << std::fixed << std::showpos << std::setprecision(1);
+          std::cout << "#";
+          for (const auto o : testEnvironment->observation) {
+            std::cout << " " << o;
+          }
+          std::cout << std::endl;
+          std::cout << "/";
+          for (const auto a : action) {
+            std::cout << " " << a;
+          }
+          std::cout << std::endl;
         }
-        std::cout << std::endl;
-        std::cout << "/";
-        for (const auto a : action) {
-          std::cout << " " << a;
+        const auto reward = testEnvironment->step(action);
+        if (printTestData) {
+          std::cout << "= " << reward << std::endl;
+          std::cout << std::resetiosflags(std::ios_base::fixed | std::ios_base::floatfield) << std::noshowpos;
         }
-        std::cout << std::endl;
-      }
-      const auto reward = testEnvironment->step(action);
-      if (printTestData) {
-        std::cout << "= " << reward << std::endl;
-        std::cout << std::defaultfloat << std::noshowpos;
+
+        const auto &cameraTarget = testEnvironment->baseBody->getWorldTransform().getOrigin();
+        guiHelper->resetCamera(cameraDistance, cameraYaw, cameraPitch,
+                              cameraTarget.x(), cameraTarget.y(), cameraTarget.z());
+        guiHelper->syncPhysicsToGraphics(testEnvironment->dynamicsWorld);
+        guiHelper->render(testEnvironment->dynamicsWorld);
+        app->swapBuffer();
+
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>
+                                (std::chrono::steady_clock::now() - lastTime).count();
+        if (elapsedTime < frameTime) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - elapsedTime));
+        }
+        lastTime = std::chrono::steady_clock::now();
       }
 
-      const auto &cameraTarget = testEnvironment->baseBody->getWorldTransform().getOrigin();
-      guiHelper->resetCamera(cameraDistance, cameraYaw, cameraPitch,
-                             cameraTarget.x(), cameraTarget.y(), cameraTarget.z());
-      guiHelper->syncPhysicsToGraphics(testEnvironment->dynamicsWorld);
-      guiHelper->render(testEnvironment->dynamicsWorld);
-      app->swapBuffer();
-
-      const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>
-                               (std::chrono::steady_clock::now() - lastTime).count();
-      if (elapsedTime < frameTime) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - elapsedTime));
-      }
-      lastTime = std::chrono::steady_clock::now();
-    }
-
-    delete guiHelper;
-    delete app;
-    exit(0);
-  });
+      delete guiHelper;
+      delete app;
+      exit(0);
+    });
+  }
 
   Coach coach(config, environment, network);
 
