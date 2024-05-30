@@ -265,33 +265,29 @@ float TwistyEnv::react(const Action &action, float timeStep) {
     }
   }
 
-  float electricityCost = 0;
-  int actionIndex = 0;
-  for (int i = 0; i < joints.size(); i++) {
-    const auto &joint = joints[i];
-    if (joint.power == 0) {
-      continue;
+  if ((jointAtLimitCost != 0) || (driveCost != 0) || (stallTorqueCost != 0)) {
+    int actionIndex = 0;
+    for (int i = 0; i < joints.size(); i++) {
+      const auto &joint = joints[i];
+      if (joint.power == 0) {
+        continue;
+      }
+      const auto actionValue = action[actionIndex];
+      auto *constraint = constraints[i];
+      constraint->calculateTransforms();
+      const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
+      const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
+      const auto angle = constraint->getAngle(0);
+      const auto speed = (axis * angularVelocity).x();
+      if ((joint.lowerAngle < joint.upperAngle) &&
+          (((angle < 0) && (angle < btRadians(joint.lowerAngle) * jointLimit)) ||
+          ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
+        reward += jointAtLimitCost;
+      }
+      reward += driveCost * std::abs(actionValue * speed) + stallTorqueCost * actionValue * actionValue;
+      actionIndex++;
     }
-    const auto actionValue = action[actionIndex];
-    auto *constraint = constraints[i];
-    constraint->calculateTransforms();
-    const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
-    const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
-    const auto angle = constraint->getAngle(0);
-    const auto speed = (axis * angularVelocity).x();
-    if ((joint.lowerAngle < joint.upperAngle) &&
-        (((angle < 0) && (angle < btRadians(joint.lowerAngle) * jointLimit)) ||
-         ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
-      reward += jointAtLimitCost;
-    }
-    electricityCost += driveCost * std::abs(actionValue * speed) +
-                       stallTorqueCost * actionValue * actionValue;
-    actionIndex++;
   }
-  if (activeJointCount > 0) {
-    electricityCost /= activeJointCount;
-  }
-  reward += electricityCost;
 
   return reward;
 }
