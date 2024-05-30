@@ -75,9 +75,7 @@ Action Network::predict(const Observation &observation) {
     cudaActive = false;
   }
 
-  const auto inputObservation = torch::from_blob(
-    reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
-    {1, static_cast<int>(observation.size())}, torch::kFloat32);
+  const auto inputObservation = wrapArray(observation);
 
   const auto sample = model->actor->forward(inputObservation);
   const auto sampleAccessor = sample.accessor<float, 2>();
@@ -112,15 +110,9 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   auto undone = torch::empty({batchSize, 1}, torch::kFloat32);
   for (int i = 0; i < batchSize; i++) {
     const auto &[observation, action, r, nextObservation, d] = *samples[i];
-    observations.push_back(
-      torch::from_blob(reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
-      {1, static_cast<int>(observation.size())}, torch::kFloat32));
-    nextObservations.push_back(
-      torch::from_blob(reinterpret_cast<void*>(const_cast<float*>(&nextObservation[0])),
-      {1, static_cast<int>(nextObservation.size())}, torch::kFloat32));
-    actions.push_back(
-      torch::from_blob(reinterpret_cast<void*>(const_cast<float*>(&action[0])),
-      {1, static_cast<int>(action.size())}, torch::kFloat32));
+    observations.push_back(wrapArray(observation));
+    nextObservations.push_back(wrapArray(nextObservation));
+    actions.push_back(wrapArray(action));
     reward[i][0] = r;
     undone[i][0] = (d ? 0 : 1);
   }
@@ -180,4 +172,10 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   }
 
   return {actorLoss.item<float>(), criticLoss.item<float>()};
+}
+
+torch::Tensor Network::wrapArray(const FloatValArray &array) {
+  return torch::from_blob(
+    reinterpret_cast<void*>(const_cast<float*>(&array[0])),
+    {1, static_cast<int>(array.size())}, torch::kFloat32);
 }

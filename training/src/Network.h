@@ -24,6 +24,8 @@ public:
   Action predict(const Observation &observation);
   ActorCriticLosses train(const SamplePtrs &samples);
 
+  static torch::Tensor wrapArray(const FloatValArray &array);
+
   Config config;
   ModelPtr model;
   CriticPtr targetCritic;
