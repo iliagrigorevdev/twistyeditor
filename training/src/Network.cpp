@@ -27,8 +27,8 @@ Network::Network(const Config &config, ModelPtr model, CriticPtr targetCritic)
 
 NetworkPtr Network::clone() const {
   return std::make_shared<Network>(config,
-    std::dynamic_pointer_cast<Model>(model->clone()),
-    std::dynamic_pointer_cast<Critic>(targetCritic->clone()));
+    std::dynamic_pointer_cast<Model>(model->clone(torch::kCPU)),
+    std::dynamic_pointer_cast<Critic>(targetCritic->clone(torch::kCPU)));
 }
 
 String Network::save() {
