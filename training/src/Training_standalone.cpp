@@ -34,6 +34,8 @@ static const float cameraDistance = 10;
 static const float cameraYaw = 190;
 static const float cameraPitch = -45;
 
+static const bool printTestData = true;
+
 static rapidjson::Document loadDocument(const String &filePath) {
   std::ifstream file(filePath);
   String content;
@@ -177,7 +179,25 @@ int main(int argc, char* argv[]) {
       }
 
       const auto action = testNetwork->predict(testEnvironment->observation);
-      testEnvironment->step(action);
+      if (printTestData) {
+        std::cout << std::endl << testEnvironment->moveNumber << std::endl;
+        std::cout << std::fixed << std::showpos << std::setprecision(1);
+        std::cout << "#";
+        for (const auto o : testEnvironment->observation) {
+          std::cout << " " << o;
+        }
+        std::cout << std::endl;
+        std::cout << "/";
+        for (const auto a : action) {
+          std::cout << " " << a;
+        }
+        std::cout << std::endl;
+      }
+      const auto reward = testEnvironment->step(action);
+      if (printTestData) {
+        std::cout << "= " << reward << std::endl;
+        std::cout << std::defaultfloat << std::noshowpos;
+      }
 
       const auto &cameraTarget = testEnvironment->baseBody->getWorldTransform().getOrigin();
       guiHelper->resetCamera(cameraDistance, cameraYaw, cameraPitch,
