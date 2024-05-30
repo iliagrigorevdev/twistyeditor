@@ -59,7 +59,9 @@ GoalPhysicsEnv::GoalInfo GoalPhysicsEnv::goalInfo() const {
 }
 
 float GoalPhysicsEnv::react(const Action &action, float timeStep) {
-  const auto distance = baseBody->getWorldTransform().getOrigin().distance(target);
+  auto origin = baseBody->getWorldTransform().getOrigin();
+  origin.setY(0); // same as target
+  const auto distance = origin.distance(target);
   const auto reward = (prevDistance - distance) / timeStep;
   prevDistance = distance;
 
