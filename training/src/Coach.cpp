@@ -1,35 +1,55 @@
 
-#include "Coach.h"
-#include "ReplayBuffer.h"
+#ifndef COACH_CPP
+#define COACH_CPP
 
-Coach::Coach(const Config &config, EnvironmentPtr environment, NetworkPtr network)
-    : config(config)
-    , environment(environment)
-    , network(network)
-    , replayBuffer(std::make_shared<ReplayBuffer>(config))
-    , advance(0) {
-}
+#include "Environment.cpp"
+#include "Network.cpp"
+#include "ReplayBuffer.cpp"
 
-float Coach::step() {
-  if (environment->done || environment->timeout()) {
-    environment->restart();
+class Coach {
+public:
+  Coach(const Config &config, EnvironmentPtr environment, NetworkPtr network)
+      : config(config)
+      , environment(environment)
+      , network(network)
+      , replayBuffer(std::make_shared<ReplayBuffer>(config))
+      , advance(0) {
   }
 
-  auto observation = environment->observation;
-  auto action = (advance < config.randomSteps
-                 ? environment->randomAction()
-                 : network->predict(observation));
+  EnvironmentPtr getEnvironment() const {
+    return environment;
+  }
 
-  const auto reward = environment->step(action);
-  auto nextObservation = environment->observation;
-  replayBuffer->append(std::make_shared<Sample>(std::move(observation),
-                       std::move(action), reward, std::move(nextObservation),
-                       environment->done));
+  float step() {
+    if (environment->isDone() || environment->timeout()) {
+      environment->restart();
+    }
 
-  advance++;
-  return reward;
-}
+    auto observation = environment->getObservation();
+    auto action = (advance < config.randomSteps
+                  ? environment->randomAction()
+                  : network->predict(observation));
 
-ActorCriticLosses Coach::train() {
-  return network->train(replayBuffer->sampleBatch());
-}
+    const auto reward = environment->step(action);
+    auto nextObservation = environment->getObservation();
+    replayBuffer->append(std::make_shared<Sample>(std::move(observation),
+                        std::move(action), reward, std::move(nextObservation),
+                        environment->isDone()));
+
+    advance++;
+    return reward;
+  }
+
+  ActorCriticLosses train() {
+    return network->train(replayBuffer->sampleBatch());
+  }
+
+private:
+  Config config;
+  EnvironmentPtr environment;
+  NetworkPtr network;
+  ReplayBufferPtr replayBuffer;
+  int advance;
+};
+
+#endif // COACH_CPP

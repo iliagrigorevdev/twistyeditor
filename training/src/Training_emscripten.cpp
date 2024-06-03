@@ -1,9 +1,10 @@
 
 #include "Types.h"
 #include "Config.h"
-#include "TwistyEnv.h"
-#include "Network.h"
-#include "Coach.h"
+
+#include "TwistyEnv.cpp"
+#include "Network.cpp"
+#include "Coach.cpp"
 
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
@@ -31,25 +32,25 @@ struct State {
   Array<Transform> transforms;
 };
 
-typedef std::shared_ptr<TwistyEnv> TwistyEnvPtr;
+typedef std::shared_ptr<twistyenv::TwistyEnv> TwistyEnvPtr;
 
 static TwistyEnvPtr environment;
 static NetworkPtr network;
 static CoachPtr coach;
 
 void create(const Config &config, const String &data) {
-  environment = std::make_shared<TwistyEnv>(data);
-  const auto observationLength = environment->observation.size();
-  if ((observationLength == 0) || (environment->actionLength == 0)) {
+  environment = std::make_shared<twistyenv::TwistyEnv>(data);
+  const auto observationLength = environment->getObservation().size();
+  if ((observationLength == 0) || (environment->getActionLength() == 0)) {
     network.reset();
     coach.reset();
     return;
   }
 
   network = std::make_shared<Network>(config, observationLength,
-                                      environment->actionLength);
+                                      environment->getActionLength());
   coach = std::make_shared<Coach>(config,
-                                  std::make_shared<TwistyEnv>(data),
+                                  std::make_shared<twistyenv::TwistyEnv>(data),
                                   network);
 }
 
@@ -58,7 +59,7 @@ StepResult step() {
     return {0, false};
   }
   const auto reward = coach->step();
-  const auto done = coach->environment->done || coach->environment->timeout();
+  const auto done = coach->getEnvironment()->isDone() || coach->getEnvironment()->timeout();
   return {reward, done};
 }
 
@@ -84,19 +85,19 @@ void load(const String &data) {
 }
 
 State evaluate() {
-  if (environment->done || environment->timeout()) {
+  if (environment->isDone() || environment->timeout()) {
     environment->restart();
   }
   const auto action = (network == nullptr
                        ? environment->randomAction()
-                       : network->predict(environment->observation));
+                       : network->predict(environment->getObservation()));
   environment->step(action);
 
   State state;
-  state.goalPosition.x = environment->target.x();
-  state.goalPosition.y = environment->target.y();
-  state.goalPosition.z = environment->target.z();
-  for (const auto *body : environment->bodies) {
+  state.goalPosition.x = environment->getTarget().x();
+  state.goalPosition.y = environment->getTarget().y();
+  state.goalPosition.z = environment->getTarget().z();
+  for (const auto *body : environment->getBodies()) {
     const auto &transform = body->getWorldTransform();
     const auto &position = transform.getOrigin();
     const auto orientation = transform.getRotation();

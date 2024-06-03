@@ -1,11 +1,20 @@
 
-#include "Model.h"
+#ifndef MODEL_CPP
+#define MODEL_CPP
+
+#include "Types.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+#include <torch/torch.h>
+#pragma clang diagnostic pop
+
+namespace model {
 
 static const float logStdMin = -20;
 static const float logStdMax = 2;
 
-static torch::nn::Sequential
-mlpNet(const IntArray &hiddenLayerSizes, int inputLength, int outputLength) {
+static torch::nn::Sequential mlpNet(const IntArray &hiddenLayerSizes, int inputLength, int outputLength) {
   if (hiddenLayerSizes.empty()) {
     throw std::runtime_error("Hidden layer sizes must be given");
   }
@@ -23,65 +32,115 @@ mlpNet(const IntArray &hiddenLayerSizes, int inputLength, int outputLength) {
   return net;
 }
 
-Actor::Actor(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
-    : hiddenLayerSizes(hiddenLayerSizes)
-    , observationLength(observationLength)
-    , actionLength(actionLength) {
-  reset();
-}
-
-void Actor::reset() {
-  net = register_module("net", mlpNet(hiddenLayerSizes, observationLength, 0));
-  muLayer = register_module("muLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
-  logStdLayer = register_module("logStdLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
-}
-
-std::pair<torch::Tensor, torch::Tensor> Actor::forward(torch::Tensor observation) {
-  const auto netOut = net->forward(observation);
-  const auto mu = muLayer->forward(netOut);
-  auto sample = mu;
-  torch::Tensor logProb;
-  if (is_training()) {
-    auto logStd = logStdLayer->forward(netOut);
-    logStd = torch::clamp(logStd, logStdMin, logStdMax);
-    const auto std = torch::exp(logStd);
-    sample += torch::randn(mu.sizes(), mu.device()) * std;
-    logProb = -0.5 * (torch::square((sample - mu) / (std + 1e-9)) + 2 * logStd + std::log(2 * M_PI));
-    logProb -= (2 * (std::log(2) - sample - torch::softplus(-2 * sample)));
-    logProb = logProb.sum(1, true);
+class Actor : public torch::nn::Cloneable<Actor> {
+public:
+  Actor(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
+      : hiddenLayerSizes(hiddenLayerSizes)
+      , observationLength(observationLength)
+      , actionLength(actionLength) {
+    reset();
   }
-  sample = torch::tanh(sample);
-  return {sample, logProb};
+
+  void reset() {
+    net = register_module("net", mlpNet(hiddenLayerSizes, observationLength, 0));
+    muLayer = register_module("muLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
+    logStdLayer = register_module("logStdLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
+  }
+
+  std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor observation) {
+    const auto netOut = net->forward(observation);
+    const auto mu = muLayer->forward(netOut);
+    auto sample = mu;
+    torch::Tensor logProb;
+    if (is_training()) {
+      auto logStd = logStdLayer->forward(netOut);
+      logStd = torch::clamp(logStd, logStdMin, logStdMax);
+      const auto std = torch::exp(logStd);
+      sample += torch::randn(mu.sizes(), mu.device()) * std;
+      logProb = -0.5 * (torch::square((sample - mu) / (std + 1e-9)) + 2 * logStd + std::log(2 * M_PI));
+      logProb -= (2 * (std::log(2) - sample - torch::softplus(-2 * sample)));
+      logProb = logProb.sum(1, true);
+    }
+    sample = torch::tanh(sample);
+    return {sample, logProb};
+  }
+
+private:
+  IntArray hiddenLayerSizes;
+  int observationLength;
+  int actionLength;
+
+  torch::nn::Sequential net = nullptr;
+  torch::nn::Linear muLayer = nullptr;
+  torch::nn::Linear logStdLayer = nullptr;
+};
+
+class Critic : public torch::nn::Cloneable<Critic> {
+public:
+  Critic(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
+      : hiddenLayerSizes(hiddenLayerSizes)
+      , observationLength(observationLength)
+      , actionLength(actionLength) {
+    reset();
+  }
+
+  void reset() {
+    q1 = register_module("q1", mlpNet(hiddenLayerSizes, observationLength + actionLength, 1));
+    q2 = register_module("q2", mlpNet(hiddenLayerSizes, observationLength + actionLength, 1));
+  }
+
+  std::pair<torch::Tensor, torch::Tensor>
+  forward(torch::Tensor observation, torch::Tensor action) {
+    const auto observationAction = torch::cat({observation, action}, 1);
+    return {q1->forward(observationAction), q2->forward(observationAction)};
+  }
+
+private:
+  IntArray hiddenLayerSizes;
+  int observationLength;
+  int actionLength;
+
+  torch::nn::Sequential q1 = nullptr;
+  torch::nn::Sequential q2 = nullptr;
+};
+
+class Model : public torch::nn::Cloneable<Model> {
+public:
+  Model(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
+      : hiddenLayerSizes(hiddenLayerSizes)
+      , observationLength(observationLength)
+      , actionLength(actionLength) {
+    reset();
+  }
+
+  int getActionLength() const {
+    return actionLength;
+  }
+
+  ActorPtr getActor() const {
+    return actor;
+  }
+
+  CriticPtr getCritic() const {
+    return critic;
+  }
+
+  void reset() {
+    actor = register_module("actor", std::make_shared<Actor>(
+      hiddenLayerSizes, observationLength, actionLength));
+    critic = register_module("critic", std::make_shared<Critic>(
+      hiddenLayerSizes, observationLength, actionLength));
+  }
+
+private:
+  IntArray hiddenLayerSizes;
+  int observationLength;
+  int actionLength;
+
+  ActorPtr actor;
+  CriticPtr critic;
+};
+
 }
 
-Critic::Critic(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
-    : hiddenLayerSizes(hiddenLayerSizes)
-    , observationLength(observationLength)
-    , actionLength(actionLength) {
-  reset();
-}
-
-void Critic::reset() {
-  q1 = register_module("q1", mlpNet(hiddenLayerSizes, observationLength + actionLength, 1));
-  q2 = register_module("q2", mlpNet(hiddenLayerSizes, observationLength + actionLength, 1));
-}
-
-std::pair<torch::Tensor, torch::Tensor>
-Critic::forward(torch::Tensor observation, torch::Tensor action) {
-  const auto observationAction = torch::cat({observation, action}, 1);
-  return {q1->forward(observationAction), q2->forward(observationAction)};
-}
-
-Model::Model(const IntArray &hiddenLayerSizes, int observationLength, int actionLength)
-    : hiddenLayerSizes(hiddenLayerSizes)
-    , observationLength(observationLength)
-    , actionLength(actionLength) {
-  reset();
-}
-
-void Model::reset() {
-  actor = register_module("actor", std::make_shared<Actor>(
-    hiddenLayerSizes, observationLength, actionLength));
-  critic = register_module("critic", std::make_shared<Critic>(
-    hiddenLayerSizes, observationLength, actionLength));
-}
+#endif // MODEL_CPP

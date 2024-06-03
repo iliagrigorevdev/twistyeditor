@@ -1,7 +1,12 @@
 
-#include "TwistyEnv.h"
+#ifndef TWISTYENV_CPP
+#define TWISTYENV_CPP
+
+#include "GoalPhysicsEnv.cpp"
 
 #include <filesystem>
+
+namespace twistyenv {
 
 static const float prismHeight = 1;
 static const float prismBase = 2 * prismHeight;
@@ -91,311 +96,366 @@ static btTransform readTransform(std::istringstream &stream) {
   return btTransform(orientation, position);
 }
 
-TwistyEnv::TwistyEnv(const String &data)
-    : environmentSteps(defaultEnvironmentSteps)
-    , gravity(defaultGravity)
-    , targetDistance(defaultTargetDistance)
-    , groundFriction(defaultGroundFriction)
-    , prismFriction(defaultPrismFriction)
-    , groundRestitution(defaultGroundRestitution)
-    , prismRestitution(defaultPrismRestitution)
-    , advanceReward(defaultAdvanceReward)
-    , aliveReward(defaultAliveReward)
-    , forwardReward(defaultForwardReward)
-    , jointAtLimitCost(defaultJointAtLimitCost)
-    , driveCost(defaultDriveCost)
-    , stallTorqueCost(defaultStallTorqueCost)
-    , activeJointCount(0)
-    , baseLinkIndex(-1)
-    , groundObject(nullptr) {
-  parseData(data);
-  validateData();
+class TwistyEnv : public goalphysicsenv::GoalPhysicsEnv {
+public:
+  TwistyEnv(const String &data)
+      : environmentSteps(defaultEnvironmentSteps)
+      , gravity(defaultGravity)
+      , targetDistance(defaultTargetDistance)
+      , groundFriction(defaultGroundFriction)
+      , prismFriction(defaultPrismFriction)
+      , groundRestitution(defaultGroundRestitution)
+      , prismRestitution(defaultPrismRestitution)
+      , advanceReward(defaultAdvanceReward)
+      , aliveReward(defaultAliveReward)
+      , forwardReward(defaultForwardReward)
+      , jointAtLimitCost(defaultJointAtLimitCost)
+      , driveCost(defaultDriveCost)
+      , stallTorqueCost(defaultStallTorqueCost)
+      , activeJointCount(0)
+      , baseLinkIndex(-1)
+      , groundObject(nullptr) {
+    parseData(data);
+    validateData();
 
-  setTargetDistance(targetDistance);
+    setTargetDistance(targetDistance);
 
-  dynamicsWorld->setGravity({0, gravity, 0});
+    dynamicsWorld->setGravity({0, gravity, 0});
 
-  groundObject = createGround(groundFriction, groundRestitution);
+    groundObject = createGround(groundFriction, groundRestitution);
 
-  const auto observationLength = 10 + 2 * activeJointCount + links.size();
-  Environment::init(observationLength, activeJointCount, environmentSteps);
+    const auto observationLength = 10 + 2 * activeJointCount + links.size();
+    Environment::init(observationLength, activeJointCount, environmentSteps);
 
-  auto *prismShape = new btConvexHullShape();
-  prismShape->setMargin(prismMargin);
-  for (const auto &vertex : prismCollisionVertices) {
-    prismShape->addPoint(vertex, false);
+    auto *prismShape = new btConvexHullShape();
+    prismShape->setMargin(prismMargin);
+    for (const auto &vertex : prismCollisionVertices) {
+      prismShape->addPoint(vertex, false);
+    }
+    prismShape->recalcLocalAabb();
+    putShape("prism", prismShape);
   }
-  prismShape->recalcLocalAabb();
-  putShape("prism", prismShape);
-}
 
-void TwistyEnv::reset() {
-  GoalPhysicsEnv::reset();
+  const std::vector<btRigidBody*>& getBodies() const {
+    return bodies;
+  }
 
-  bodies.clear();
-  constraints.clear();
+  void reset() {
+    GoalPhysicsEnv::reset();
 
-  auto *prismShape = getShape("prism");
+    bodies.clear();
+    constraints.clear();
 
-  for (int i = 0; i < links.size(); i++) {
-    const auto &link = links[i];
+    auto *prismShape = getShape("prism");
 
-    const auto shapeName = "link" + std::to_string(i);
-    auto *linkShape = getShape(shapeName, false);
-    if (linkShape == nullptr) {
-      auto *shape = new btCompoundShape();
-      for (const auto &prism : link.prisms) {
-        shape->addChildShape(prism.transform, prismShape);
+    for (int i = 0; i < links.size(); i++) {
+      const auto &link = links[i];
+
+      const auto shapeName = "link" + std::to_string(i);
+      auto *linkShape = getShape(shapeName, false);
+      if (linkShape == nullptr) {
+        auto *shape = new btCompoundShape();
+        for (const auto &prism : link.prisms) {
+          shape->addChildShape(prism.transform, prismShape);
+        }
+        putShape(shapeName, shape);
+        linkShape = shape;
       }
-      putShape(shapeName, shape);
-      linkShape = shape;
+
+      auto *body = createBody(shapeName, link.transform, physicsenv::dynamicGroup, physicsenv::dynamicMask,
+                              link.mass, link.inertia, prismFriction, prismRestitution);
+      body->setUserIndex2(i);
+      if (i == baseLinkIndex) {
+        baseBody = body;
+      }
+      bodies.push_back(body);
     }
 
-    auto *body = createBody(shapeName, link.transform, dynamicGroup, dynamicMask,
-                            link.mass, link.inertia, prismFriction, prismRestitution);
-    body->setUserIndex2(i);
-    if (i == baseLinkIndex) {
-      baseBody = body;
-    }
-    bodies.push_back(body);
-  }
+    for (int i = 0; i < joints.size(); i++) {
+      const auto &joint = joints[i];
 
-  for (int i = 0; i < joints.size(); i++) {
-    const auto &joint = joints[i];
-
-    auto *baseBody = bodies[joint.baseIndex];
-    auto *targetBody = bodies[joint.targetIndex];
-    const auto &baseLink = links[joint.baseIndex];
-    const auto &targetLink = links[joint.targetIndex];
-    const auto baseFrame = baseLink.transform.inverse() * joint.transform;
-    const auto targetFrame = targetLink.transform.inverse() * joint.transform;
-    auto *constraint = constrainBodies(baseBody, targetBody,
-                                       baseFrame, targetFrame,
-                                       {0, 0, 0}, {0, 0, 0},
-                                       {btRadians(joint.lowerAngle), 0, 0},
-                                       {btRadians(joint.upperAngle), 0, 0},
-                                       true);
-    constraints.push_back(constraint);
-  }
-}
-
-void TwistyEnv::update() {
-  int index = 0;
-  const auto [angleToGoal, pitch, roll, linearVelocity, angularVelocity] = goalInfo();
-  observation[index++] = std::cos(angleToGoal);
-  observation[index++] = std::sin(angleToGoal);
-  observation[index++] = pitch;
-  observation[index++] = roll;
-  observation[index++] = linearVelocity.x();
-  observation[index++] = linearVelocity.y();
-  observation[index++] = linearVelocity.z();
-  observation[index++] = angularVelocity.x();
-  observation[index++] = angularVelocity.y();
-  observation[index++] = angularVelocity.z();
-
-  // Joint parameters
-  for (int i = 0; i < joints.size(); i++) {
-    const auto &joint = joints[i];
-    if (joint.power == 0) {
-      continue;
-    }
-    auto *constraint = constraints[i];
-    const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
-    const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
-    observation[index++] = -constraint->getAngle(0);
-    observation[index++] = (axis * angularVelocity).x();
-  }
-
-  // Ground contacts
-  for (int i = 0; i < links.size(); i++) {
-    observation[index + i] = 0;
-  }
-  const auto numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
-  for (int i = 0; i < numManifolds; i++) {
-    const auto *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
-    if (contactManifold->getNumContacts() == 0) {
-      continue;
-    }
-    const auto *body0 = contactManifold->getBody0();
-    const auto *body1 = contactManifold->getBody1();
-    if ((body0 != groundObject) && (body1 != groundObject)) {
-      continue;
-    }
-    const auto *body = (body0 == groundObject ? body1 : body0);
-    const auto linkIndex = body->getUserIndex2();
-    if (linkIndex == -1) {
-      continue;
-    }
-    if ((linkIndex == baseLinkIndex) && (aliveReward != 0)) {
-      done = true;
-    }
-    observation[index + linkIndex] = 1;
-  }
-}
-
-void TwistyEnv::applyForces(const Action &action) {
-  int actionIndex = 0;
-  for (int i = 0; i < joints.size(); i++) {
-    const auto &joint = joints[i];
-    if (joint.power == 0) {
-      continue;
-    }
-    auto *constraint = constraints[i];
-    constraint->calculateTransforms();
-    const auto torque = action[actionIndex] * joint.power;
-    const auto &axisB = constraint->getCalculatedTransformB().getBasis().getColumn(0);
-    const auto &axisA = constraint->getCalculatedTransformA().getBasis().getColumn(0);
-    constraint->getRigidBodyB().applyTorque(torque * axisB);
-    constraint->getRigidBodyA().applyTorque(-torque * axisA);
-    actionIndex++;
-  }
-}
-
-float TwistyEnv::react(const Action &action, float timeStep) {
-  auto reward = advanceReward * GoalPhysicsEnv::react(action, timeStep);
-
-  reward += aliveReward;
-
-  if (forwardReward != 0) {
-    const auto cosAngleToGoal = observation[0];
-    if (cosAngleToGoal > forwardCosMin) {
-      reward += forwardReward;
-    } else {
-      reward += forwardReward * cosAngleToGoal / forwardCosMin;
+      auto *baseBody = bodies[joint.baseIndex];
+      auto *targetBody = bodies[joint.targetIndex];
+      const auto &baseLink = links[joint.baseIndex];
+      const auto &targetLink = links[joint.targetIndex];
+      const auto baseFrame = baseLink.transform.inverse() * joint.transform;
+      const auto targetFrame = targetLink.transform.inverse() * joint.transform;
+      auto *constraint = constrainBodies(baseBody, targetBody,
+                                        baseFrame, targetFrame,
+                                        {0, 0, 0}, {0, 0, 0},
+                                        {btRadians(joint.lowerAngle), 0, 0},
+                                        {btRadians(joint.upperAngle), 0, 0},
+                                        true);
+      constraints.push_back(constraint);
     }
   }
 
-  if ((jointAtLimitCost != 0) || (driveCost != 0) || (stallTorqueCost != 0)) {
+  void update() {
+    int index = 0;
+    const auto [angleToGoal, pitch, roll, linearVelocity, angularVelocity] = goalInfo();
+    observation[index++] = std::cos(angleToGoal);
+    observation[index++] = std::sin(angleToGoal);
+    observation[index++] = pitch;
+    observation[index++] = roll;
+    observation[index++] = linearVelocity.x();
+    observation[index++] = linearVelocity.y();
+    observation[index++] = linearVelocity.z();
+    observation[index++] = angularVelocity.x();
+    observation[index++] = angularVelocity.y();
+    observation[index++] = angularVelocity.z();
+
+    // Joint parameters
+    for (int i = 0; i < joints.size(); i++) {
+      const auto &joint = joints[i];
+      if (joint.power == 0) {
+        continue;
+      }
+      auto *constraint = constraints[i];
+      const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
+      const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
+      observation[index++] = -constraint->getAngle(0);
+      observation[index++] = (axis * angularVelocity).x();
+    }
+
+    // Ground contacts
+    for (int i = 0; i < links.size(); i++) {
+      observation[index + i] = 0;
+    }
+    const auto numManifolds = dynamicsWorld->getDispatcher()->getNumManifolds();
+    for (int i = 0; i < numManifolds; i++) {
+      const auto *contactManifold = dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+      if (contactManifold->getNumContacts() == 0) {
+        continue;
+      }
+      const auto *body0 = contactManifold->getBody0();
+      const auto *body1 = contactManifold->getBody1();
+      if ((body0 != groundObject) && (body1 != groundObject)) {
+        continue;
+      }
+      const auto *body = (body0 == groundObject ? body1 : body0);
+      const auto linkIndex = body->getUserIndex2();
+      if (linkIndex == -1) {
+        continue;
+      }
+      if ((linkIndex == baseLinkIndex) && (aliveReward != 0)) {
+        done = true;
+      }
+      observation[index + linkIndex] = 1;
+    }
+  }
+
+  void applyForces(const Action &action) {
     int actionIndex = 0;
     for (int i = 0; i < joints.size(); i++) {
       const auto &joint = joints[i];
       if (joint.power == 0) {
         continue;
       }
-      const auto actionValue = action[actionIndex];
       auto *constraint = constraints[i];
       constraint->calculateTransforms();
-      const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
-      const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
-      const auto angle = constraint->getAngle(0);
-      const auto speed = (axis * angularVelocity).x();
-      if ((joint.lowerAngle < joint.upperAngle) &&
-          (((angle < 0) && (angle < btRadians(joint.lowerAngle) * jointLimit)) ||
-          ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
-        reward += jointAtLimitCost;
-      }
-      reward += driveCost * std::abs(actionValue * speed) + stallTorqueCost * actionValue * actionValue;
+      const auto torque = action[actionIndex] * joint.power;
+      const auto &axisB = constraint->getCalculatedTransformB().getBasis().getColumn(0);
+      const auto &axisA = constraint->getCalculatedTransformA().getBasis().getColumn(0);
+      constraint->getRigidBodyB().applyTorque(torque * axisB);
+      constraint->getRigidBodyA().applyTorque(-torque * axisA);
       actionIndex++;
     }
   }
 
-  return reward;
-}
+  float react(const Action &action, float timeStep) {
+    auto reward = advanceReward * GoalPhysicsEnv::react(action, timeStep);
 
-void TwistyEnv::parseData(const String &data) {
-  if (data.empty()) {
-    EXCEPT("Data must be specified");
-  }
+    reward += aliveReward;
 
-  String line;
-  auto lines = std::istringstream(data);
-  while (std::getline(lines, line)) {
-    if (line.length() < 2) {
-      EXCEPT("Invalid line: '" + line + "'");
-    }
-    const auto type = line[0];
-    std::istringstream stream(line.substr(2));
-    switch (type) {
-    case 'o':
-      stream >> name;
-      break;
-    case 's':
-      timeStep = readValue<float>(stream);
-      frameSteps = readValue<int>(stream);
-      environmentSteps = readValue<int>(stream);
-      gravity = readValue<float>(stream);
-      targetDistance = readValue<float>(stream);
-      groundFriction = readValue<float>(stream);
-      prismFriction = readValue<float>(stream);
-      groundRestitution = readValue<float>(stream);
-      prismRestitution = readValue<float>(stream);
-      break;
-    case 'c':
-      advanceReward = readValue<float>(stream);
-      aliveReward = readValue<float>(stream);
-      forwardReward = readValue<float>(stream);
-      jointAtLimitCost = readValue<float>(stream);
-      driveCost = readValue<float>(stream);
-      stallTorqueCost = readValue<float>(stream);
-      break;
-    case 'l':
-      links.push_back({
-        readValue<float>(stream), // mass
-        readVector(stream), // inertia
-        readTransform(stream), // transform
-        {} // prisms
-      });
-      break;
-    case 'p':
-      if (links.empty()) {
-        EXCEPT("No link");
+    if (forwardReward != 0) {
+      const auto cosAngleToGoal = observation[0];
+      if (cosAngleToGoal > forwardCosMin) {
+        reward += forwardReward;
+      } else {
+        reward += forwardReward * cosAngleToGoal / forwardCosMin;
       }
-      links.back().prisms.push_back({
-        readTransform(stream) // transform
-      });
-      break;
-    case 'j':
-      joints.push_back({
-        readValue<int>(stream), // base index
-        readValue<int>(stream), // target index
-        readValue<float>(stream), // lower angle
-        readValue<float>(stream), // upper angle
-        readValue<float>(stream), // power
-        readTransform(stream) // transform
-      });
-      break;
-    case 'b':
-      if (baseLinkIndex != -1) {
-        EXCEPT("Multiple bases not supported");
+    }
+
+    if ((jointAtLimitCost != 0) || (driveCost != 0) || (stallTorqueCost != 0)) {
+      int actionIndex = 0;
+      for (int i = 0; i < joints.size(); i++) {
+        const auto &joint = joints[i];
+        if (joint.power == 0) {
+          continue;
+        }
+        const auto actionValue = action[actionIndex];
+        auto *constraint = constraints[i];
+        constraint->calculateTransforms();
+        const auto &axis = constraint->getCalculatedTransformB().getBasis().getColumn(0);
+        const auto &angularVelocity = constraint->getRigidBodyB().getAngularVelocity();
+        const auto angle = constraint->getAngle(0);
+        const auto speed = (axis * angularVelocity).x();
+        if ((joint.lowerAngle < joint.upperAngle) &&
+            (((angle < 0) && (angle < btRadians(joint.lowerAngle) * jointLimit)) ||
+            ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
+          reward += jointAtLimitCost;
+        }
+        reward += driveCost * std::abs(actionValue * speed) + stallTorqueCost * actionValue * actionValue;
+        actionIndex++;
       }
-      baseLinkIndex = readValue<int>(stream);
-      break;
-    default:
-      EXCEPT("Invalid type: '" + String(1, type) + "'");
+    }
+
+    return reward;
+  }
+
+  void parseData(const String &data) {
+    if (data.empty()) {
+      EXCEPT("Data must be specified");
+    }
+
+    String line;
+    auto lines = std::istringstream(data);
+    while (std::getline(lines, line)) {
+      if (line.length() < 2) {
+        EXCEPT("Invalid line: '" + line + "'");
+      }
+      const auto type = line[0];
+      std::istringstream stream(line.substr(2));
+      switch (type) {
+      case 'o':
+        stream >> name;
+        break;
+      case 's':
+        timeStep = readValue<float>(stream);
+        frameSteps = readValue<int>(stream);
+        environmentSteps = readValue<int>(stream);
+        gravity = readValue<float>(stream);
+        targetDistance = readValue<float>(stream);
+        groundFriction = readValue<float>(stream);
+        prismFriction = readValue<float>(stream);
+        groundRestitution = readValue<float>(stream);
+        prismRestitution = readValue<float>(stream);
+        break;
+      case 'c':
+        advanceReward = readValue<float>(stream);
+        aliveReward = readValue<float>(stream);
+        forwardReward = readValue<float>(stream);
+        jointAtLimitCost = readValue<float>(stream);
+        driveCost = readValue<float>(stream);
+        stallTorqueCost = readValue<float>(stream);
+        break;
+      case 'l':
+        links.push_back({
+          readValue<float>(stream), // mass
+          readVector(stream), // inertia
+          readTransform(stream), // transform
+          {} // prisms
+        });
+        break;
+      case 'p':
+        if (links.empty()) {
+          EXCEPT("No link");
+        }
+        links.back().prisms.push_back({
+          readTransform(stream) // transform
+        });
+        break;
+      case 'j':
+        joints.push_back({
+          readValue<int>(stream), // base index
+          readValue<int>(stream), // target index
+          readValue<float>(stream), // lower angle
+          readValue<float>(stream), // upper angle
+          readValue<float>(stream), // power
+          readTransform(stream) // transform
+        });
+        break;
+      case 'b':
+        if (baseLinkIndex != -1) {
+          EXCEPT("Multiple bases not supported");
+        }
+        baseLinkIndex = readValue<int>(stream);
+        break;
+      default:
+        EXCEPT("Invalid type: '" + String(1, type) + "'");
+      }
+    }
+
+    for (const auto &joint : joints) {
+      if (joint.power != 0) {
+        activeJointCount++;
+      }
     }
   }
 
-  for (const auto &joint : joints) {
-    if (joint.power != 0) {
-      activeJointCount++;
+  void validateData() const {
+    if (baseLinkIndex == -1) {
+      EXCEPT("No base found");
+    }
+    if ((baseLinkIndex < 0) || (baseLinkIndex >= links.size())) {
+      EXCEPT("Out of range base link index (" + std::to_string(baseLinkIndex) + ")");
+    }
+    for (int i = 0; i < links.size(); i++) {
+      const auto &link = links[i];
+      if (link.prisms.empty()) {
+        EXCEPT("No prism found for link with index " + std::to_string(i));
+      }
+    }
+    for (int i = 0; i < joints.size(); i++) {
+      const auto &joint = joints[i];
+      if ((joint.baseIndex < 0) || (joint.baseIndex >= links.size())) {
+        EXCEPT("Out of range base index (" +
+              std::to_string(joint.baseIndex) +
+              ") for joint with index " + std::to_string(i));
+      }
+      if ((joint.targetIndex < 0) || (joint.targetIndex >= links.size())) {
+        EXCEPT("Out of range target index (" +
+              std::to_string(joint.targetIndex) +
+              ") for joint with index " + std::to_string(i));
+      }
     }
   }
+
+private:
+  struct Prism {
+    btTransform transform;
+  };
+
+  struct Link {
+    float mass;
+    btVector3 inertia;
+    btTransform transform;
+    std::vector<Prism> prisms;
+  };
+
+  struct Joint {
+    int baseIndex;
+    int targetIndex;
+    float lowerAngle;
+    float upperAngle;
+    float power;
+    btTransform transform;
+  };
+
+  String name;
+  int environmentSteps;
+  float gravity;
+  float targetDistance;
+  float groundFriction;
+  float prismFriction;
+  float groundRestitution;
+  float prismRestitution;
+  float advanceReward;
+  float aliveReward;
+  float forwardReward;
+  float jointAtLimitCost;
+  float driveCost;
+  float stallTorqueCost;
+  std::vector<Link> links;
+  std::vector<Joint> joints;
+  int activeJointCount;
+  int baseLinkIndex;
+
+  btCollisionObject *groundObject;
+  std::vector<btRigidBody*> bodies;
+  std::vector<btGeneric6DofSpring2Constraint*> constraints;
+};
+
 }
 
-void TwistyEnv::validateData() const {
-  if (baseLinkIndex == -1) {
-    EXCEPT("No base found");
-  }
-  if ((baseLinkIndex < 0) || (baseLinkIndex >= links.size())) {
-    EXCEPT("Out of range base link index (" + std::to_string(baseLinkIndex) + ")");
-  }
-  for (int i = 0; i < links.size(); i++) {
-    const auto &link = links[i];
-    if (link.prisms.empty()) {
-      EXCEPT("No prism found for link with index " + std::to_string(i));
-    }
-  }
-  for (int i = 0; i < joints.size(); i++) {
-    const auto &joint = joints[i];
-    if ((joint.baseIndex < 0) || (joint.baseIndex >= links.size())) {
-      EXCEPT("Out of range base index (" +
-             std::to_string(joint.baseIndex) +
-             ") for joint with index " + std::to_string(i));
-    }
-    if ((joint.targetIndex < 0) || (joint.targetIndex >= links.size())) {
-      EXCEPT("Out of range target index (" +
-             std::to_string(joint.targetIndex) +
-             ") for joint with index " + std::to_string(i));
-    }
-  }
-}
+#endif // TWISTYENV_CPP

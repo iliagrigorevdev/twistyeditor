@@ -1,9 +1,10 @@
 
 #include "Types.h"
 #include "Config.h"
-#include "TwistyEnv.h"
-#include "Network.h"
-#include "Coach.h"
+
+#include "TwistyEnv.cpp"
+#include "Network.cpp"
+#include "Coach.cpp"
 
 #define RAPIDJSON_HAS_STDSTRING 1
 #include "rapidjson/document.h"
@@ -35,7 +36,7 @@ static const float cameraYaw = 190;
 static const float cameraPitch = -45;
 
 static const bool testEnabled = true;
-static const bool printTestData = true;
+static const bool printTestData = false;
 
 static rapidjson::Document loadDocument(const String &filePath) {
   std::ifstream file(filePath);
@@ -125,14 +126,14 @@ int main(int argc, char* argv[]) {
 
   const String shapeData = document["shapeData"].GetString();
 
-  const auto environment = std::make_shared<TwistyEnv>(shapeData);
+  const auto environment = std::make_shared<twistyenv::TwistyEnv>(shapeData);
 
-  const auto observationLength = environment->observation.size();
-  if ((observationLength == 0) || (environment->actionLength == 0)) {
+  const auto observationLength = environment->getObservation().size();
+  if ((observationLength == 0) || (environment->getActionLength() == 0)) {
     return 1;
   }
 
-  const auto network = std::make_shared<Network>(config, observationLength, environment->actionLength);
+  const auto network = std::make_shared<Network>(config, observationLength, environment->getActionLength());
 
   if (!document["checkpoint"]["data"].IsNull()) {
     const String checkpointData(document["checkpoint"]["data"].GetString(),
@@ -147,7 +148,7 @@ int main(int argc, char* argv[]) {
   // Testing
   std::thread testThread;
   if (testEnabled) {
-    const auto testEnvironment = std::make_shared<TwistyEnv>(shapeData);
+    const auto testEnvironment = std::make_shared<twistyenv::TwistyEnv>(shapeData);
 
     testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment]() {
       auto *app = new SimpleOpenGL3App("Training", 1600, 1600);
@@ -167,27 +168,27 @@ int main(int argc, char* argv[]) {
         }
         lock.unlock();
 
-        if (networkChanged || testEnvironment->done || testEnvironment->timeout()) {
+        if (networkChanged || testEnvironment->isDone() || testEnvironment->timeout()) {
           guiHelper->removeAllGraphicsInstances();
 
           testEnvironment->restart();
-          for (const auto &shapeEntry : testEnvironment->shapes) {
+          for (const auto &shapeEntry : testEnvironment->getShapes()) {
             shapeEntry.second->setUserIndex(-1);
           }
-          for (int i = 0; i < testEnvironment->dynamicsWorld->getNumCollisionObjects(); i++) {
-            btCollisionObject *object = testEnvironment->dynamicsWorld->getCollisionObjectArray()[i];
+          for (int i = 0; i < testEnvironment->getDynamicsWorld()->getNumCollisionObjects(); i++) {
+            btCollisionObject *object = testEnvironment->getDynamicsWorld()->getCollisionObjectArray()[i];
             object->setUserIndex(-1);
           }
 
-          guiHelper->autogenerateGraphicsObjects(testEnvironment->dynamicsWorld);
+          guiHelper->autogenerateGraphicsObjects(testEnvironment->getDynamicsWorld());
         }
 
-        const auto action = testNetwork->predict(testEnvironment->observation);
+        const auto action = testNetwork->predict(testEnvironment->getObservation());
         if (printTestData) {
-          std::cout << std::endl << testEnvironment->moveNumber << std::endl;
+          std::cout << std::endl << testEnvironment->getMoveNumber() << std::endl;
           std::cout << std::fixed << std::showpos << std::setprecision(1);
           std::cout << "#";
-          for (const auto o : testEnvironment->observation) {
+          for (const auto o : testEnvironment->getObservation()) {
             std::cout << " " << o;
           }
           std::cout << std::endl;
@@ -203,11 +204,11 @@ int main(int argc, char* argv[]) {
           std::cout << std::resetiosflags(std::ios_base::fixed | std::ios_base::floatfield) << std::noshowpos;
         }
 
-        const auto &cameraTarget = testEnvironment->baseBody->getWorldTransform().getOrigin();
+        const auto &cameraTarget = testEnvironment->getBaseBody()->getWorldTransform().getOrigin();
         guiHelper->resetCamera(cameraDistance, cameraYaw, cameraPitch,
                               cameraTarget.x(), cameraTarget.y(), cameraTarget.z());
-        guiHelper->syncPhysicsToGraphics(testEnvironment->dynamicsWorld);
-        guiHelper->render(testEnvironment->dynamicsWorld);
+        guiHelper->syncPhysicsToGraphics(testEnvironment->getDynamicsWorld());
+        guiHelper->render(testEnvironment->getDynamicsWorld());
         app->swapBuffer();
 
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>
@@ -243,7 +244,7 @@ int main(int argc, char* argv[]) {
     playCurrentValue += reward;
     playMoveCount++;
 
-    if (environment->done || environment->timeout()) {
+    if (environment->isDone() || environment->timeout()) {
       playGameCount++;
       playTotalValue += playCurrentValue;
       playCurrentValue = 0;

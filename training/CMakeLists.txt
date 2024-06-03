@@ -24,26 +24,13 @@ endif()
 set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${PROJECT_SOURCE_DIR}/extern/bullet extern/bullet EXCLUDE_FROM_ALL)
 
-set(TRAINING_SOURCES
-  src/Environment.cpp
-  src/Model.cpp
-  src/Network.cpp
-  env/GoalPhysicsEnv.cpp
-  env/PhysicsEnv.cpp
-  env/TwistyEnv.cpp
-  src/Coach.cpp
-  src/ReplayBuffer.cpp
-)
-
 if(EMSCRIPTEN)
   add_library(Training STATIC
-    ${TRAINING_SOURCES}
     src/Training_emscripten.cpp
   )
   target_include_directories(Training PUBLIC ${TORCH_INCLUDES})
 else()
   add_executable(Training
-    ${TRAINING_SOURCES}
     src/Training_standalone.cpp
   )
 endif()
