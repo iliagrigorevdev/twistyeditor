@@ -22,9 +22,7 @@ public:
   void load(std::istream &stream);
 
   Action predict(const Observation &observation);
-  ActorCriticLosses train(const SamplePtrs &samples);
-
-  static torch::Tensor wrapArray(const FloatValArray &array);
+  ActorCriticLosses train(const std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> &samples);
 
   Config config;
   ModelPtr model;

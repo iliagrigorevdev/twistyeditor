@@ -31,6 +31,5 @@ float Coach::step() {
 }
 
 ActorCriticLosses Coach::train() {
-  const auto samples = replayBuffer->sampleBatch();
-  return network->train(samples);
+  return network->train(replayBuffer->sampleBatch());
 }

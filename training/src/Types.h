@@ -40,7 +40,6 @@ typedef std::pair<float, float> ActorCriticLosses;
 
 typedef std::tuple<Observation, Action, float, Observation, bool> Sample;
 typedef std::shared_ptr<Sample> SamplePtr;
-typedef Array<SamplePtr> SamplePtrs;
 
 typedef std::shared_ptr<Environment> EnvironmentPtr;
 typedef std::shared_ptr<Actor> ActorPtr;

@@ -75,7 +75,9 @@ Action Network::predict(const Observation &observation) {
     cudaActive = false;
   }
 
-  const auto inputObservation = wrapArray(observation);
+  const auto inputObservation = torch::from_blob(
+      reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
+      {1, static_cast<int>(observation.size())}, torch::kFloat32);
 
   const auto [sample, _] = model->actor->forward(inputObservation);
   const auto sampleAccessor = sample.accessor<float, 2>();
@@ -87,8 +89,10 @@ Action Network::predict(const Observation &observation) {
   return action;
 }
 
-ActorCriticLosses Network::train(const SamplePtrs &samples) {
-  if (samples.empty()) {
+ActorCriticLosses Network::train(const std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> &samples) {
+  const auto &[observation, nextObservation, action, reward, undone] = samples;
+
+  if (observation.sizes().empty()) {
     return {0, 0};
   }
 
@@ -100,31 +104,6 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
     model->to(torch::kCUDA);
     targetCritic->to(torch::kCUDA);
     cudaActive = true;
-  }
-
-  const auto batchSize = static_cast<int>(samples.size());
-  std::vector<torch::Tensor> observations;
-  std::vector<torch::Tensor> nextObservations;
-  std::vector<torch::Tensor> actions;
-  auto reward = torch::empty({batchSize, 1}, torch::kFloat32);
-  auto undone = torch::empty({batchSize, 1}, torch::kFloat32);
-  for (int i = 0; i < batchSize; i++) {
-    const auto &[observation, action, r, nextObservation, d] = *samples[i];
-    observations.push_back(wrapArray(observation));
-    nextObservations.push_back(wrapArray(nextObservation));
-    actions.push_back(wrapArray(action));
-    reward[i][0] = r;
-    undone[i][0] = (d ? 0 : 1);
-  }
-  auto observation = torch::cat(observations);
-  auto nextObservation = torch::cat(nextObservations);
-  auto action = torch::cat(actions);
-  if (cudaActive) {
-    observation = observation.to(torch::kCUDA);
-    nextObservation = nextObservation.to(torch::kCUDA);
-    action = action.to(torch::kCUDA);
-    reward = reward.to(torch::kCUDA);
-    undone = undone.to(torch::kCUDA);
   }
 
   criticOptimizer->zero_grad();
@@ -172,10 +151,4 @@ ActorCriticLosses Network::train(const SamplePtrs &samples) {
   }
 
   return {actorLoss.item<float>(), criticLoss.item<float>()};
-}
-
-torch::Tensor Network::wrapArray(const FloatValArray &array) {
-  return torch::from_blob(
-    reinterpret_cast<void*>(const_cast<float*>(&array[0])),
-    {1, static_cast<int>(array.size())}, torch::kFloat32);
 }
