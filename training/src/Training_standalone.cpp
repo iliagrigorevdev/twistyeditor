@@ -35,9 +35,6 @@ static const float cameraDistance = 10;
 static const float cameraYaw = 190;
 static const float cameraPitch = -45;
 
-static const bool testEnabled = true;
-static const bool printTestData = false;
-
 static rapidjson::Document loadDocument(const String &filePath) {
   std::ifstream file(filePath);
   String content;
@@ -66,12 +63,24 @@ static void saveDocument(const rapidjson::Document &document, const String &file
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
+  auto testEnabled = false;
+  auto printTestData = false;
+  auto inputFileName = "";
+  for (auto i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-p") == 0) {
+      printTestData = true;
+    } else if (strcmp(argv[i], "-t") == 0) {
+      testEnabled = true;
+    } else {
+      inputFileName = argv[i];
+    }
+  }
+  if (strlen(inputFileName) == 0) {
     std::cerr << "Usage: " << argv[0] << " FILEPATH" << std::endl;
     return 1;
   }
 
-  const std::filesystem::path inputFilePath(argv[1]);
+  const std::filesystem::path inputFilePath(inputFileName);
 
   auto document = loadDocument(inputFilePath.string());
   if (!document.HasMember("shapeData")) {
@@ -150,7 +159,7 @@ int main(int argc, char* argv[]) {
   if (testEnabled) {
     const auto testEnvironment = std::make_shared<twistyenv::TwistyEnv>(shapeData);
 
-    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment, inputFilePath]() {
+    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment, inputFilePath, printTestData]() {
       auto *app = new SimpleOpenGL3App(inputFilePath.stem().c_str(), 1600, 1600);
       auto *guiHelper = new OpenGLGuiHelper(app, false);
       guiHelper->setUpAxis(1);
