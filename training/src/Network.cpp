@@ -71,6 +71,7 @@ public:
       cudaActive = false;
     }
     torch::load(model, stream);
+    targetCritic = std::dynamic_pointer_cast<model::Critic>(model->getCritic()->clone());
   }
 
   Action predict(const Observation &observation) {
