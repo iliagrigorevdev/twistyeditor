@@ -150,8 +150,8 @@ int main(int argc, char* argv[]) {
   if (testEnabled) {
     const auto testEnvironment = std::make_shared<twistyenv::TwistyEnv>(shapeData);
 
-    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment]() {
-      auto *app = new SimpleOpenGL3App("Training", 1600, 1600);
+    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment, inputFilePath]() {
+      auto *app = new SimpleOpenGL3App(inputFilePath.stem().c_str(), 1600, 1600);
       auto *guiHelper = new OpenGLGuiHelper(app, false);
       guiHelper->setUpAxis(1);
 
