@@ -243,6 +243,9 @@ public:
       }
       if (linkIndex == baseLinkIndex) {
         fellDown = true;
+        if (fallCost != 0) {
+          done = true;
+        }
       }
       observation[index + linkIndex] = 1;
     }
