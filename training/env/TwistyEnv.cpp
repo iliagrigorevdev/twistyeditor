@@ -278,6 +278,7 @@ public:
 
     if ((jointAtLimitCost != 0) || (driveCost != 0) || (stallTorqueCost != 0)) {
       int actionIndex = 0;
+      float electricityCost = 0;
       for (int i = 0; i < joints.size(); i++) {
         const auto &joint = joints[i];
         if (joint.power == 0) {
@@ -293,11 +294,15 @@ public:
         if ((joint.lowerAngle < joint.upperAngle) &&
             (((angle < 0) && (angle < btRadians(joint.lowerAngle) * jointLimit)) ||
             ((angle > 0) && (angle > btRadians(joint.upperAngle) * jointLimit)))) {
-          reward += jointAtLimitCost;
+          electricityCost += jointAtLimitCost;
         }
-        reward += driveCost * std::abs(actionValue * speed) + stallTorqueCost * actionValue * actionValue;
+        electricityCost += driveCost * std::abs(actionValue * speed) + stallTorqueCost * actionValue * actionValue;
         actionIndex++;
       }
+      if (activeJointCount > 0) {
+        electricityCost /= activeJointCount;
+      }
+      reward += electricityCost;
     }
 
     return reward;
