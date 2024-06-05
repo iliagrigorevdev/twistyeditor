@@ -247,6 +247,7 @@ int main(int argc, char* argv[]) {
     });
   }
 
+  int totalSampleCount = 0;
   float totalValue = 0;
   int64_t playTime = 0;
   int64_t trainTime = 0;
@@ -321,6 +322,7 @@ int main(int argc, char* argv[]) {
       for (const auto &sample : samples) {
         replayBuffer->append(sample);
       }
+      totalSampleCount += samples.size();
       totalValue += value;
       actorElapsedTimeMin = std::max(elapsedTime, actorElapsedTimeMin);
     }
@@ -349,6 +351,7 @@ int main(int argc, char* argv[]) {
 
       std::cout << std::endl;
       std::cout << "Epoch " << epochNumber << std::endl;
+      std::cout << "Samples   : " << totalSampleCount * 100 / config.replayBufferSize << "%" << std::endl;
       std::cout << "Value     : " << totalValue << std::endl;
       std::cout << "LossP     : " << (trainStepCount > 0 ? trainLosses.first / trainStepCount : trainLosses.first) << std::endl;
       std::cout << "LossV     : " << (trainStepCount > 0 ? trainLosses.second / trainStepCount : trainLosses.second) << std::endl;
