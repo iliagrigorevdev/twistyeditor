@@ -35,7 +35,6 @@ static const int totalSteps = epochs * epochSteps;
 static const int trainingStartSteps = 1000;
 static const int trainingInterval = 50;
 
-static const int frameTime = 40;
 static const float cameraDistance = 10;
 static const float cameraYaw = 190;
 static const float cameraPitch = -45;
@@ -108,6 +107,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   if (!document.HasMember("config") ||
+      !document["config"].HasMember("timeStep") ||
+      !document["config"].HasMember("frameSteps") ||
       !document["config"].HasMember("discount") ||
       !document["config"].HasMember("batchSize") ||
       !document["config"].HasMember("randomSteps") ||
@@ -122,6 +123,8 @@ int main(int argc, char* argv[]) {
   }
 
   Config config;
+  config.timeStep = document["config"]["timeStep"].GetFloat();
+  config.frameSteps = document["config"]["frameSteps"].GetInt();
   config.discount = document["config"]["discount"].GetFloat();
   config.batchSize = document["config"]["batchSize"].GetInt();
   config.randomSteps = document["config"]["randomSteps"].GetInt();
@@ -134,6 +137,8 @@ int main(int argc, char* argv[]) {
   for (const auto &value : document["config"]["hiddenLayerSizes"].GetArray()) {
     config.hiddenLayerSizes.push_back(value.GetInt());
   }
+
+  const auto frameTime = static_cast<int>(config.timeStep * config.frameSteps * 1000 + 0.5);
 
   std::filesystem::path outputFileName = inputFilePath.stem();
   outputFileName += "_out";
@@ -172,7 +177,7 @@ int main(int argc, char* argv[]) {
   if (testEnabled) {
     const auto testEnvironment = std::make_shared<twistyenv::TwistyEnv>(shapeData);
 
-    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment, inputFilePath, printTestData]() {
+    testThread = std::thread([&mutex, &checkpointNetwork, testEnvironment, inputFilePath, printTestData, frameTime]() {
       auto *app = new SimpleOpenGL3App(inputFilePath.stem().c_str(), 1600, 1600);
       auto *guiHelper = new OpenGLGuiHelper(app, false);
       guiHelper->setUpAxis(1);
