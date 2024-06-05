@@ -4,7 +4,7 @@
 
 #include "TwistyEnv.cpp"
 #include "Network.cpp"
-#include "Coach.cpp"
+#include "ReplayBuffer.cpp"
 
 #define RAPIDJSON_HAS_STDSTRING 1
 #include "rapidjson/document.h"
@@ -16,6 +16,8 @@
 #include <filesystem>
 #include <fstream>
 #include <streambuf>
+#include <ranges>
+#include <future>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Weverything"
@@ -23,6 +25,9 @@
 #include "ExampleBrowser/OpenGLGuiHelper.h"
 #include "LinearMath/btVector3.h"
 #pragma clang diagnostic pop
+
+typedef std::shared_ptr<twistyenv::TwistyEnv> TwistyEnvPtr;
+typedef Array<TwistyEnvPtr> TwistyEnvPtrs;
 
 static const int epochs = 1000;
 static const int epochSteps = 4000;
@@ -65,12 +70,15 @@ static void saveDocument(const rapidjson::Document &document, const String &file
 int main(int argc, char* argv[]) {
   auto testEnabled = false;
   auto printTestData = false;
+  auto actorCount = 1;
   auto inputFileName = "";
   for (auto i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-p") == 0) {
       printTestData = true;
     } else if (strcmp(argv[i], "-t") == 0) {
       testEnabled = true;
+    } else if (strncmp(argv[i], "-a", 2) == 0) {
+      actorCount = std::max(atoi(argv[i] + 2), 1);
     } else {
       inputFileName = argv[i];
     }
@@ -135,14 +143,19 @@ int main(int argc, char* argv[]) {
 
   const String shapeData = document["shapeData"].GetString();
 
-  const auto environment = std::make_shared<twistyenv::TwistyEnv>(shapeData);
+  TwistyEnvPtrs environments(actorCount);
+  std::ranges::generate(environments, [&shapeData]() {
+    return std::make_shared<twistyenv::TwistyEnv>(shapeData);
+  });
 
-  const auto observationLength = environment->getObservation().size();
-  if ((observationLength == 0) || (environment->getActionLength() == 0)) {
+  const auto observationLength = environments[0]->getObservation().size();
+  if ((observationLength == 0) || (environments[0]->getActionLength() == 0)) {
     return 1;
   }
 
-  const auto network = std::make_shared<Network>(config, observationLength, environment->getActionLength());
+  const auto network = std::make_shared<Network>(config, observationLength, environments[0]->getActionLength());
+
+  const auto replayBuffer = std::make_shared<ReplayBuffer>(config);
 
   if (!document["checkpoint"]["data"].IsNull()) {
     const String checkpointData(document["checkpoint"]["data"].GetString(),
@@ -234,59 +247,101 @@ int main(int argc, char* argv[]) {
     });
   }
 
-  Coach coach(config, environment, network);
-
-  int playGameCount = 0;
-  int playMoveCount = 0;
-  float playCurrentValue = 0;
-  float playTotalValue = 0;
-  int trainTime = 0;
+  float totalValue = 0;
+  int64_t playTime = 0;
+  int64_t trainTime = 0;
   int trainStepCount = 0;
   ActorCriticLosses trainLosses = {0, 0};
 
   const auto startRunTime = std::chrono::steady_clock::now();
   auto startEpochTime = startRunTime;
+  const auto jobSize = trainingInterval / actorCount;
+  const auto jobRest = trainingInterval % actorCount;
 
   // Training
-  for (int t = 0; t < totalSteps; t++) {
-    const auto reward = coach.step();
-    playCurrentValue += reward;
-    playMoveCount++;
+  for (int t = 0; t < totalSteps; t += trainingInterval) {
+    const auto actors = (t < config.randomSteps) ? ActorPtrs() : network->cloneActors(actorCount);
 
-    if (environment->isDone() || environment->timeout()) {
-      playGameCount++;
-      playTotalValue += playCurrentValue;
-      playCurrentValue = 0;
+    std::future<std::tuple<ActorCriticLosses, int64_t>> trainingJob;
+    if (t >= trainingStartSteps) {
+      trainingJob = std::async(std::launch::async, [network, replayBuffer]() {
+        const auto startTime = std::chrono::steady_clock::now();
+        ActorCriticLosses losses = {0, 0};
+        for (int i = 0; i < trainingInterval; i++) {
+          const auto l = network->train(replayBuffer->sampleBatch());
+          losses.first += l.first;
+          losses.second += l.second;
+        }
+        losses.first /= trainingInterval;
+        losses.second /= trainingInterval;
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - startTime).count();
+        return std::make_tuple(losses, elapsedTime);
+      });
     }
 
-    if ((t >= trainingStartSteps) && ((t % trainingInterval) == 0)) {
-      const auto startTrainTime = std::chrono::steady_clock::now();
-      for (int i = 0; i < trainingInterval; i++) {
-        const auto losses = coach.train();
-        trainLosses.first += losses.first;
-        trainLosses.second += losses.second;
-        trainStepCount++;
+    Array<std::future<std::tuple<SamplePtrs, float, int64_t>>> actorJobs(actorCount);
+    for (auto i = 0; i < actorCount; i++) {
+      const auto n = jobSize + (i == 0 ? jobRest : 0);
+      const auto actor = (i < actors.size()) ? actors[i] : nullptr;
+      const auto environment = environments[i];
+      actorJobs[i] = std::async(std::launch::async, [n, actor, environment]() {
+        const auto startTime = std::chrono::steady_clock::now();
+        SamplePtrs samples;
+        float value = 0;
+        for (auto s = 0; s < n; s++) {
+          if (environment->isDone() || environment->timeout()) {
+            environment->restart();
+          }
+          auto observation = environment->getObservation();
+          auto action = (actor == nullptr) ? environment->randomAction() : actor->predict(observation);
+          const auto reward = environment->step(action);
+          auto nextObservation = environment->getObservation();
+          samples.push_back(std::make_shared<Sample>(std::move(observation),
+              std::move(action), reward, std::move(nextObservation), environment->isDone()));
+          value += reward;
+        }
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - startTime).count();
+        return std::make_tuple(samples, value, elapsedTime);
+      });
+    }
+
+    if (trainingJob.valid()) {
+      const auto &[losses, elapsedTime] = trainingJob.get();
+      trainLosses.first += losses.first;
+      trainLosses.second += losses.second;
+      trainTime += elapsedTime;
+      trainStepCount += trainingInterval;
+    }
+
+    int64_t actorElapsedTimeMin = 0;
+    for (auto &actorJob : actorJobs) {
+      const auto &[samples, value, elapsedTime] = actorJob.get();
+      for (const auto &sample : samples) {
+        replayBuffer->append(sample);
       }
-      trainTime += std::chrono::duration_cast<std::chrono::milliseconds>
-                   (std::chrono::steady_clock::now() - startTrainTime).count();
+      totalValue += value;
+      actorElapsedTimeMin = std::max(elapsedTime, actorElapsedTimeMin);
     }
+    playTime += actorElapsedTimeMin;
 
-    if (((t + 1) % epochSteps == 0)) {
-      const auto epochNumber = (t + 1) / epochSteps;
+    if (((t + trainingInterval) % epochSteps == 0)) {
+      const auto epochNumber = (t + trainingInterval) / epochSteps;
 
       {
         std::lock_guard<std::mutex> lock(mutex);
         checkpointNetwork = network->clone();
       }
       const auto checkpointData = checkpointNetwork->save();
-      const auto checkpointTime = std::chrono::duration_cast<std::chrono::milliseconds>
+      const auto checkpointTime = std::chrono::duration_cast<std::chrono::microseconds>
                                   (std::chrono::system_clock::now().time_since_epoch()).count();
       document["checkpoint"]["data"].SetString(checkpointData, document.GetAllocator());
       document["checkpoint"]["time"].SetInt64(checkpointTime);
       saveDocument(document, outputFilePath.string());
 
       const auto currentTime = std::chrono::steady_clock::now();
-      const auto epochTime = std::chrono::duration_cast<std::chrono::milliseconds>
+      const auto epochTime = std::chrono::duration_cast<std::chrono::microseconds>
                              (currentTime - startEpochTime).count();
       const auto totalTime = std::chrono::duration_cast<std::chrono::seconds>
                              (currentTime - startRunTime).count();
@@ -294,20 +349,16 @@ int main(int argc, char* argv[]) {
 
       std::cout << std::endl;
       std::cout << "Epoch " << epochNumber << std::endl;
-      std::cout << "Games     : " << playGameCount << std::endl;
-      std::cout << "Moves     : " << (playGameCount > 0 ? playMoveCount / playGameCount : playMoveCount) << std::endl;
-      std::cout << "Value     : " << (playGameCount > 0 ? playTotalValue / playGameCount : playTotalValue) << std::endl;
+      std::cout << "Value     : " << totalValue << std::endl;
       std::cout << "LossP     : " << (trainStepCount > 0 ? trainLosses.first / trainStepCount : trainLosses.first) << std::endl;
       std::cout << "LossV     : " << (trainStepCount > 0 ? trainLosses.second / trainStepCount : trainLosses.second) << std::endl;
-      std::cout << "PlayTime  : " << epochTime - trainTime << std::endl;
-      std::cout << "TrainTime : " << trainTime << std::endl;
-      std::cout << "EpochTime : " << epochTime << std::endl;
+      std::cout << "PlayTime  : " << playTime / 1000 << std::endl;
+      std::cout << "TrainTime : " << trainTime / 1000 << std::endl;
+      std::cout << "EpochTime : " << epochTime / 1000 << std::endl;
       std::cout << "TotalTime : " << totalTime / 60 << ":" << std::setfill('0') << std::setw(2) << totalTime % 60 << std::endl;
 
-      playGameCount = 0;
-      playMoveCount = 0;
-      playCurrentValue = 0;
-      playTotalValue = 0;
+      totalValue = 0;
+      playTime = 0;
       trainTime = 0;
       trainStepCount = 0;
       trainLosses = {0, 0};

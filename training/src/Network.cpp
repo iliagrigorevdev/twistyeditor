@@ -41,6 +41,15 @@ public:
       std::dynamic_pointer_cast<model::Critic>(targetCritic->clone(torch::kCPU)));
   }
 
+  ActorPtrs cloneActors(int count) const {
+    ActorPtrs actors(count);
+    for (auto i = 0; i < count; i++) {
+      const auto sourceActor = (i == 0) ? model->getActor() : actors[0];
+      actors[i] = std::dynamic_pointer_cast<model::Actor>(sourceActor->clone(torch::kCPU));
+    }
+    return actors;
+  }
+
   String save() {
     std::ostringstream stream;
     save(stream);
@@ -75,8 +84,6 @@ public:
   }
 
   Action predict(const Observation &observation) {
-    torch::NoGradGuard noGradGuard;
-
     if (model->is_training()) {
       model->eval();
     }
@@ -86,18 +93,7 @@ public:
       cudaActive = false;
     }
 
-    const auto inputObservation = torch::from_blob(
-        reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
-        {1, static_cast<int>(observation.size())}, torch::kFloat32);
-
-    const auto [sample, _] = model->getActor()->forward(inputObservation);
-    const auto sampleAccessor = sample.accessor<float, 2>();
-    Action action(0.0, model->getActionLength());
-    for (int i = 0; i < model->getActionLength(); i++) {
-      action[i] = sampleAccessor[0][i];
-    }
-
-    return action;
+    return model->getActor()->predict(observation);
   }
 
   ActorCriticLosses train(const std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor> &samples) {
@@ -122,7 +118,7 @@ public:
     torch::Tensor backup;
     {
       torch::NoGradGuard noGradGuard;
-      const auto [nextAction, nextLogProb] = model->getActor()->forward(nextObservation);
+      const auto [nextAction, nextLogProb] = model->getActor()->forward(nextObservation, true);
       const auto [targetQ1, targetQ2] = targetCritic->forward(nextObservation, nextAction);
       const auto targetQ = torch::min(targetQ1, targetQ2);
       backup = reward + config.discount * undone * (targetQ - config.regularization * nextLogProb);
@@ -138,7 +134,7 @@ public:
     }
 
     actorOptimizer->zero_grad();
-    const auto [sample, logProb] = model->getActor()->forward(observation);
+    const auto [sample, logProb] = model->getActor()->forward(observation, true);
     const auto [sampleQ1, sampleQ2] = model->getCritic()->forward(observation, sample);
     const auto sampleQ = torch::min(sampleQ1, sampleQ2);
     const auto actorLoss = (config.regularization * logProb - sampleQ).mean();

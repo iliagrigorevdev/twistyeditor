@@ -52,6 +52,9 @@ typedef std::shared_ptr<RandomGenerator> RandomGeneratorPtr;
 typedef std::shared_ptr<ReplayBuffer> ReplayBufferPtr;
 typedef std::shared_ptr<Coach> CoachPtr;
 
+typedef Array<ActorPtr> ActorPtrs;
+typedef Array<SamplePtr> SamplePtrs;
+
 #define EXCEPT(message) std::cerr << (message) << std::endl; throw std::runtime_error(message);
 
 #endif // TYPES_H

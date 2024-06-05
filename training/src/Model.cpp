@@ -47,12 +47,12 @@ public:
     logStdLayer = register_module("logStdLayer", torch::nn::Linear(hiddenLayerSizes.back(), actionLength));
   }
 
-  std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor observation) {
+  std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor observation, bool withLogProb) {
     const auto netOut = net->forward(observation);
     const auto mu = muLayer->forward(netOut);
     auto sample = mu;
     torch::Tensor logProb;
-    if (is_training()) {
+    if (withLogProb) {
       auto logStd = logStdLayer->forward(netOut);
       logStd = torch::clamp(logStd, logStdMin, logStdMax);
       const auto std = torch::exp(logStd);
@@ -63,6 +63,23 @@ public:
     }
     sample = torch::tanh(sample);
     return {sample, logProb};
+  }
+
+  Action predict(const Observation &observation) {
+    torch::NoGradGuard noGradGuard;
+
+    const auto inputObservation = torch::from_blob(
+        reinterpret_cast<void*>(const_cast<float*>(&observation[0])),
+        {1, static_cast<int>(observation.size())}, torch::kFloat32);
+
+    const auto [sample, _] = forward(inputObservation, false);
+    const auto sampleAccessor = sample.accessor<float, 2>();
+    Action action(0.0, actionLength);
+    for (int i = 0; i < actionLength; i++) {
+      action[i] = sampleAccessor[0][i];
+    }
+
+    return action;
   }
 
 private:
@@ -111,10 +128,6 @@ public:
       , observationLength(observationLength)
       , actionLength(actionLength) {
     reset();
-  }
-
-  int getActionLength() const {
-    return actionLength;
   }
 
   ActorPtr getActor() const {
