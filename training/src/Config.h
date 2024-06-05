@@ -5,6 +5,9 @@
 #include "Types.h"
 
 struct Config {
+  float timeStep = 0.01;
+  int frameSteps = 4;
+
   float discount = 0.99;
   int batchSize = 100;
   int randomSteps = 10000;
