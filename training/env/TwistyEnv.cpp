@@ -34,11 +34,11 @@ static const float defaultGroundRestitution = 0;
 static const float defaultPrismRestitution = 0;
 
 static const float defaultAdvanceReward = 1;
-static const float defaultAliveReward = 0;
-static const float defaultForwardReward = 0;
+static const float defaultForwardReward = 0.1;
+static const float defaultFallCost = -100;
 static const float defaultJointAtLimitCost = -10;
-static const float defaultDriveCost = 0;
-static const float defaultStallTorqueCost = 0;
+static const float defaultDriveCost = -0.1;
+static const float defaultStallTorqueCost = 0.01;
 
 static const std::array<btVector3, 6> prismCollisionVertices = {{
   {
@@ -107,13 +107,14 @@ public:
       , groundRestitution(defaultGroundRestitution)
       , prismRestitution(defaultPrismRestitution)
       , advanceReward(defaultAdvanceReward)
-      , aliveReward(defaultAliveReward)
       , forwardReward(defaultForwardReward)
+      , fallCost(defaultFallCost)
       , jointAtLimitCost(defaultJointAtLimitCost)
       , driveCost(defaultDriveCost)
       , stallTorqueCost(defaultStallTorqueCost)
       , activeJointCount(0)
       , baseLinkIndex(-1)
+      , fellDown(false)
       , groundObject(nullptr) {
     parseData(data);
     validateData();
@@ -188,6 +189,8 @@ public:
                                         true);
       constraints.push_back(constraint);
     }
+
+    fellDown = false;
   }
 
   void update() {
@@ -218,6 +221,7 @@ public:
     }
 
     // Ground contacts
+    fellDown = false;
     for (int i = 0; i < links.size(); i++) {
       observation[index + i] = 0;
     }
@@ -237,8 +241,8 @@ public:
       if (linkIndex == -1) {
         continue;
       }
-      if ((linkIndex == baseLinkIndex) && (aliveReward != 0)) {
-        done = true;
+      if (linkIndex == baseLinkIndex) {
+        fellDown = true;
       }
       observation[index + linkIndex] = 1;
     }
@@ -265,8 +269,6 @@ public:
   float react(const Action &action, float timeStep) {
     auto reward = advanceReward * GoalPhysicsEnv::react(action, timeStep);
 
-    reward += aliveReward;
-
     if (forwardReward != 0) {
       const auto cosAngleToGoal = observation[0];
       if (cosAngleToGoal > forwardCosMin) {
@@ -274,6 +276,10 @@ public:
       } else {
         reward += forwardReward * cosAngleToGoal / forwardCosMin;
       }
+    }
+
+    if (fellDown && (fallCost != 0)) {
+      reward += fallCost;
     }
 
     if ((jointAtLimitCost != 0) || (driveCost != 0) || (stallTorqueCost != 0)) {
@@ -338,8 +344,8 @@ public:
         break;
       case 'c':
         advanceReward = readValue<float>(stream);
-        aliveReward = readValue<float>(stream);
         forwardReward = readValue<float>(stream);
+        fallCost = readValue<float>(stream);
         jointAtLimitCost = readValue<float>(stream);
         driveCost = readValue<float>(stream);
         stallTorqueCost = readValue<float>(stream);
@@ -446,8 +452,8 @@ private:
   float groundRestitution;
   float prismRestitution;
   float advanceReward;
-  float aliveReward;
   float forwardReward;
+  float fallCost;
   float jointAtLimitCost;
   float driveCost;
   float stallTorqueCost;
@@ -455,6 +461,7 @@ private:
   std::vector<Joint> joints;
   int activeJointCount;
   int baseLinkIndex;
+  bool fellDown;
 
   btCollisionObject *groundObject;
   std::vector<btRigidBody*> bodies;

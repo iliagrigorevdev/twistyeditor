@@ -10,7 +10,7 @@ import Worker from "./Worker.worker.js";
 import RigidInfo from './RigidInfo';
 import { ActorCriticLosses } from './Trainer';
 
-const ARCHIVE_VERSION = 4;
+const ARCHIVE_VERSION = 5;
 const ARCHIVE_EXTENSION = ".twy";
 const HISTORY_LENGTH_MAX = 30;
 
@@ -175,7 +175,7 @@ class App extends Component {
       } else {
         alert("Failed to load shape");
       }
-      if (archive.version >= 4) {
+      if (archive.version >= 5) {
         const config = archive.config;
         if (config) {
           this.handleConfigChange(config);

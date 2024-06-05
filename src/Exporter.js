@@ -39,8 +39,8 @@ class Exporter {
                + this.config.prismRestitution);
 
     lines.push("c " + this.config.advanceReward + " "
-               + this.config.aliveReward + " "
                + this.config.forwardReward + " "
+               + this.config.fallCost + " "
                + this.config.jointAtLimitCost + " "
                + this.config.driveCost + " "
                + this.config.stallTorqueCost);
